@@ -36,6 +36,9 @@
 
 namespace asd
 {
+	const wchar_t NullChar = '\0';
+
+
 	inline bool SamePtr(IN const void* a_p1,
 						IN const void* a_p2)
 	{
@@ -255,10 +258,10 @@ namespace asd
 			return 0;
 
 		if (a_str1 == nullptr)
-			return -1;
+			a_str1 = (const char*)&NullChar;
 
 		if (a_str2 == nullptr)
-			return 1;
+			a_str2 = (const char*)&NullChar;
 
 		if (a_ignoreCase == false)
 			return ::strcmp(a_str1, a_str2);
@@ -279,10 +282,10 @@ namespace asd
 			return 0;
 
 		if (a_str1 == nullptr)
-			return -1;
+			a_str1 = &NullChar;
 
 		if (a_str2 == nullptr)
-			return 1;
+			a_str2 = &NullChar;
 
 		if (a_ignoreCase == false)
 			return ::wcscmp(a_str1, a_str2);
@@ -313,8 +316,6 @@ namespace asd
 		*a_dst = (DstType)*a_src;
 	}
 
-
-	const wchar_t NullChar = '\0';
 
 	char* strcpy(OUT char* a_dst,
 				 IN const char* a_src) asd_NoThrow

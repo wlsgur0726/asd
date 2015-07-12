@@ -85,12 +85,12 @@ namespace asd
 #else
 
 	#if defined(asd_Compiler_MSVC)
-		#define asd_RaiseException(msg, ...)										\
-			throw asd::Exception(asd_MakeDebugInfo(msg, __VA_ARGS__));				\
+		#define asd_RaiseException(msg, ...)									\
+			throw asd::Exception(asd_MakeDebugInfo(msg, __VA_ARGS__));			\
 
 	#else
-		#define asd_RaiseException(...)												\
-			throw asd::Exception(asd_MakeDebugInfo(__VA_ARGS__));					\
+		#define asd_RaiseException(...)											\
+			throw asd::Exception(asd_MakeDebugInfo(__VA_ARGS__));				\
 
 	#endif
 

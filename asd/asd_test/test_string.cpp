@@ -252,12 +252,16 @@ namespace asdtest_string
 			EXPECT_GT(s2, stdString);
 
 			// 빈 문자열은 가장 작다.
-			typename StringType_asd::CharType* NullPtr = nullptr;
-			typename StringType_asd::CharType NullChar = 0;
+			typename StringType_asd::CharType NullChar = '\0';
 			s4 = StringType_asd();
 			EXPECT_GT(s1, s4);
-			EXPECT_GT(s1, NullPtr);
 			EXPECT_GT(s1, &NullChar);
+			EXPECT_EQ(s4, &NullChar);
+
+			// nullptr은 빈 문자열로 취급한다.
+			typename StringType_asd::CharType* NullPtr = nullptr;
+			EXPECT_GT(s1, NullPtr);
+			EXPECT_EQ(s4, NullPtr);
 		}
 	}
 
