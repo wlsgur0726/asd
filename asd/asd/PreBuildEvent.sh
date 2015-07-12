@@ -3,9 +3,7 @@
 echo asd PreBuildEvent start
 
 cd ../src
-if [ -e stdafx.h.gch ]; then
-	g++ -std=c++11 stdafx.h
-fi
+g++ -std=c++11 stdafx.h
 
 echo asd PreBuildEvent end
 
