@@ -29,8 +29,10 @@ namespace asdtest_string
 		// sprintf, strcmp
 		{
 			const int BufSize = 512;
-			char BufM[BufSize] = {0xFF};
-			wchar_t BufW[BufSize] = {0xFF};
+			char BufM[BufSize];
+			memset(BufM, 0xff, sizeof(BufM));
+			wchar_t BufW[BufSize];
+			memset(BufW, 0xff, sizeof(BufM));
 
 			asd::sprintf(BufM, BufSize, 
 						 "%s %s %d", "abc", "가나다", 123);
@@ -55,16 +57,17 @@ namespace asdtest_string
 
 
 
-	template <typename StringType>
-	void TestCode_hash_and_equal(const typename StringType::CharType* a_keyString)
+	template <typename StringType_asd>
+	void TestCode_hash_and_equal(const typename StringType_asd::CharType* a_keyString)
 	{
 		const int BufSize = 512;
-		typename StringType::CharType key[BufSize] ={0};
+		typename StringType_asd::CharType key[BufSize];
+		memset(key, 0xff, sizeof(key));
 		asd::strcpy(key, a_keyString);
 
-		std::unordered_map<StringType,
+		std::unordered_map<StringType_asd,
 						   int,
-						   typename StringType::Hash> map;
+						   typename StringType_asd::Hash> map;
 
 		map.emplace(a_keyString, BufSize);
 
@@ -79,7 +82,7 @@ namespace asdtest_string
 			EXPECT_EQ(it->second, BufSize);
 		}
 		{
-			StringType str;
+			StringType_asd str;
 			str = a_keyString;
 			auto it = map.find(str);
 			ASSERT_NE(it, map.end());
@@ -124,72 +127,146 @@ namespace asdtest_string
 	FormatString(False, "false");
 
 
-	template <typename StringType>
-	void TestCode_StringClass(const typename StringType::CharType* a_testString)
+	template <typename StringType_asd, typename StringType_std>
+	void TestCode_StringClass(const typename StringType_asd::CharType* a_testString)
 	{
-		typename StringType::CharType c = 0;
+		typename StringType_asd::CharType c = 0;
+		const StringType_std stdString = a_testString;
 
-		StringType s1(a_testString);
-		StringType s2(s1);
-		StringType s3(FormatString_String(c), a_testString);
-		StringType s4 = a_testString;
-		StringType s5 = s1;
-		StringType s6;
+		// 각종 생성자와 대입연산자 테스트
+		const StringType_asd s1(a_testString);
+		StringType_asd s2(s1);
+		StringType_asd s3(FormatString_String(c), a_testString);
+		StringType_asd s4 = a_testString;
+		StringType_asd s5 = s1;
+		StringType_asd s6;
 		s6 = a_testString;
-		StringType s7;
+		StringType_asd s7;
 		s7 = s1;
+		StringType_asd s8(stdString);
+		StringType_asd s9;
+		s9 = stdString;
 
-
+		EXPECT_EQ(s1, a_testString);
 		EXPECT_EQ(s1, s2);
 		EXPECT_EQ(s2, s3);
 		EXPECT_EQ(s3, s4);
 		EXPECT_EQ(s4, s5);
 		EXPECT_EQ(s5, s6);
 		EXPECT_EQ(s6, s7);
-
-		
-		s2 += s3 + s4;
-		EXPECT_NE(s1, s2);
-		EXPECT_LT(s1, s2);
+		EXPECT_EQ(s7, s8);
+		EXPECT_EQ(s8, s9);
 
 
-		const int BufSize = 512;
-		typename StringType::CharType buf[BufSize] = {0xFF};
-		asd::strcpy(buf,					s1);
-		asd::strcpy(buf+s1.GetLength(),		s1);
-		asd::strcpy(buf+(s1.GetLength()*2),	s1);
-		EXPECT_EQ(s1, s3);
-		EXPECT_EQ(s2, buf);
+		// +와 +=연산자 테스트
+		{
+			s2 = s1;
+			s2 += s3 + s4;
+
+			// s3와 s4는 값의 변화가 없어야 한다.
+			EXPECT_EQ(s1, s3);
+			EXPECT_EQ(s1, s4);
+
+			const int BufSize = 512;
+			typename StringType_asd::CharType buf[BufSize] ={0xFF};
+			int offset = 0;
+			asd::strcpy(buf+offset, s1);
+
+			offset += s1.GetLength();
+			asd::strcpy(buf+offset, s3);
+
+			offset += s3.GetLength();
+			asd::strcpy(buf+offset, s4);
+
+			// s2는 뒤에 s3와 s4의 내용이 붙어있어야 한다.
+			EXPECT_EQ(s2, buf);
+		}
 
 
-		s2 << s3 << s4 << s5;
-		EXPECT_EQ(s1, s3);
-		EXPECT_EQ(s1, s4);
+		// <<연산자 테스트
+		{
+			s2 = s1;
+			s2 << s3 << s4;
+
+			// s3와 s4는 값의 변화가 없어야 한다.
+			EXPECT_EQ(s1, s3);
+			EXPECT_EQ(s1, s4);
+
+			const int BufSize = 512;
+			typename StringType_asd::CharType buf[BufSize] ={0xFF};
+			int offset = 0;
+			asd::strcpy(buf+offset, s1);
+
+			offset += s1.GetLength();
+			asd::strcpy(buf+offset, s3);
+
+			offset += s3.GetLength();
+			asd::strcpy(buf+offset, s4);
+
+			// s2는 뒤에 s3와 s4의 내용이 붙어있어야 한다.
+			EXPECT_EQ(s2, buf);
+		}
 
 
-		void* p = &c;
-		s2 = s1;
-		s2 << 123 << true << p;
-		s3 += 123;
-		s3 += true;
-		s3 += p;
-		s4 = s4 + FormatString_Int32(c) + FormatString_String(c) + FormatString_Pointer(c);
-		s5.Format(s4, 123, FormatString_True(c), p);
-		EXPECT_EQ(s2, s3);
-		EXPECT_EQ(s3, s5);
+		// 각종 타입들에 대한 연산자 오버로딩 테스트
+		{
+			void* p = &c;
+
+			s2 = s1;
+			s2 << 123 << 1.23 << true << p << stdString;
+
+			s3 = s1;
+			s3 += 123;
+			s3 += 1.23;
+			s3 += true;
+			s3 += p;
+			s3 += stdString;
+
+			s4 =  s1 
+				+ FormatString_Int32(c)
+				+ FormatString_Double(c)
+				+ FormatString_String(c)
+				+ FormatString_Pointer(c)
+				+ FormatString_String(c);
+			s5.Format(s4, 123, 1.23, FormatString_True(c), p, stdString.data());
+
+			// 값이 모두 같은지 확인.
+			EXPECT_EQ(s2, s3);
+			EXPECT_EQ(s3, s5);
+		}
 
 
-		s7 = StringType();
-		EXPECT_NE(s1, s7);
-		EXPECT_GT(s1, s7);
+		// 비교연산 테스트
+		{
+			s2 = s1 + 0;
+			s3 = s2 + 1;
+			
+			// '0'의 코드값이 '1'보다 작으므로 s2가 더 작다.
+			EXPECT_LT(s2, s3);
+			
+			// 길이가 더 짧은 쪽이 더 작다.
+			EXPECT_LT(s1, s2);
+
+			// std string과 비교.
+			EXPECT_EQ(s1, stdString);
+			EXPECT_GT(s2, stdString);
+
+			// 빈 문자열은 가장 작다.
+			typename StringType_asd::CharType* NullPtr = nullptr;
+			typename StringType_asd::CharType NullChar = 0;
+			s4 = StringType_asd();
+			EXPECT_GT(s1, s4);
+			EXPECT_GT(s1, NullPtr);
+			EXPECT_GT(s1, &NullChar);
+		}
 	}
 
 	TEST(String, StringClass)
 	{
 		// MultiByte
-		TestCode_StringClass<asd::MString>("abc가나다123");
+		TestCode_StringClass<asd::MString, std::string>("abc가나다123");
 
 		// Wide
-		TestCode_StringClass<asd::WString>(L"abc가나다123");
+		TestCode_StringClass<asd::WString, std::wstring>(L"abc가나다123");
 	}
 }

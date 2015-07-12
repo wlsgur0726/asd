@@ -1,5 +1,6 @@
 ﻿#pragma once
-#include "string.h"
+#include "asd/asdbase.h"
+
 namespace asd
 {
 	void Test();

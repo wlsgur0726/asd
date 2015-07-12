@@ -254,6 +254,12 @@ namespace asd
 		if (SamePtr(a_str1, a_str2))
 			return 0;
 
+		if (a_str1 == nullptr)
+			return -1;
+
+		if (a_str2 == nullptr)
+			return 1;
+
 		if (a_ignoreCase == false)
 			return ::strcmp(a_str1, a_str2);
 
@@ -272,6 +278,12 @@ namespace asd
 		if (SamePtr(a_str1, a_str2))
 			return 0;
 
+		if (a_str1 == nullptr)
+			return -1;
+
+		if (a_str2 == nullptr)
+			return 1;
+
 		if (a_ignoreCase == false)
 			return ::wcscmp(a_str1, a_str2);
 
@@ -288,28 +300,31 @@ namespace asd
 	inline void strcpy_internal(OUT DstType* a_dst,
 								IN const SrcType* a_src) asd_NoThrow
 	{
-		if (SamePtr(a_dst, a_src))
-			return;
-
-		// a_dst가 작아서 잘못된 메모리를 접근하는 경우는 없다. (caller를 믿는다)
-		do {
+		// 잘못된 메모리를 접근하는 경우는 없다. (caller를 믿는다)
+		for (; *a_src!='\0'; ++a_src,++a_dst) {
 			if (AsciiOnly) {
 				bool isAsciiChar = (0x7F - *a_src) >= 0;
 				assert(isAsciiChar);
 			}
-
 			*a_dst = (DstType)*a_src;
-			if (*a_src == '\0')
-				break;
-			++a_src;
-			++a_dst;
-		} while (true);
+		}
+
+		assert(*a_src == '\0');
+		*a_dst = (DstType)*a_src;
 	}
 
+
+	const wchar_t NullChar = '\0';
 
 	char* strcpy(OUT char* a_dst,
 				 IN const char* a_src) asd_NoThrow
 	{
+		if (SamePtr(a_dst, a_src))
+			return a_dst;
+
+		if (a_src == nullptr)
+			a_src = (const char*)&NullChar;
+
 #if defined(asd_Platform_Windows)
 		strcpy_internal(a_dst, a_src);
 		return a_dst;
@@ -322,6 +337,12 @@ namespace asd
 	wchar_t* strcpy(OUT wchar_t* a_dst,
 					IN const wchar_t* a_src) asd_NoThrow
 	{
+		if (SamePtr(a_dst, a_src))
+			return a_dst;
+
+		if (a_src == nullptr)
+			a_src = &NullChar;
+
 #if defined(asd_Platform_Windows)
 		strcpy_internal(a_dst, a_src);
 		return a_dst;
@@ -335,6 +356,12 @@ namespace asd
 	char* strcpy(OUT char* a_dst,
 				 IN const wchar_t* a_src) asd_NoThrow
 	{
+		if (SamePtr(a_dst, a_src))
+			return a_dst;
+
+		if (a_src == nullptr)
+			a_src = &NullChar;
+
 		strcpy_internal<char, wchar_t, true>(a_dst, a_src);
 		return a_dst;
 	}
@@ -344,6 +371,12 @@ namespace asd
 	wchar_t* strcpy(OUT wchar_t* a_dst,
 					IN const char* a_src) asd_NoThrow
 	{
+		if (SamePtr(a_dst, a_src))
+			return a_dst;
+
+		if (a_src == nullptr)
+			a_src = (const char*)&NullChar;
+
 		strcpy_internal<wchar_t, char, true>(a_dst, a_src);
 		return a_dst;
 	}

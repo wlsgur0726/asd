@@ -39,9 +39,8 @@ TEST(Semaphore, PostTest)
 }
 
 
-TEST(Semaphore, EventTest1)
+TEST(Semaphore, Example1)
 {
-	// 이벤트 반응성 테스트1
 	// 1ms에 핑퐁을 얼마나 주고받는가
 	const int TestTimeMs = 100;
 	asd::Semaphore semPing;
@@ -87,9 +86,8 @@ TEST(Semaphore, EventTest1)
 }
 
 
-TEST(Semaphore, EventTest2)
+TEST(Semaphore, Example2)
 {
-	// 이벤트 반응성 테스트2
 	// std::thread를 1ms에 몇개나 만들 수 있는가
 	const int TestCount = 5;
 	const int ThreadCount = 256;
@@ -111,7 +109,7 @@ TEST(Semaphore, EventTest2)
 
 		bool allSuccess = true;
 		for (int i=0; i<ThreadCount; ++i)
-			allSuccess = allSuccess && created_event.Wait(10);
+			allSuccess = allSuccess && created_event.Wait(100);
 
 		// 시간측정 종료
 		auto end = std::chrono::high_resolution_clock::now();		
@@ -146,9 +144,9 @@ TEST(Semaphore, EventTest2)
 }
 
 
-TEST(Semaphore, Example)
+TEST(Semaphore, Example3)
 {
-	// 세마포어로 간단한 이벤트큐와 뮤텍스를 구현해본 테스트
+	// 세마포어로 간단한 뮤텍스와 이벤트큐를 구현해본 테스트
 	struct Mutex {
 		asd::Semaphore m_sem = asd::Semaphore(1);
 		void Lock() {

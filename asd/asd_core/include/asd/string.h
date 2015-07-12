@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "asd/asdbase.h"
 #include <cstring>
-#include <vector>
+#include <string>
 
 namespace asd
 {
@@ -122,12 +122,15 @@ namespace asd
 	class BasicString
 	{
 	public:
-		typedef CHARTYPE					CharType;
+		typedef CHARTYPE						CharType;
 
-		typedef BasicString<CharType>		ThisType;
+		typedef BasicString<CharType>			ThisType;
 
-		typedef std::shared_ptr<CharType>	Buffer_ptr;
+		typedef std::shared_ptr<CharType>		Buffer_ptr;
 
+		typedef std::basic_string<CharType>		SupportType_StdString;
+
+		static const bool IgnoreCase_Default = false;
 
 	private:
 		// 앞에서 sizeof(std::size_t) 만큼은 문자열 길이를 저장하는데 사용한다.
@@ -164,12 +167,14 @@ namespace asd
 		}
 
 
+
 		template<typename... ARGS>
 		BasicString(IN const CharType* a_format,
 					IN ARGS&&... a_args) asd_NoThrow
 		{
 			Format(a_format, a_args...);
 		}
+
 
 
 		ThisType& Format(IN const CharType* a_format,
@@ -182,6 +187,7 @@ namespace asd
 
 			return *this;
 		}
+
 
 
 		inline ThisType& FormatV(IN const CharType* a_format,
@@ -209,6 +215,7 @@ namespace asd
 		}
 
 
+
 		// '\0'을 제외한 캐릭터 수를 리턴
 		inline std::size_t GetLength() const asd_NoThrow
 		{
@@ -221,6 +228,7 @@ namespace asd
 
 			return ret;
 		}
+
 
 
 		// 문자열의 시작 포인터를 리턴
@@ -241,6 +249,7 @@ namespace asd
 		}
 
 
+
 		inline operator const CharType*() const asd_NoThrow
 		{
 			return GetData();
@@ -248,59 +257,11 @@ namespace asd
 
 
 
-		// 비교
-		//  return -  :  left <  right
-		//  return +  :  left >  right
-		//  return 0  :  left == right
-		inline static int Compare(IN const CharType* a_left,
-								  IN const CharType* a_right,
-								  IN bool a_ignoreCase = false) asd_NoThrow
+		inline operator SupportType_StdString() const asd_NoThrow
 		{
-			return asd::strcmp(a_left, a_right, a_ignoreCase);
+			return SupportType_StdString(GetData(), GetLength());
 		}
 
-
-		inline int Compare(IN const CharType* a_rval,
-						   IN bool a_ignoreCase = false) const asd_NoThrow
-		{
-			return Compare(*this, a_rval, a_ignoreCase);
-		}
-
-
-		inline bool operator == (IN const CharType* a_rval) const asd_NoThrow
-		{
-			return Compare(a_rval) == 0;
-		}
-
-
-		inline bool operator != (IN const CharType* a_rval) const asd_NoThrow
-		{
-			return Compare(a_rval) != 0;
-		}
-
-
-		inline bool operator < (IN const CharType* a_rval) const asd_NoThrow
-		{
-			return Compare(a_rval) < 0;
-		}
-
-		
-		inline bool operator <= (IN const CharType* a_rval) const asd_NoThrow
-		{
-			return Compare(a_rval) <= 0;
-		}
-
-
-		inline bool operator > (IN const CharType* a_rval) const asd_NoThrow
-		{
-			return Compare(a_rval) > 0;
-		}
-
-
-		inline bool operator >= (IN const CharType* a_rval) const asd_NoThrow
-		{
-			return Compare(a_rval) >= 0;
-		}
 
 
 		// STL의 해시 기반 컨테이너에서 사용할 Functor
@@ -335,11 +296,13 @@ namespace asd
 		};
 
 
-		inline std::size_t GetHash() const
+
+		inline std::size_t GetHash() const asd_NoThrow
 		{
 			Hash functor;
 			return functor(GetData());
 		}
+
 
 
 		// 현재 문자열 뒤에 인자로 받은 문자열을 적용한다.
@@ -381,54 +344,169 @@ namespace asd
 		}
 
 
-		// 대입연산자(=)를 기반으로 생성자까지 한번에 정의하는 매크로.
-#define asd_Define_OperatorEqual(ArgType, ArgVal)							\
-		BasicString(IN ArgType ArgVal) asd_NoThrow							\
-		{																	\
-			*this = ArgVal;													\
-		}																	\
-																			\
-		inline ThisType& operator = (IN ArgType ArgVal) asd_NoThrow			\
+
+		// CompareFunction를 사용해서 비교연산자들을 오버로딩하는 매크로.
+#define asd_Define_CompareOperator(CompareFunction, TemplateType, IgnoreCase_DefaultVar)		\
+																								\
+		inline int Compare(IN TemplateType a_rval,												\
+						   IN bool a_ignoreCase = IgnoreCase_DefaultVar) const asd_NoThrow		\
+		{																						\
+			return CompareFunction(GetData(), a_rval, a_ignoreCase);							\
+		}																						\
+																								\
+		inline bool operator == (IN TemplateType a_rval) const asd_NoThrow						\
+		{																						\
+			return Compare(a_rval) == 0;														\
+		}																						\
+																								\
+		inline bool operator != (IN TemplateType a_rval) const asd_NoThrow						\
+		{																						\
+			return Compare(a_rval) != 0;														\
+		}																						\
+																								\
+		inline bool operator < (IN TemplateType a_rval) const asd_NoThrow						\
+		{																						\
+			return Compare(a_rval) < 0;															\
+		}																						\
+																								\
+		inline bool operator <= (IN TemplateType a_rval) const asd_NoThrow						\
+		{																						\
+			return Compare(a_rval) <= 0;														\
+		}																						\
+																								\
+		inline bool operator > (IN TemplateType a_rval) const asd_NoThrow						\
+		{																						\
+			return Compare(a_rval) > 0;															\
+		}																						\
+																								\
+		inline bool operator >= (IN TemplateType a_rval) const asd_NoThrow						\
+		{																						\
+			return Compare(a_rval) >= 0;														\
+		}																						\
 
 
-		// += 연산자를 기반으로 << 와 + 연산자를 한번에 정의하는 매크로.
-#define asd_Define_OperatorAppend(ArgType, ArgVal)							\
-		inline ThisType operator + (IN ArgType ArgVal) const asd_NoThrow	\
-		{																	\
-			ThisType ret;													\
-			ret << *this << ArgVal;											\
-			return ret;														\
-		}																	\
-																			\
-		inline ThisType& operator << (IN ArgType ArgVal) asd_NoThrow		\
-		{																	\
-			return *this += ArgVal;											\
-		}																	\
-																			\
-		inline ThisType& operator += (IN ArgType ArgVal) asd_NoThrow		\
 
-
-		// += 연산자를 기반으로 생성자와 기타 연산자들을 한번에 정의하는 매크로.
-#define asd_Define_OperatorGeneric(ArgType, ArgVal)							\
-		asd_Define_OperatorEqual(ArgType, ArgVal)							\
-		{																	\
-			m_data = Buffer_ptr();											\
-			return *this += ArgVal;											\
-		}																	\
-																			\
-		asd_Define_OperatorAppend(ArgType, ArgVal)							\
+		// static int Compare() 함수를 정의하면서 다른 비교연산자들까지 오버로딩하는 매크로.
+#define asd_Define_CompareFunction(CharTypePointer_LeftVar,										\
+								   TemplateType,												\
+								   Template_RightVar,											\
+								   IgnoreCaseVar,												\
+								   IgnoreCase_DefaultVar)										\
+																								\
+		asd_Define_CompareOperator(Compare, TemplateType, IgnoreCase_DefaultVar)				\
+																								\
+		inline static int Compare(IN TemplateType a_templateVar,								\
+								  IN const CharType* a_stringVar,								\
+								  IN bool a_ignoreCase = IgnoreCase_DefaultVar) asd_NoThrow		\
+		{																						\
+			return Compare(a_stringVar, a_templateVar, a_ignoreCase);							\
+		}																						\
+																								\
+		inline static int Compare(IN const CharType* CharTypePointer_LeftVar,					\
+								  IN TemplateType Template_RightVar,							\
+								  IN bool IgnoreCaseVar = IgnoreCase_DefaultVar) asd_NoThrow	\
 
 
 
-		asd_Define_OperatorEqual(REF const ThisType&, a_share)
+		// 대입연산자(=)를 정의하면서 생성자까지 한번에 정의하는 매크로.
+#define asd_Define_AssignmentOperator_Substitute(ArgType, ArgVar)								\
+		BasicString(IN ArgType ArgVar) asd_NoThrow												\
+		{																						\
+			*this = ArgVar;																		\
+		}																						\
+																								\
+		inline ThisType& operator = (IN ArgType ArgVar) asd_NoThrow								\
+
+
+
+		// += 연산자를 정의하면서 << 와 + 연산자를 한번에 정의하는 매크로.
+#define asd_Define_AssignmentOperator_Append(ArgType, ArgVar)									\
+		inline ThisType operator + (IN ArgType ArgVar) const asd_NoThrow						\
+		{																						\
+			ThisType ret;																		\
+			ret << *this << ArgVar;																\
+			return ret;																			\
+		}																						\
+																								\
+		inline ThisType& operator << (IN ArgType ArgVar) asd_NoThrow							\
+		{																						\
+			return *this += ArgVar;																\
+		}																						\
+																								\
+		inline ThisType& operator += (IN ArgType ArgVar) asd_NoThrow							\
+
+
+
+		// += 연산자를 기반으로 생성자와 기타 Assignment 연산자들을 한번에 정의하는 매크로.
+#define asd_Define_AssignmentOperator(ArgType, ArgVar)											\
+		asd_Define_AssignmentOperator_Substitute(ArgType, ArgVar)								\
+		{																						\
+			m_data = Buffer_ptr();																\
+			return *this += ArgVar;																\
+		}																						\
+																								\
+		asd_Define_AssignmentOperator_Append(ArgType, ArgVar)									\
+
+
+
+		// asd_Define_AssignmentOperator를 정의하면서 
+		// asd_Define_CompareFunction까지 정의하는 매크로.
+#define asd_Define_AssignmentOperator_GenCompare(ArgType, ArgVar)								\
+		asd_Define_CompareFunction(a_left, ArgType, a_right, a_ignoreCase, IgnoreCase_Default)	\
+		{																						\
+			return Compare(a_left, ThisType(a_right), a_ignoreCase);							\
+		}																						\
+																								\
+		asd_Define_AssignmentOperator(ArgType, ArgVar)											\
+
+
+
+		// CharType 관련.
+		//   문자열 비교 함수.
+		//   매크로에 의해 오버로딩된 대부분의 Compare함수들은 최종적으로 이것을 호출한다.
+		//     return -  :  left <  right
+		//     return +  :  left >  right
+		//     return 0  :  left == right
+		inline static int Compare(IN const CharType* a_left,
+								  IN const CharType* a_right,
+								  IN bool a_ignoreCase = IgnoreCase_Default) asd_NoThrow
+		{
+			return asd::strcmp(a_left,
+							   a_right,
+							   a_ignoreCase);
+		}
+
+		asd_Define_CompareOperator(Compare, const CharType*, IgnoreCase_Default)
+
+		asd_Define_AssignmentOperator(const CharType*, a_rval)
+		{
+			Append(a_rval, asd::strlen(a_rval));
+			return *this;
+		}
+
+
+
+		// ThisType 관련.
+		//   ambiguous error를 피하기 위한 오버로딩.
+		inline static int Compare(IN const CharType* a_left,
+								  IN const ThisType& a_right,
+								  IN bool a_ignoreCase = IgnoreCase_Default) asd_NoThrow
+		{
+			return Compare(a_left,
+						   a_right.GetData(),
+						   a_ignoreCase);
+		}
+
+		asd_Define_CompareOperator(Compare, const ThisType&, IgnoreCase_Default)
+
+		asd_Define_AssignmentOperator_Substitute(REF const ThisType&, a_share)
 		{
 			// 공유
 			m_data = a_share.m_data;
 			return *this;
 		}
 
-
-		asd_Define_OperatorAppend(IN const ThisType&, a_rval)
+		asd_Define_AssignmentOperator_Append(IN const ThisType&, a_rval)
 		{
 			if (GetLength() == 0) {
 				// 기존데이터가 없다면 대입 (공유)
@@ -441,45 +519,50 @@ namespace asd
 		}
 
 
-		asd_Define_OperatorGeneric(IN const CharType*, a_rval)
+
+		// std::string 관련.
+		asd_Define_CompareFunction(a_left,
+								   const SupportType_StdString&,
+								   a_right,
+								   a_ignoreCase,
+								   IgnoreCase_Default)
 		{
-			Append(a_rval, asd::strlen(a_rval));
-			return *this;
+			return Compare(a_left,
+						   a_right.data(),
+						   a_ignoreCase);
 		}
 
-
-		asd_Define_OperatorGeneric(IN const std::basic_string<CharType>&, a_rval)
+		asd_Define_AssignmentOperator(const SupportType_StdString&, a_rval)
 		{
 			Append(a_rval.data(), a_rval.length());
 			return *this;
 		}
 
 
-		asd_Define_OperatorGeneric(IN const int32_t&, a_rval)
+
+		// 정수
+		asd_Define_AssignmentOperator_GenCompare(const int32_t, a_rval)
 		{
 			const CharType format[] = {'%', 'd', 0};
 			ThisType temp(format, a_rval);
 			return *this += temp;
 		}
 
-
-		asd_Define_OperatorGeneric(IN const uint32_t&, a_rval)
+		asd_Define_AssignmentOperator_GenCompare(const uint32_t, a_rval)
 		{
 			const CharType format[] = {'%', 'u', 0};
 			ThisType temp(format, a_rval);
 			return *this += temp;
 		}
 
-
-		asd_Define_OperatorGeneric(IN const int64_t&, a_rval)
+		asd_Define_AssignmentOperator_GenCompare(const int64_t, a_rval)
 		{
 			const CharType format[] = {'%', 'l', 'l', 'd', 0};
 			ThisType temp(format, a_rval);
 			return *this += temp;
 		}
 
-		
-		asd_Define_OperatorGeneric(IN const uint64_t&, a_rval)
+		asd_Define_AssignmentOperator_GenCompare(const uint64_t, a_rval)
 		{
 			const CharType format[] = {'%', 'l', 'l', 'u', 0};
 			ThisType temp(format, a_rval);
@@ -487,7 +570,9 @@ namespace asd
 		}
 
 
-		asd_Define_OperatorGeneric(IN const double&, a_rval)
+
+		// 실수
+		asd_Define_AssignmentOperator_GenCompare(const double, a_rval)
 		{
 			const CharType format[] = {'%', 'l', 'f', 0};
 			ThisType temp(format, a_rval);
@@ -495,7 +580,9 @@ namespace asd
 		}
 
 
-		asd_Define_OperatorGeneric(IN const uint8_t&, a_rval)
+
+		// byte
+		asd_Define_AssignmentOperator_GenCompare(const uint8_t, a_rval)
 		{
 			const CharType format[] = {'%', 'x', 0};
 			ThisType temp(format, (uint32_t)a_rval);
@@ -503,7 +590,9 @@ namespace asd
 		}
 
 
-		asd_Define_OperatorGeneric(IN const void*, a_rval)
+
+		// pointer
+		asd_Define_AssignmentOperator_GenCompare(const void*, a_rval)
 		{
 			const CharType format[] = {'%', 'p', 0};
 			ThisType temp(format, a_rval);
@@ -511,7 +600,9 @@ namespace asd
 		}
 
 
-		asd_Define_OperatorGeneric(IN const bool&, a_rval)
+
+		// bool
+		asd_Define_AssignmentOperator_GenCompare(const bool, a_rval)
 		{
 			if (a_rval) {
 				const CharType str_true[] = {'t', 'r', 'u', 'e', 0};
