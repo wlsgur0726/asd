@@ -4,33 +4,29 @@
 
 
 #if defined(asd_Platform_Windows)
-
-#include <Windows.h>
-
-#define asd_vsprintf_a	::vsprintf_s
-#define asd_vsprintf_w	::vswprintf_s
-
-#define asd_vfprintf_a	::vfprintf_s
-#define asd_vfprintf_w	::vfwprintf_s
-
-#define asd_vprintf_a	::vprintf_s
-#define asd_vprintf_w	::vwprintf_s
-
-
+#	include <Windows.h>
+#
+#	define asd_vsprintf_a	::vsprintf_s
+#	define asd_vsprintf_w	::vswprintf_s
+#
+#	define asd_vfprintf_a	::vfprintf_s
+#	define asd_vfprintf_w	::vfwprintf_s
+#
+#	define asd_vprintf_a	::vprintf_s
+#	define asd_vprintf_w	::vwprintf_s
+#
 #else
-
-#include <string.h>
-#include <cwchar>
-
-#define asd_vsprintf_a	::vsnprintf
-#define asd_vsprintf_w	::vswprintf
-
-#define asd_vfprintf_a	::vfprintf
-#define asd_vfprintf_w	::vfwprintf
-
-#define asd_vprintf_a	::vprintf
-#define asd_vprintf_w	::vwprintf
-
+#	include <cwchar>
+#
+#	define asd_vsprintf_a	::vsnprintf
+#	define asd_vsprintf_w	::vswprintf
+#
+#	define asd_vfprintf_a	::vfprintf
+#	define asd_vfprintf_w	::vfwprintf
+#
+#	define asd_vprintf_a	::vprintf
+#	define asd_vprintf_w	::vwprintf
+#
 #endif
 
 
