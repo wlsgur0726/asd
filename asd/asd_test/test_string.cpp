@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "../asd/include/string.h"
+#include "asd/string.h"
 #include <unordered_map>
 #include <iostream>
 

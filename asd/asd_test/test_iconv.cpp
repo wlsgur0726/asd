@@ -1,6 +1,6 @@
 ﻿#include "stdafx.h"
-#include "../asd/include/exception.h"
-#include "../asd/include/iconvwrap.h"
+#include "asd/exception.h"
+#include "asd/iconvwrap.h"
 #include <unordered_set>
 #include <unordered_map>
 #include <functional>

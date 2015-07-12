@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "../../asd/include/semaphore.h"
+#include "asd/semaphore.h"
 
 #if !defined(asd_Platform_Windows)
 #	include <semaphore.h>

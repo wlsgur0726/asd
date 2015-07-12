@@ -15,49 +15,49 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\test.h">
+    <ClInclude Include="include\asd\test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\socket.h">
+    <ClInclude Include="include\asd\socket.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\threadpool.h">
+    <ClInclude Include="include\asd\threadpool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\lock.h">
+    <ClInclude Include="include\asd\lock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\semaphore.h">
+    <ClInclude Include="include\asd\semaphore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\address.h">
+    <ClInclude Include="include\asd\address.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\asdbase.h">
+    <ClInclude Include="include\asd\asdbase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\string.h">
+    <ClInclude Include="include\asd\string.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\exception.h">
+    <ClInclude Include="include\asd\exception.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\stdafx.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\iconvwrap.h">
+    <ClInclude Include="include\asd\iconvwrap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\tlsmanager.h">
+    <ClInclude Include="include\asd\tlsmanager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\tempbuffer.h">
+    <ClInclude Include="include\asd\tempbuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\objpool.h">
+    <ClInclude Include="include\asd\objpool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\util.h">
+    <ClInclude Include="include\asd\util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

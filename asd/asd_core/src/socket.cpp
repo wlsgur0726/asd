@@ -1,6 +1,6 @@
 ﻿#include "stdafx.h"
-#include "../../asd/include/socket.h"
-#include "../../asd/include/exception.h"
+#include "asd/socket.h"
+#include "asd/exception.h"
 #include <string>
 #include <cstdio>
 #include <algorithm>

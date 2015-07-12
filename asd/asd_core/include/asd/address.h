@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "../../asd/include/asdbase.h"
-#include "../../asd/include/string.h"
-#include "../../asd/include/exception.h"
+#include "asd/asdbase.h"
+#include "asd/string.h"
+#include "asd/exception.h"
 
 #ifndef asd_Platform_Windows
 #	include <sys/socket.h>

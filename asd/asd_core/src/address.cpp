@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "../../asd/include/address.h"
+#include "asd/address.h"
 
 #if defined(asd_Platform_Windows)
 #	include <WinSock2.h>

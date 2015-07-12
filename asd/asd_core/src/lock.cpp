@@ -1,6 +1,6 @@
 ﻿#include "stdafx.h"
-#include "../include/lock.h"
-#include "../include/tlsmanager.h"
+#include "asd/lock.h"
+#include "asd/tlsmanager.h"
 #include <thread>
 
 #if defined(asd_Platform_Windows)	

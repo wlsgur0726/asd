@@ -93,7 +93,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Create</PrecompiledHeader>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
@@ -111,7 +111,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Create</PrecompiledHeader>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
@@ -131,7 +131,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Create</PrecompiledHeader>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
@@ -153,7 +153,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Create</PrecompiledHeader>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
@@ -167,20 +167,20 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\address.h" />
-    <ClInclude Include="include\asdbase.h" />
-    <ClInclude Include="include\exception.h" />
-    <ClInclude Include="include\iconvwrap.h" />
-    <ClInclude Include="include\lock.h" />
-    <ClInclude Include="include\objpool.h" />
-    <ClInclude Include="include\semaphore.h" />
-    <ClInclude Include="include\socket.h" />
-    <ClInclude Include="include\string.h" />
-    <ClInclude Include="include\tempbuffer.h" />
-    <ClInclude Include="include\test.h" />
-    <ClInclude Include="include\threadpool.h" />
-    <ClInclude Include="include\tlsmanager.h" />
-    <ClInclude Include="include\util.h" />
+    <ClInclude Include="include\asd\address.h" />
+    <ClInclude Include="include\asd\asdbase.h" />
+    <ClInclude Include="include\asd\exception.h" />
+    <ClInclude Include="include\asd\iconvwrap.h" />
+    <ClInclude Include="include\asd\lock.h" />
+    <ClInclude Include="include\asd\objpool.h" />
+    <ClInclude Include="include\asd\semaphore.h" />
+    <ClInclude Include="include\asd\socket.h" />
+    <ClInclude Include="include\asd\string.h" />
+    <ClInclude Include="include\asd\tempbuffer.h" />
+    <ClInclude Include="include\asd\test.h" />
+    <ClInclude Include="include\asd\threadpool.h" />
+    <ClInclude Include="include\asd\tlsmanager.h" />
+    <ClInclude Include="include\asd\util.h" />
     <ClInclude Include="src\stdafx.h" />
   </ItemGroup>
   <ItemGroup>

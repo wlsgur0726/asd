@@ -1,6 +1,6 @@
 ﻿#include "stdafx.h"
-#include "../../asd/include/iconvwrap.h"
-#include "../../asd/include/tlsmanager.h"
+#include "asd/iconvwrap.h"
+#include "asd/tlsmanager.h"
 #include <cwchar>
 
 // 빌드머신에 iconv가 설치되어 있어야 하고

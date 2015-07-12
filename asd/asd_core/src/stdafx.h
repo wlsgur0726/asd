@@ -1,8 +1,8 @@
 ﻿// PreCompiled Header
 #pragma once
 
-#include "../../asd/include/asdbase.h"
-#include "../../asd/include/exception.h"
+#include "asd/asdbase.h"
+#include "asd/exception.h"
 
 
 #if defined(asd_Platform_Windows)

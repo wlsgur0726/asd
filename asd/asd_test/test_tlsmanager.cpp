@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "../asd/include/tlsmanager.h"
+#include "asd/tlsmanager.h"
 #include <thread>
 #include <atomic>
 

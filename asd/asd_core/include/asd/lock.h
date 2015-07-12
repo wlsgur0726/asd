@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "../../asd/include/asdbase.h"
-#include "../../asd/include/exception.h"
+#include "asd/asdbase.h"
+#include "asd/exception.h"
 #include <thread>
 
 namespace asd

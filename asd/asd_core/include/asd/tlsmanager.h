@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../../asd/include/asdbase.h"
+#include "asd/asdbase.h"
 #include <memory>
 #include <unordered_map>
 #include <thread>

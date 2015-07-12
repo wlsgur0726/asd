@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "../asd/include/exception.h"
+#include "asd/exception.h"
 
 
 TEST(Exception, MacroFunctionTest1)

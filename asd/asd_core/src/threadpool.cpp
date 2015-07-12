@@ -1,7 +1,7 @@
 ﻿#include "stdafx.h"
 #include <vector>
 #include <thread>
-#include "../include/threadpool.h"
+#include "asd/threadpool.h"
 
 namespace asd
 {

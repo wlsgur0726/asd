@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "../asd/include/test.h"
+#include "asd/test.h"
 int main(int argc, char ** argv)
 {
 	asd::Test();

@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "../asd/include/semaphore.h"
+#include "asd/semaphore.h"
 #include <thread>
 #include <atomic>
 #include <list>

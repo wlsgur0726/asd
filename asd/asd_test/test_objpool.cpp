@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "../asd/include/objpool.h"
+#include "asd/objpool.h"
 #include <thread>
 #include <mutex>
 #include <atomic>

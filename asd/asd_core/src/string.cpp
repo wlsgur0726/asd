@@ -1,6 +1,6 @@
 ﻿#include "stdafx.h"
-#include "../../asd/include/string.h"
-#include "../../asd/include/tempbuffer.h"
+#include "asd/string.h"
+#include "asd/tempbuffer.h"
 
 
 #if defined(asd_Platform_Windows)

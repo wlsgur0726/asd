@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "../../asd/include/asdbase.h"
-#include "../../asd/include/lock.h"
+#include "asd/asdbase.h"
+#include "asd/lock.h"
 #include <stack>
 
 namespace asd
