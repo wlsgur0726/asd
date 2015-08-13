@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<!-- saved from url=(0073)chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/viewer.html?init=true -->
+<html ng-app="viewerApp" class="ng-scope"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style type="text/css">@charset "UTF-8";[ng\:cloak],[ng-cloak],[data-ng-cloak],[x-ng-cloak],.ng-cloak,.x-ng-cloak,.ng-hide:not(.ng-hide-animate){display:none !important;}ng\:form{display:block;}</style>
+  <title>사전</title>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="Content-Script-Type" content="text/javascript">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <link rel="stylesheet" href="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/css/common.css">
+  <link rel="stylesheet" href="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/css/viewer.css">
+</head>
+<body class="viewer">
+<div class="wrap ng-scope" ng-controller="mainCtrl" style="font-size: 90%;">
+  <!-- ngIf: query --><div class="content ng-scope" ng-if="query">
+    <!-- ngRepeat: word in result -->
+    <!-- ngIf: !result.length --><div class="noresult ng-scope" ng-if="!result.length">
+      <span class="query ng-binding">'dllexport'</span>에 대한 검색 결과가 없습니다.
+    </div><!-- end ngIf: !result.length -->
+  </div><!-- end ngIf: query -->
+</div>
+
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/vendor/jquery.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/vendor/underscore.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/vendor/angular.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/vendor/q.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/js/common/define.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/js/common/constant.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/js/common/message.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/js/common/storage.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/js/common/options.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/js/common/f.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/js/common/analytics.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/js/content/basicWords.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/js/content/viewer.js"></script>
+<script src="chrome-extension://jfibpeiddefellcfgnijpcpddoimbdij/js/content/actionWatcher.js"></script>
+
+</body></html>

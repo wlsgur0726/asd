@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 1999-2008, 2011 Free Software Foundation, Inc.
  * This file is part of the GNU LIBICONV Library.
  *
@@ -244,7 +244,7 @@ invalid:
 }
 
 size_t iconv (iconv_t icd,
-              ICONV_CONST char* * inbuf, size_t *inbytesleft,
+              const char* * inbuf, size_t *inbytesleft,
               char* * outbuf, size_t *outbytesleft)
 {
   conv_t cd = (conv_t) icd;
