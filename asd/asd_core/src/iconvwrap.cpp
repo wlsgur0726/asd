@@ -3,9 +3,14 @@
 #include "asd/tlsmanager.h"
 #include <cwchar>
 
-// 빌드머신에 iconv가 설치되어 있어야 하고
-// 그 경로를 컴파일러가 알고 있어야 한다.
-#include <iconv.h>
+#if defined(asd_Platform_Windows)
+#	include "../../../libiconv-1.14/include/iconv.h"
+#
+#else
+#	// iconv가 기본적으로 설치되어 있는 플랫폼
+#	include <iconv.h>
+#
+#endif
 
 
 

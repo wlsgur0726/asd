@@ -103,6 +103,9 @@
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
+    <PreBuildEvent>
+      <Command>$(ProjectDir)..\Copy_ICONV_DLL.bat "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -121,6 +124,9 @@
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
+    <PreBuildEvent>
+      <Command>$(ProjectDir)..\Copy_ICONV_DLL.bat "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -143,6 +149,9 @@
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
+    <PreBuildEvent>
+      <Command>$(ProjectDir)..\Copy_ICONV_DLL.bat "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -165,6 +174,9 @@
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
+    <PreBuildEvent>
+      <Command>$(ProjectDir)..\Copy_ICONV_DLL.bat "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\asd\address.h" />
