@@ -232,9 +232,9 @@ namespace asd
 		assert(m_after != Encoding_Last);
 
 		int ret;
-		char* inBuf = (char*)a_inBuffer;
+		const char* inBuf = a_inBuffer;
 		size_t inSiz = a_inBufSize_byte;
-		char* outBuf = (char*)a_outBuffer;
+		char* outBuf = a_outBuffer;
 		ret = iconv(m_icd,
 					&inBuf,
 					&inSiz,

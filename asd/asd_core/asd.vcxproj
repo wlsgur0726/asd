@@ -195,8 +195,8 @@
     <ClCompile Include="src\threadpool.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\libiconv-master\MSVC14\libiconv_static\libiconv_static.vcxproj">
-      <Project>{f9c13a95-c7eb-40f3-a599-3695c1e0cf38}</Project>
+    <ProjectReference Include="..\..\libiconv-1.14\windows\msvc2015\libiconv.vcxproj">
+      <Project>{8bd75398-70d3-4786-a9dc-52fbd1e5ca13}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
