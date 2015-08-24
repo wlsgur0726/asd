@@ -65,10 +65,7 @@ namespace asdtest_string
 		memset(key, 0xff, sizeof(key));
 		asd::strcpy(key, a_keyString);
 
-		std::unordered_map<StringType_asd,
-						   int,
-						   typename StringType_asd::Hash> map;
-
+		std::unordered_map<StringType_asd, int> map;
 		map.emplace(a_keyString, BufSize);
 
 		{

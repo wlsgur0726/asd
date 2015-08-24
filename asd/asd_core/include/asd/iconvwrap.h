@@ -15,28 +15,45 @@ namespace asd
 	};
 
 
-	// char 문자열의 기본 인코딩값을 얻어온다.
-	Encoding GetDefaultEncoding_char() asd_NoThrow;
-	inline Encoding GetDefaultEncoding(IN const char*) asd_NoThrow
-	{
-		return GetDefaultEncoding_char();
-	}
 
+	// char 문자열의 기본 인코딩값을 얻어온다.
+	Encoding GetDefaultEncoding(IN const char*) asd_NoThrow;
 
 	// wchar_t 문자열의 기본 인코딩값을 얻어온다.
-	Encoding GetDefaultEncoding_wchar_t() asd_NoThrow;
-	inline Encoding GetDefaultEncoding(IN const wchar_t*) asd_NoThrow
+	Encoding GetDefaultEncoding(IN const wchar_t*) asd_NoThrow;
+
+	// char16_t 문자열의 기본 인코딩값을 얻어온다.
+	Encoding GetDefaultEncoding(IN const char16_t*) asd_NoThrow;
+
+	// char32_t 문자열의 기본 인코딩값을 얻어온다.
+	Encoding GetDefaultEncoding(IN const char32_t*) asd_NoThrow;
+
+	// CharType 문자열의 기본 인코딩값을 얻어온다.
+	template<typename CharType>
+	Encoding GetDefaultEncoding() asd_NoThrow
 	{
-		return GetDefaultEncoding_wchar_t();
+		CharType t;
+		return GetDefaultEncoding(&t);
 	}
+
 
 
 	// char 문자열의 기본 인코딩값을 지정한다.
-	void SetDefaultEncoding_char(IN Encoding a_enc) asd_NoThrow;
-
+	void SetDefaultEncoding(IN Encoding a_enc,
+							IN const char*) asd_NoThrow;
 
 	// wchar_t 문자열의 기본 인코딩값을 지정한다.
-	void SetDefaultEncoding_wchar_t(IN Encoding a_enc) asd_NoThrow;
+	void SetDefaultEncoding(IN Encoding a_enc,
+							IN const wchar_t*) asd_NoThrow;
+
+	// CharType 문자열의 기본 인코딩값을 지정한다.
+	template<typename CharType>
+	Encoding GetDefaultEncoding(IN Encoding a_enc) asd_NoThrow
+	{
+		CharType t;
+		return SetDefaultEncoding(a_enc, &t);
+	}
+
 
 
 	// 인자로 받은 인코딩에서 문자 1개의 최소 크기를 리턴
@@ -83,20 +100,21 @@ namespace asd
 
 		// 리턴 직후의 a_outSize_byte = (호출 당시 입력한 a_outSize_byte) - (a_outBuffer에 write한 byte 수 ('\0' 포함))
 		// 리턴값이 음수이면 실패 (errno 확인요망)
-		int Convert(IN const char* a_inBuffer,
+		int Convert(IN const void* a_inBuffer,
 					IN size_t a_inBufSize_byte,
-					OUT char* a_outBuffer,
+					OUT void* a_outBuffer,
 					INOUT size_t& a_outSize_byte) const asd_NoThrow;
 
 
 		// a_outSize_byte  :  변환 후 결과물의 배열 길이 리턴
 		// 리턴값 : 변환한 결과물. 실패 시 nullptr.
-		std::shared_ptr<char> Convert(IN const char* a_inBuffer,
+		std::shared_ptr<char> Convert(IN const void* a_inBuffer,
 									  IN size_t a_inSize,
 									  OUT size_t* a_outSize_byte = nullptr) const asd_NoThrow;
 
 
 		~IconvWrap() asd_NoThrow;
+
 	};
 
 
@@ -104,25 +122,44 @@ namespace asd
 								  IN Encoding a_dstEncoding) asd_NoThrow;
 
 
-	MString StringConvertM(IN const wchar_t* a_srcString) asd_NoThrow;
+	// To Multi-Byte
+	MString ConvToM(IN const void* a_srcString,
+					IN Encoding a_srcEncoding,
+					IN Encoding a_dstEncoding) asd_NoThrow;
 
-	MString StringConvertM(IN const wchar_t* a_srcString,
-						   IN Encoding a_dstEncoding) asd_NoThrow;
+	MString ConvToM(IN const wchar_t* a_srcString) asd_NoThrow;
 
-	MString StringConvertM(IN const char* a_srcString,
-						   IN Encoding a_srcEncoding,
-						   IN Encoding a_dstEncoding) asd_NoThrow;
+	MString ConvToM(IN const wchar_t* a_srcString,
+					IN Encoding a_dstEncoding) asd_NoThrow;
+
+	MString ConvToM(IN const char16_t* a_srcString) asd_NoThrow;
+
+	MString ConvToM(IN const char16_t* a_srcString,
+					IN Encoding a_dstEncoding) asd_NoThrow;
+
+	MString ConvToM(IN const char32_t* a_srcString) asd_NoThrow;
+
+	MString ConvToM(IN const char32_t* a_srcString,
+					IN Encoding a_dstEncoding) asd_NoThrow;
 
 
-	WString StringConvertW(IN const char* a_srcString) asd_NoThrow;
+	// To Wide
+	WString ConvToW(IN const void* a_srcString,
+					IN Encoding a_srcEncoding) asd_NoThrow;
 
-	WString StringConvertW(IN const char* a_srcString,
-						   IN Encoding a_srcEncoding) asd_NoThrow;
+	WString ConvToW(IN const char* a_srcString) asd_NoThrow;
+
+	WString ConvToW(IN const char16_t* a_srcString) asd_NoThrow;
+
+	WString ConvToW(IN const char32_t* a_srcString) asd_NoThrow;
+
 
 
 #if defined(UNICODE)
-#define StringConvertT StringConvertW
+#	define ConvToT ConvToW
+#
 #else
-#define StringConvertT StringConvertM
+#	define ConvToT ConvToM
+#
 #endif
 }

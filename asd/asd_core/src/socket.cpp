@@ -795,7 +795,7 @@ namespace asd
 								a_buffer.size(), 
 								a_flags);
 		if (e.m_error != 0) {
-			asd_RaiseSocketException(e);
+			asd_RaiseSocketException(e.m_error);
 		}
 	}
 
@@ -814,7 +814,7 @@ namespace asd
 								  a_flags);
 
 		if (e.m_error != 0) {
-			asd_RaiseSocketException(e);
+			asd_RaiseSocketException(e.m_error);
 		}
 	}
 

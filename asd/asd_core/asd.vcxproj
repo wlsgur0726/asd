@@ -22,33 +22,34 @@
     <ProjectGuid>{BED6683E-0EB1-4E30-8E45-8B8290B7C8C4}</ProjectGuid>
     <RootNamespace>asd_windows</RootNamespace>
     <ProjectName>asd</ProjectName>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -185,13 +186,13 @@
     <ClInclude Include="include\asd\iconvwrap.h" />
     <ClInclude Include="include\asd\lock.h" />
     <ClInclude Include="include\asd\objpool.h" />
+    <ClInclude Include="include\asd\odbcwrap.h" />
     <ClInclude Include="include\asd\semaphore.h" />
     <ClInclude Include="include\asd\socket.h" />
     <ClInclude Include="include\asd\string.h" />
     <ClInclude Include="include\asd\tempbuffer.h" />
     <ClInclude Include="include\asd\test.h" />
     <ClInclude Include="include\asd\threadpool.h" />
-    <ClInclude Include="include\asd\tlsmanager.h" />
     <ClInclude Include="include\asd\util.h" />
     <ClInclude Include="src\stdafx.h" />
   </ItemGroup>
@@ -200,6 +201,7 @@
     <ClCompile Include="src\exception.cpp" />
     <ClCompile Include="src\iconvwrap.cpp" />
     <ClCompile Include="src\lock.cpp" />
+    <ClCompile Include="src\odbcwrap.cpp" />
     <ClCompile Include="src\semaphore.cpp" />
     <ClCompile Include="src\socket.cpp" />
     <ClCompile Include="src\string.cpp" />

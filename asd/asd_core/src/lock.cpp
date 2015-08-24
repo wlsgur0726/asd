@@ -1,6 +1,5 @@
 ﻿#include "stdafx.h"
 #include "asd/lock.h"
-#include "asd/tlsmanager.h"
 #include <thread>
 
 #if defined(asd_Platform_Windows)	
@@ -14,17 +13,15 @@
 
 namespace asd
 {
-	thread_local std::thread::id* t_tid = nullptr;
-	TLSManager<std::thread::id> g_tidManager;
+	thread_local std::thread::id t_tid;
 
 	const std::thread::id& GetCurrentThreadID() asd_NoThrow
 	{
-		if (t_tid == nullptr) {
-			t_tid = new std::thread::id(std::this_thread::get_id());
-			g_tidManager.Register(t_tid);
-		}
-		assert(t_tid != nullptr);
-		return *t_tid;
+		if (t_tid == std::thread::id())
+			t_tid = std::this_thread::get_id();
+
+		assert(t_tid != std::thread::id());
+		return t_tid;
 	}
 
 

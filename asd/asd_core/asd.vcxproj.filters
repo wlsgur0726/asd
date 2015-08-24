@@ -48,9 +48,6 @@
     <ClInclude Include="include\asd\iconvwrap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\asd\tlsmanager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\asd\tempbuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -58,6 +55,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\asd\util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\asd\odbcwrap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -87,6 +87,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\semaphore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\odbcwrap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

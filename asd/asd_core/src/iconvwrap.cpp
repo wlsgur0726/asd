@@ -1,6 +1,5 @@
 ﻿#include "stdafx.h"
 #include "asd/iconvwrap.h"
-#include "asd/tlsmanager.h"
 #include <cwchar>
 
 #if defined(asd_Platform_Windows)
@@ -36,6 +35,9 @@ namespace asd
 					 , m_maxSize(a_maxSize)
 					 , m_encodingName(a_encodingName)
 		{
+			assert(a_minSize > 0);
+			assert(a_avgSize > 0);
+			assert(a_maxSize > 0);
 		}
 	};
 
@@ -44,12 +46,13 @@ namespace asd
 	// enum Encoding의 순서와 맞춰야 함.
 	// 프로세스 시작 시 초기화 후 오로지 조회 용도로만 사용.
 	const EncodingInfo g_encodingInfo[Encoding_Last] = {
-		EncodingInfo(Encoding_UTF8,		1,	2.5,	4,	"UTF-8"),
-		EncodingInfo(Encoding_UTF16LE,	2,	2,		4,	"UTF-16LE"),
-		EncodingInfo(Encoding_UTF16BE,	2,	2,		4,	"UTF-16BE"),
-		EncodingInfo(Encoding_UTF32LE,	4,	4,		4,	"UTF-32LE"),
-		EncodingInfo(Encoding_UTF32BE,	4,	4,		4,	"UTF-32BE"),
-		EncodingInfo(Encoding_CP949,	1,	1.5,	2,	"CP949")
+		//              Enum            MinSize   AvgSize   MaxSize    Name
+		EncodingInfo(Encoding_UTF8,       1,        2.5,      4,      "UTF-8"),
+		EncodingInfo(Encoding_UTF16LE,    2,        2,        4,      "UTF-16LE"),
+		EncodingInfo(Encoding_UTF16BE,    2,        2,        4,      "UTF-16BE"),
+		EncodingInfo(Encoding_UTF32LE,    4,        4,        4,      "UTF-32LE"),
+		EncodingInfo(Encoding_UTF32BE,    4,        4,        4,      "UTF-32BE"),
+		EncodingInfo(Encoding_CP949,      1,        1.5,      2,      "CP949")
 	};
 
 
@@ -61,10 +64,11 @@ namespace asd
 
 
 
-	bool g_checkedTable = false;
+	// g_encodingInfo가 제대로 초기화 되었는지 확인하는 함수
 	inline void Check_EncodingInfo_Table()
 	{
 #ifdef asd_Debug
+		static bool g_checkedTable = false;
 		if (g_checkedTable == false) {
 			for (int i=0; i<Encoding_Last; ++i) {
 				assert(g_encodingInfo[i].m_encoding == (Encoding)i);
@@ -89,43 +93,57 @@ namespace asd
 
 
 	// 각 컴파일러 별 문자열 리터럴의 기본 인코딩값을 조사하여 기입 할 것.
+#define asd_Define_DefaultEncoding(CharType, DefaultEncoding)	Encoding DefaultEncoding_ ## CharType = DefaultEncoding
+
 #if defined(asd_Compiler_MSVC)
-	Encoding DefaultEncoding_char = Encoding_CP949;
-	Encoding DefaultEncoding_wchar_t = Encoding_UTF16LE;
+	asd_Define_DefaultEncoding(char,		Encoding_CP949);
+	asd_Define_DefaultEncoding(wchar_t,		Encoding_UTF16LE);
+	asd_Define_DefaultEncoding(char16_t,	Encoding_UTF16LE);
+	asd_Define_DefaultEncoding(char32_t,	Encoding_UTF32LE);
+
 #elif defined(asd_Compiler_GCC)
-	Encoding DefaultEncoding_char = Encoding_UTF8;
-	Encoding DefaultEncoding_wchar_t = Encoding_UTF32LE;
+	asd_Define_DefaultEncoding(char,		Encoding_UTF8);
+	asd_Define_DefaultEncoding(wchar_t,		Encoding_UTF32LE);
+	asd_Define_DefaultEncoding(char16_t,	Encoding_UTF16LE);
+	asd_Define_DefaultEncoding(char32_t,	Encoding_UTF32LE);
+
 #else
 	#error This Compiler is not supported.
+
 #endif
 
 
-	Encoding GetDefaultEncoding_char() asd_NoThrow
-	{
-		auto ret = DefaultEncoding_char;
-		assert(IsValidEncoding(ret));
-		return ret;
-	}
+
+#define asd_Define_GetDefaultEncoding(CharType)						\
+	Encoding GetDefaultEncoding(IN const CharType*) asd_NoThrow		\
+	{																\
+		Encoding ret = DefaultEncoding_ ## CharType;				\
+		assert(IsValidEncoding(ret));								\
+		return ret;													\
+	}																\
+
+	asd_Define_GetDefaultEncoding(char)
+
+	asd_Define_GetDefaultEncoding(wchar_t)
+
+	asd_Define_GetDefaultEncoding(char16_t)
+
+	asd_Define_GetDefaultEncoding(char32_t)
 
 
-	Encoding GetDefaultEncoding_wchar_t() asd_NoThrow
-	{
-		auto ret = DefaultEncoding_wchar_t;
-		assert(IsValidEncoding(ret));
-		return ret;
-	}
 
+#define asd_Define_SetDefaultEncoding(CharType)						\
+	void SetDefaultEncoding(IN Encoding a_enc,						\
+							IN const CharType*) asd_NoThrow			\
+	{																\
+		assert(IsValidEncoding(a_enc));								\
+		DefaultEncoding_ ## CharType = a_enc;						\
+	}																\
 
-	void SetDefaultEncoding_char(IN Encoding a_enc) asd_NoThrow
-	{
-		DefaultEncoding_char = a_enc;
-	}
+	asd_Define_SetDefaultEncoding(char)
 
+	asd_Define_SetDefaultEncoding(wchar_t)
 
-	void SetDefaultEncoding_wchar_t(IN Encoding a_enc) asd_NoThrow
-	{
-		DefaultEncoding_wchar_t = a_enc;
-	}
 
 
 	int SizeOfCharUnit_Min(IN Encoding a_enc) asd_NoThrow
@@ -160,7 +178,7 @@ namespace asd
 	}
 
 
-		
+
 	inline void Close(INOUT void*& a_icd)
 	{
 		if (a_icd != ICONV_InvalidDescriptor) {
@@ -227,9 +245,9 @@ namespace asd
 
 
 	
-	int IconvWrap::Convert(IN const char* a_inBuffer,
+	int IconvWrap::Convert(IN const void* a_inBuffer,
 						   IN size_t a_inBufSize_byte,
-						   OUT char* a_outBuffer,
+						   OUT void* a_outBuffer,
 						   INOUT size_t& a_outSize_byte) const asd_NoThrow
 	{
 		assert(m_icd != ICONV_InvalidDescriptor);
@@ -237,9 +255,9 @@ namespace asd
 		assert(m_after != Encoding_Last);
 
 		int ret;
-		const char* inBuf = a_inBuffer;
+		const char* inBuf = (const char*)a_inBuffer;
 		size_t inSiz = a_inBufSize_byte;
-		char* outBuf = a_outBuffer;
+		char* outBuf = (char*)a_outBuffer;
 		ret = iconv(m_icd,
 					&inBuf,
 					&inSiz,
@@ -253,7 +271,7 @@ namespace asd
 
 
 
-	std::shared_ptr<char> IconvWrap::Convert(IN const char* a_inBuffer,
+	std::shared_ptr<char> IconvWrap::Convert(IN const void* a_inBuffer,
 											 IN size_t a_inSize,
 											 OUT size_t* a_outSize_byte /*= nullptr*/) const asd_NoThrow
 	{
@@ -289,19 +307,17 @@ namespace asd
 
 
 
-	TLSManager<IconvWrap> g_converterManager[Encoding_Last][Encoding_Last];
-
-	thread_local IconvWrap* t_converterTable[Encoding_Last][Encoding_Last] = {nullptr};
+	typedef std::unique_ptr<IconvWrap> IconvWrap_ptr;
+	thread_local IconvWrap_ptr t_converterTable[Encoding_Last][Encoding_Last];
 
 	const IconvWrap& GetConverter(IN Encoding a_srcEncoding,
 								  IN Encoding a_dstEncoding) asd_NoThrow
 	{
-		IconvWrap*& ic = t_converterTable[a_srcEncoding][a_dstEncoding];
+		IconvWrap_ptr& ic = t_converterTable[a_srcEncoding][a_dstEncoding];
 		if (ic == nullptr) {
-			ic = new IconvWrap();
-			bool initSuccess = 0 == ic->Init(a_srcEncoding, a_dstEncoding);
+			ic = IconvWrap_ptr(new IconvWrap);
+			bool initSuccess = (0 == ic->Init(a_srcEncoding, a_dstEncoding));
 			assert(initSuccess);
-			g_converterManager[a_srcEncoding][a_dstEncoding].Register(ic);
 		}
 		assert(ic != nullptr);
 		return *ic;
@@ -311,110 +327,100 @@ namespace asd
 
 	inline bool IsWideEncoding(IN Encoding a_enc) asd_NoThrow
 	{
-		return a_enc == Encoding_UTF32LE
-			|| a_enc == Encoding_UTF32BE
-			|| a_enc == Encoding_UTF16LE
-			|| a_enc == Encoding_UTF16BE;
+		return a_enc == GetDefaultEncoding<wchar_t>();
 	}
 
 
 
-	template<typename SrcType, typename ResultType>
-	inline ResultType StringConvert_Internal(IN const SrcType* a_srcString,
-											 IN Encoding a_srcEncoding,
-											 IN Encoding a_dstEncoding) asd_NoThrow
+	template<typename ResultType>
+	inline ResultType ConvTo_Internal(IN const void* a_srcString,
+									  IN Encoding a_srcEncoding,
+									  IN Encoding a_dstEncoding) asd_NoThrow
 	{
-		const int sizeOfDstChar = sizeof(typename ResultType::CharType);
-#ifdef asd_Debug
-		{
-			if (a_dstEncoding==Encoding_UTF16LE || a_dstEncoding==Encoding_UTF16BE)
-				assert(sizeOfDstChar == 2);
-			else if (a_dstEncoding==Encoding_UTF32LE || a_dstEncoding==Encoding_UTF32BE)
-				assert(sizeOfDstChar == 4);
-			else
-				assert(sizeOfDstChar == 1);
-		}
-#endif
-
-		if (a_srcString == nullptr || a_srcString[0] == '\0')
+		if (a_srcString == nullptr)
 			return ResultType();
 
 		if (a_srcEncoding == a_dstEncoding) {
-			assert(sizeof(SrcType) == sizeOfDstChar);
-			return a_srcString;
+			return (typename ResultType::CharType*)a_srcString;
 		}
 
-		auto& ic = GetConverter(a_srcEncoding, a_dstEncoding);
+		int cu = SizeOfCharUnit_Min(a_srcEncoding);
+		size_t len = asd::strlen(a_srcString, cu);
+		if (len == 0)
+			return ResultType();
 
-		auto conv_result = ic.Convert((char*)a_srcString,
-									  (asd::strlen(a_srcString)+1) * sizeof(SrcType));
+		auto& ic = GetConverter(a_srcEncoding, a_dstEncoding);
+		auto conv_result = ic.Convert(a_srcString,
+									  (len + 1) * cu);
 		ResultType ret = (typename ResultType::CharType*)conv_result.get();
 		return ret;
 	}
 
 
 
-	MString StringConvertM(IN const wchar_t* a_srcString) asd_NoThrow
-	{
-		return StringConvert_Internal<wchar_t, MString>(a_srcString,
-														GetDefaultEncoding_wchar_t(),
-														GetDefaultEncoding_char());
-	}
+	// To Multi-Byte
+#define asd_Define_ConvToM(CharType)														\
+	MString ConvToM(IN const CharType* a_srcString) asd_NoThrow								\
+	{																						\
+		return ConvTo_Internal<MString>(a_srcString,										\
+										GetDefaultEncoding<CharType>(),						\
+										GetDefaultEncoding<char>());						\
+	}																						\
+																							\
+	MString ConvToM(IN const CharType* a_srcString,											\
+					IN Encoding a_dstEncoding) asd_NoThrow									\
+	{																						\
+		if (IsWideEncoding(a_dstEncoding)) {												\
+			asd_PrintStdErr("invalid parameter (a_dstEncoding)");							\
+			return MString();																\
+		}																					\
+		return ConvTo_Internal<MString>(a_srcString,										\
+										GetDefaultEncoding<CharType>(),						\
+										a_dstEncoding);										\
+	}																						\
 
 
+	asd_Define_ConvToM(wchar_t)
 
-	MString StringConvertM(IN const wchar_t* a_srcString,
-						   IN Encoding a_dstEncoding) asd_NoThrow
+	asd_Define_ConvToM(char16_t)
+
+	asd_Define_ConvToM(char32_t)
+
+	MString ConvToM(IN const void* a_srcString,
+					IN Encoding a_srcEncoding,
+					IN Encoding a_dstEncoding) asd_NoThrow
 	{
 		if (IsWideEncoding(a_dstEncoding)) {
 			asd_PrintStdErr("invalid parameter (a_dstEncoding)");
 			return MString();
 		}
-		return StringConvert_Internal<wchar_t, MString>(a_srcString,
-														GetDefaultEncoding_wchar_t(),
-														a_dstEncoding);
+		return ConvTo_Internal<MString>((const char*)a_srcString,
+										a_srcEncoding,
+										a_dstEncoding);
 	}
 
 
 
-	MString StringConvertM(IN const char* a_srcString,
-						   IN Encoding a_srcEncoding,
-						   IN Encoding a_dstEncoding) asd_NoThrow
+	// To Wide
+#define asd_Define_ConvToX(X, ReturnType, SrcCharType)										\
+	ReturnType ConvTo ## X (IN const SrcCharType* a_srcString) asd_NoThrow					\
+	{																						\
+		return ConvTo_Internal<ReturnType>(a_srcString,										\
+										   GetDefaultEncoding<SrcCharType>(),				\
+										   GetDefaultEncoding<ReturnType::CharType>());		\
+	}																						\
+
+	asd_Define_ConvToX(W, WString, char)
+
+	asd_Define_ConvToX(W, WString, char16_t)
+
+	asd_Define_ConvToX(W, WString, char32_t)
+
+	WString ConvToW(IN const void* a_srcString,
+					IN Encoding a_srcEncoding) asd_NoThrow
 	{
-		if (IsWideEncoding(a_srcEncoding)) {
-			asd_PrintStdErr("invalid parameter (a_srcEncoding)");
-			return MString();
-		}
-		if (IsWideEncoding(a_dstEncoding)) {
-			asd_PrintStdErr("invalid parameter (a_dstEncoding)");
-			return MString();
-		}
-		return StringConvert_Internal<char, MString>(a_srcString,
-													 a_srcEncoding,
-													 a_dstEncoding);
+		return ConvTo_Internal<WString>((const char*)a_srcString,
+										a_srcEncoding,
+										GetDefaultEncoding<WString::CharType>());
 	}
-
-
-
-	WString StringConvertW(IN const char* a_srcString) asd_NoThrow
-	{
-		return StringConvert_Internal<char, WString>(a_srcString,
-													 GetDefaultEncoding_char(),
-													 GetDefaultEncoding_wchar_t());
-	}
-
-
-
-	WString StringConvertW(IN const char* a_srcString,
-						   IN Encoding a_srcEncoding) asd_NoThrow
-	{
-		if (IsWideEncoding(a_srcEncoding)) {
-			asd_PrintStdErr("invalid parameter (a_srcEncoding)");
-			return WString();
-		}
-		return StringConvert_Internal<char, WString>(a_srcString,
-													 a_srcEncoding,
-													 GetDefaultEncoding_wchar_t());
-	}
-
 }

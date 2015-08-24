@@ -98,29 +98,36 @@ namespace asd
 
 	size_t strlen(IN const wchar_t* a_str) asd_NoThrow;
 
-
-	// UTF16이나 UTF32 데이터를 char 배열에 저장했을 때 사용.
+	// SizeOfChar값 단위로 문자열 길이를 구한다.
 	template<int SizeOfChar>
-	size_t strlen(IN const char* a_str) asd_NoThrow
+	size_t strlen(IN const void* a_str) asd_NoThrow
 	{
-		// UTF32 이하만 허용
-		assert(SizeOfChar > 0);
-		assert(SizeOfChar <= 4);
-		const char cmpbuf[SizeOfChar] = {0};
-		const char* p = a_str;
+		static_assert(SizeOfChar==1 || SizeOfChar==2 || SizeOfChar==4,
+					  "invalid SizeOfChar");
+
+		const int32_t Null = 0;
+		const char* p = (const char*)a_str;
 		size_t ret = 0;
-		while (0 != std::memcmp(p, cmpbuf, SizeOfChar)) {
+		while (0 != std::memcmp(p, &Null, SizeOfChar)) {
 			++ret;
 			p += SizeOfChar;
 		}
 		return ret;
 	}
 
+	// 위 템플릿함수의 런타임 버전
+	size_t strlen(IN const void* a_str,
+				  IN int a_sizeOfChar) asd_NoThrow;
+
 
 
 	template<typename CHARTYPE>
 	class BasicString
 	{
+		static_assert(std::is_same<CHARTYPE, char>::value ||
+					  std::is_same<CHARTYPE, wchar_t>::value,
+					  "CHARTYPE is not supported.");
+
 	public:
 		typedef CHARTYPE						CharType;
 
@@ -251,6 +258,13 @@ namespace asd
 
 
 		inline operator const CharType*() const asd_NoThrow
+		{
+			return GetData();
+		}
+
+
+
+		inline operator const void*() const asd_NoThrow
 		{
 			return GetData();
 		}
@@ -636,3 +650,13 @@ namespace asd
 #endif
 }
 
+
+
+namespace std
+{
+	template<typename CHARTYPE>
+	struct hash<asd::BasicString<CHARTYPE> >
+		: public asd::BasicString<CHARTYPE>::Hash
+	{
+	};
+}

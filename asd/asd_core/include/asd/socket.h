@@ -4,16 +4,15 @@
 #include <vector>
 
 #if defined(asd_Platform_Windows)
-
-#include <Windows.h>
-#	define asd_PlatformTypeDef_Socket						\
+	#include <Windows.h>
+	#define asd_PlatformTypeDef_Socket						\
 		typedef SOCKET Handle;								\
 		typedef int Error;									\
 		static const Handle InvalidHandle = INVALID_SOCKET;	\
 
 #else
-#	include <sys/socket.h>
-#	define asd_PlatformTypeDef_Socket						\
+	#include <sys/socket.h>
+	#define asd_PlatformTypeDef_Socket						\
 		typedef int Handle;									\
 		typedef int Error;									\
 		static const Handle InvalidHandle = -1;				\

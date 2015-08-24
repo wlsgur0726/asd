@@ -162,8 +162,8 @@ namespace asd
 	}
 
 
-	int fputs(IN FILE* a_fp,
-			  IN const wchar_t* a_str) asd_NoThrow
+	int fputs(IN const wchar_t* a_str,
+			  IN FILE* a_fp) asd_NoThrow
 	{
 		return ::fputws(a_str, a_fp);
 	}
@@ -242,6 +242,22 @@ namespace asd
 	size_t strlen(IN const wchar_t* a_str) asd_NoThrow
 	{
 		return ::wcslen(a_str);
+	}
+
+
+	size_t strlen(IN const void* a_str,
+				  IN int a_sizeOfChar) asd_NoThrow
+	{
+		assert(a_sizeOfChar==1 || a_sizeOfChar==2 || a_sizeOfChar==4);
+		switch (a_sizeOfChar) {
+			case 1:
+				return ::strlen((const char*)a_str);
+			case 2:
+				return asd::strlen<2>(a_str);
+			case 4:
+				return asd::strlen<4>(a_str);
+		}
+		return -1;
 	}
 
 

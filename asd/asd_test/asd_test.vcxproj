@@ -173,7 +173,6 @@
     <ClCompile Include="test_semaphore.cpp" />
     <ClCompile Include="test_string.cpp" />
     <ClCompile Include="test_template.cpp" />
-    <ClCompile Include="test_tlsmanager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\gtest-1.7.0\msvc2015\gtest-md.vcxproj">

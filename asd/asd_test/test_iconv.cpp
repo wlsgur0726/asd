@@ -200,8 +200,8 @@ namespace asdtest_iconv
 				 [](asd::Encoding encodig_enum1, const char* encodig_str1, TestSource src1,
 					asd::Encoding encodig_enum2, const char* encodig_str2, TestSource src2) -> bool
 		{
-			asd::Encoding defaultEnc_M = asd::GetDefaultEncoding_char();
-			asd::Encoding defaultEnc_W = asd::GetDefaultEncoding_wchar_t();
+			asd::Encoding defaultEnc_M = asd::GetDefaultEncoding<char>();
+			asd::Encoding defaultEnc_W = asd::GetDefaultEncoding<wchar_t>();
 			EXPECT_NE(defaultEnc_M, asd::Encoding_Last);
 			EXPECT_NE(defaultEnc_W, asd::Encoding_Last);
 			if (defaultEnc_M == asd::Encoding_Last || defaultEnc_W == asd::Encoding_Last)
@@ -219,9 +219,9 @@ namespace asdtest_iconv
 
 			// M to M
 			if (srcUnitSize==1 && dstUnitSize==1) {
-				asd::MString r = asd::StringConvertM(src1.buffer,
-													 encodig_enum1,
-													 encodig_enum2);
+				asd::MString r = asd::ConvToM(src1.buffer,
+											  encodig_enum1,
+											  encodig_enum2);
 				bool check = goal.Equal(r.GetData());
 				EXPECT_TRUE(check);
 				ret &= check;
@@ -229,8 +229,8 @@ namespace asdtest_iconv
 
 			// M to W
 			if (srcUnitSize==1 && encodig_enum2==defaultEnc_W) {
-				asd::WString r = asd::StringConvertW(src1.buffer,
-													 encodig_enum1);
+				asd::WString r = asd::ConvToW(src1.buffer,
+											  encodig_enum1);
 				bool check = goal.Equal((const char*)r.GetData());
 				EXPECT_TRUE(check);
 				ret &= check;
@@ -238,7 +238,7 @@ namespace asdtest_iconv
 
 			// M to W (기본인자)
 			if (encodig_enum1==defaultEnc_M && encodig_enum2==defaultEnc_W) {
-				asd::WString r = asd::StringConvertW(src1.buffer);
+				asd::WString r = asd::ConvToW(src1.buffer);
 				bool check = goal.Equal((const char*)r.GetData());
 				EXPECT_TRUE(check);
 				ret &= check;
@@ -246,8 +246,8 @@ namespace asdtest_iconv
 
 			// W to M
 			if (encodig_enum1==defaultEnc_W && dstUnitSize==1) {
-				asd::MString r = asd::StringConvertM((const wchar_t*)src1.buffer,
-													 encodig_enum2);
+				asd::MString r = asd::ConvToM((const wchar_t*)src1.buffer,
+											  encodig_enum2);
 				bool check = goal.Equal(r.GetData());
 				EXPECT_TRUE(check);
 				ret &= check;
@@ -255,7 +255,7 @@ namespace asdtest_iconv
 
 			// W to M (기본인자)
 			if (encodig_enum1==defaultEnc_W && encodig_enum2==defaultEnc_M) {
-				asd::MString r = asd::StringConvertM((const wchar_t*)src1.buffer);
+				asd::MString r = asd::ConvToM((const wchar_t*)src1.buffer);
 				bool check = goal.Equal(r.GetData());
 				EXPECT_TRUE(check);
 				ret &= check;

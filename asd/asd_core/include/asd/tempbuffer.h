@@ -49,6 +49,13 @@ namespace asd
 		}
 
 
+		inline operator void* () const asd_NoThrow
+		{
+			assert(m_arr != nullptr);
+			return m_arr;
+		}
+
+
 		inline operator Object* () const asd_NoThrow
 		{
 			assert(m_arr != nullptr);
