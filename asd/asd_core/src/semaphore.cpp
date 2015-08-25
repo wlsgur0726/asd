@@ -105,22 +105,10 @@ namespace asd
 		if (m_data == nullptr)
 			return; // move된 경우
 
-		try {
+		asd_Destructor_Start
 			assert(GetCount() >= 0);
 			delete m_data;
-		}
-		catch (asd::Exception& e) {
-			asd_PrintStdErr(e.what());
-			assert(false);
-		}
-		catch (const char* str) {
-			asd_PrintStdErr(str);
-			assert(false);
-		}
-		catch (...) {
-			asd_PrintStdErr("unknown exception");
-			assert(false);
-		}
+		asd_Destructor_End
 	}
 
 

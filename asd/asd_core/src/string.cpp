@@ -233,6 +233,29 @@ namespace asd
 
 
 
+	int scprintf(IN const char* a_format,
+				 IN ...) asd_NoThrow
+	{
+		va_list args;
+		va_start(args, a_format);
+		int r = asd::vscprintf(a_format, args);
+		va_end(args);
+		return r;
+	}
+
+
+	int scprintf(IN const wchar_t* a_format,
+				 IN ...) asd_NoThrow
+	{
+		va_list args;
+		va_start(args, a_format);
+		int r = asd::vscprintf(a_format, args);
+		va_end(args);
+		return r;
+	}
+
+
+
 	size_t strlen(IN const char* a_str) asd_NoThrow
 	{
 		return ::strlen(a_str);

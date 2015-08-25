@@ -318,13 +318,13 @@ namespace asd
 
 
 
-	std::size_t IpAddress::Hash::operator () (IN const IpAddress& a_addr) const asd_NoThrow
+	size_t IpAddress::Hash::operator () (IN const IpAddress& a_addr) const asd_NoThrow
 	{
 		if (a_addr.m_addr == nullptr)
 			return 0;
 
-		const int SizeOfSizeT = sizeof(std::size_t);
-		std::size_t ret = 0;
+		const int SizeOfSizeT = sizeof(size_t);
+		size_t ret = 0;
 
 		int len;
 		void* ip = a_addr.GetIp(&len);
@@ -338,13 +338,13 @@ namespace asd
 			assert(len == 16);
 			assert(len % SizeOfSizeT == 0);
 			const int Count = len / SizeOfSizeT;
-			std::size_t* arr = (std::size_t*)ip;
+			size_t* arr = (size_t*)ip;
 			for (int i=0; i<Count; ++i) {
 				ret ^= arr[i];
 			}
 		}
 
-		std::size_t port = a_addr.GetPort();
+		size_t port = a_addr.GetPort();
 		port << (SizeOfSizeT - 2);
 		ret ^= port;
 

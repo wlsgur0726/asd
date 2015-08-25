@@ -14,7 +14,7 @@ namespace asd
 		typedef TempBuffer<T> ThisType;
 
 
-		TempBuffer(IN std::size_t a_count) asd_NoThrow {
+		TempBuffer(IN size_t a_count) asd_NoThrow {
 			assert(a_count > 0);
 			auto buf = std::get_temporary_buffer<Object>((ptrdiff_t)a_count);
 			m_arr = buf.first;
@@ -63,14 +63,14 @@ namespace asd
 		}
 
 
-		inline std::size_t GetCount() const asd_NoThrow
+		inline size_t GetCount() const asd_NoThrow
 		{
 			assert(m_count > 0);
 			return m_count;
 		}
 
 
-		inline Object& At(IN std::size_t a_index) const 
+		inline Object& At(IN size_t a_index) const 
 			asd_Throws(asd::Exception)
 		{
 			if (a_index < 0 || a_index >= GetCount()) {
@@ -80,7 +80,7 @@ namespace asd
 		}
 
 
-		inline Object& operator [] (IN std::size_t a_index) const
+		inline Object& operator [] (IN size_t a_index) const
 			asd_Throws(asd::Exception)
 		{
 			return At(a_index);
@@ -88,7 +88,7 @@ namespace asd
 
 
 		template<typename... ARGS>
-		inline void Constructor(IN std::size_t a_index,
+		inline void Constructor(IN size_t a_index,
 								IN ARGS&&... a_constructorArgs)
 			asd_Throws(asd::Exception)
 		{
@@ -97,7 +97,7 @@ namespace asd
 		}
 
 
-		inline void Destrucotr(IN std::size_t a_index)
+		inline void Destrucotr(IN size_t a_index)
 			asd_Throws(asd::Exception)
 		{
 			Object& obj = At(a_index);
@@ -110,6 +110,6 @@ namespace asd
 		TempBuffer& operator = (const ThisType&) = delete;
 
 		Object* m_arr = nullptr;
-		std::size_t m_count = 0;
+		size_t m_count = 0;
 	};
 }

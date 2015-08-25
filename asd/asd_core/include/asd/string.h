@@ -57,6 +57,13 @@ namespace asd
 				  IN va_list& a_args) asd_NoThrow;
 
 
+	int scprintf(IN const char* a_format,
+				 IN ...) asd_NoThrow;
+
+	int scprintf(IN const wchar_t* a_format,
+				 IN ...) asd_NoThrow;
+
+
 	int fputs(IN const char* a_str,
 			  IN FILE* a_fp) asd_NoThrow;
 
@@ -122,50 +129,46 @@ namespace asd
 
 
 	template<typename CHARTYPE>
-	class BasicString
+	class BasicString : public std::shared_ptr<CHARTYPE>
 	{
+		// char16_t와 char32_t는 
+		// 표준 C 함수가 제공되지 않으므로 미지원
 		static_assert(std::is_same<CHARTYPE, char>::value ||
 					  std::is_same<CHARTYPE, wchar_t>::value,
 					  "CHARTYPE is not supported.");
-
 	public:
 		typedef CHARTYPE						CharType;
-
 		typedef BasicString<CharType>			ThisType;
-
-		typedef std::shared_ptr<CharType>		Buffer_ptr;
-
+		typedef std::shared_ptr<CharType>		BaseType;
 		typedef std::basic_string<CharType>		SupportType_StdString;
+
+		using BaseType::get;
+		using BaseType::reset;
 
 		static const bool IgnoreCase_Default = false;
 
-	private:
-		// 앞에서 sizeof(std::size_t) 만큼은 문자열 길이를 저장하는데 사용한다.
-		static const int DataStartOffset = sizeof(std::size_t) / sizeof(CharType);
-		
 
-		inline static void Assert_TypeSizeCheck() asd_NoThrow 
-		{
-			assert(sizeof(std::size_t) >= sizeof(CharType));
-			assert(sizeof(std::size_t) % sizeof(CharType) == 0);
-		}
+
+	private:
+		// 앞에서 sizeof(size_t) 만큼은 문자열 길이를 저장하는데 사용한다.
+		static const int DataStartOffset = sizeof(size_t) / sizeof(CharType);
+		static_assert(sizeof(size_t) >= sizeof(CharType),
+					  "CharType의 크기가 너무 큽니다.");
+		static_assert(sizeof(size_t) % sizeof(CharType) == 0,
+					  "size_t와 CharType의 크기가 정수비례하지 않습니다.");
 
 
 		inline static CharType* GetField_String(IN CharType* a_data) asd_NoThrow 
 		{
-			Assert_TypeSizeCheck();
 			return a_data + DataStartOffset;
 		}
 
-		
-		inline static std::size_t& GetField_Length(IN CharType* a_data) asd_NoThrow
+
+		inline static size_t& GetField_Length(IN CharType* a_data) asd_NoThrow
 		{
-			Assert_TypeSizeCheck();
-			return *((std::size_t*)a_data);
+			return *((size_t*)a_data);
 		}
 
-
-		Buffer_ptr m_data;
 
 
 	public:
@@ -184,54 +187,15 @@ namespace asd
 
 
 
-		ThisType& Format(IN const CharType* a_format,
-						 IN ...) asd_NoThrow
-		{
-			va_list args;
-			va_start(args, a_format);
-			FormatV(a_format, args);
-			va_end(args);
-
-			return *this;
-		}
-
-
-
-		inline ThisType& FormatV(IN const CharType* a_format,
-								 IN va_list& a_args) asd_NoThrow
-		{
-			int length = vscprintf(a_format, a_args);
-			assert(length > 0);
-
-			CharType* newBuf = new CharType[length + DataStartOffset + 1];
-			m_data = Buffer_ptr(newBuf, 
-								std::default_delete<CharType[]>());
-
-			auto vsprintf_ret = asd::vsprintf(GetField_String(newBuf),
-											  length + 1,
-											  a_format,
-											  a_args);
-			assert(vsprintf_ret >= 0);
-			assert(vsprintf_ret == length);
-
-			auto& lenField = GetField_Length(newBuf);
-			lenField = length;
-			assert(GetLength() >= 0);
-
-			return *this;
-		}
-
-
-
 		// '\0'을 제외한 캐릭터 수를 리턴
-		inline std::size_t GetLength() const asd_NoThrow
+		inline size_t GetLength() const asd_NoThrow
 		{
-			if (m_data == nullptr)
+			if (get() == nullptr)
 				return 0;
 
-			auto ret = GetField_Length(m_data.get());
+			auto ret = GetField_Length(get());
 			assert(ret >= 0);
-			assert(GetField_String(m_data.get())[ret] == '\0');
+			assert(GetField_String(get())[ret] == '\0');
 
 			return ret;
 		}
@@ -239,15 +203,15 @@ namespace asd
 
 
 		// 문자열의 시작 포인터를 리턴
-		inline const CharType* GetData() const asd_NoThrow
+		inline CharType* GetData() const asd_NoThrow
 		{
 			CharType* ret;
-			if (m_data == nullptr) {
+			if (get() == nullptr) {
 				const static CharType NullChar = '\0';
 				ret = (CharType*)&NullChar;
 			}
 			else {
-				ret = GetField_String(m_data.get());
+				ret = GetField_String(get());
 			}
 
 			assert(ret[GetLength()] == '\0');
@@ -281,19 +245,18 @@ namespace asd
 		// STL의 해시 기반 컨테이너에서 사용할 Functor
 		struct Hash
 		{
-			inline std::size_t operator() (IN const CharType* a_src) const asd_NoThrow
+			inline size_t operator() (IN const CharType* a_src) const asd_NoThrow
 			{
-				Assert_TypeSizeCheck();
-				const int cnt = sizeof(std::size_t) / sizeof(CharType);
+				const int cnt = sizeof(size_t) / sizeof(CharType);
 				assert(cnt >= 1);
 
 				if (a_src == nullptr)
 					return 0;
 
 				const CharType* p = a_src;
-				std::size_t ret = 0;
+				size_t ret = 0;
 				while (*p != '\0') {
-					std::size_t block = 0;
+					size_t block = 0;
 					for (int i=0; i<cnt; ++i) {
 						block |= *p;
 						++p;
@@ -311,10 +274,45 @@ namespace asd
 
 
 
-		inline std::size_t GetHash() const asd_NoThrow
+		inline size_t GetHash() const asd_NoThrow
 		{
 			Hash functor;
 			return functor(GetData());
+		}
+
+
+
+		// 버퍼를 a_len 개수로 초기화한다.
+		// 값을 수정하는 모든 메소드들은 반드시 이것을 호출한다.
+		// 값이 수정되면서 공유를 풀어야 하기 때문에 무조건 재할당을 한다.
+		inline void InitBuffer(IN size_t a_len) asd_NoThrow
+		{
+			assert(a_len >= 0);
+			assert(a_len <= std::numeric_limits<size_t>::max() - (DataStartOffset + 1));
+
+			const size_t orgLen = GetLength();
+			const size_t newLen = a_len;
+
+			if (newLen == 0) {
+				reset();
+				return;
+			}
+
+			CharType* newBuf = new CharType[newLen + DataStartOffset + 1];
+			if (orgLen > 0) {
+				assert(get() != nullptr);
+				std::memcpy(GetField_String(newBuf),
+							GetData(),
+							sizeof(CharType) * std::min(orgLen, newLen));
+			}
+
+			newBuf[DataStartOffset + newLen] = '\0';
+			size_t& len = GetField_Length(newBuf);
+			len = newLen;
+
+			reset(newBuf,
+				  std::default_delete<CharType[]>());
+			assert(GetLength() > 0);
 		}
 
 
@@ -323,38 +321,57 @@ namespace asd
 		//  a_str  :  추가할 문자열
 		//  a_len  :  a_str에서 '\0'을 제외한 원소 개수 (a_len = strlen(a_str))
 		inline void Append(IN const CharType* a_str,
-						   IN std::size_t a_len) asd_NoThrow
+						   IN size_t a_len) asd_NoThrow
 		{
-			auto orgLen = GetLength();
-			auto addLen = a_len;
-			auto newLen = orgLen + addLen;
+			const auto orgLen = GetLength();
+			const auto addLen = a_len;
+			const auto newLen = orgLen + addLen;
 			if (newLen==orgLen || a_str==nullptr)
 				return;
 
-			assert(a_str[0] != 0);
+			assert(a_str[0] != '\0');
 			assert(addLen > 0);
 			assert(newLen > 0);
 			assert(newLen > orgLen);
 
-			CharType* temp = new CharType[newLen + DataStartOffset + 1];
-
-			if (orgLen > 0) {
-				assert(m_data != nullptr);
-				std::memcpy(GetField_String(temp),
-							GetData(),
-							sizeof(CharType)*orgLen);
-			}
-			std::memcpy(GetField_String(temp) + orgLen,
+			InitBuffer(newLen);
+			std::memcpy(GetData() + orgLen,
 						a_str, 
 						sizeof(CharType)*addLen);
+			assert(GetLength() > 0);
+		}
 
-			temp[DataStartOffset + newLen] = '\0';
-			auto& len = GetField_Length(temp);
-			len = newLen;
 
-			m_data = Buffer_ptr(temp, 
-								std::default_delete<CharType[]>());
+
+		ThisType& Format(IN const CharType* a_format,
+						 IN ...) asd_NoThrow
+		{
+			va_list args;
+			va_start(args, a_format);
+			FormatV(a_format, args);
+			va_end(args);
+
+			return *this;
+		}
+
+
+
+		inline ThisType& FormatV(IN const CharType* a_format,
+								 IN va_list& a_args) asd_NoThrow
+		{
+			auto length = asd::vscprintf(a_format, a_args);
+			assert(length >= 0);
+
+			InitBuffer(length);
+			auto r = asd::vsprintf(GetData(),
+								   length + 1,
+								   a_format,
+								   a_args);
+			assert(r >= 0);
+			assert(r == length);
 			assert(GetLength() >= 0);
+
+			return *this;
 		}
 
 
@@ -455,7 +472,7 @@ namespace asd
 #define asd_Define_AssignmentOperator(ArgType, ArgVar)											\
 		asd_Define_AssignmentOperator_Substitute(ArgType, ArgVar)								\
 		{																						\
-			m_data = Buffer_ptr();																\
+			reset();																			\
 			return *this += ArgVar;																\
 		}																						\
 																								\
@@ -516,7 +533,7 @@ namespace asd
 		asd_Define_AssignmentOperator_Substitute(REF const ThisType&, a_share)
 		{
 			// 공유
-			m_data = a_share.m_data;
+			BaseType::operator=(a_share);
 			return *this;
 		}
 

@@ -42,55 +42,81 @@ namespace asd
 
 
 
+	// asd_MakeDebugInfo
 #if defined(asd_Compiler_MSVC)
-	#define asd_MakeDebugInfo(COMMENT, ...)										\
-		asd::DebugInfo(__FILE__, __LINE__, __FUNCTION__, COMMENT, __VA_ARGS__)	\
+	#define asd_MakeDebugInfo(COMMENT, ...)											\
+		asd::DebugInfo(__FILE__, __LINE__, __FUNCTION__, COMMENT, __VA_ARGS__)		\
 
 #else
-	#define asd_MakeDebugInfo(...)												\
-		asd::DebugInfo(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)			\
+	#define asd_MakeDebugInfo(...)													\
+		asd::DebugInfo(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)				\
 
 #endif
 
 
 
+	// asd_DebugTrace
 #if defined(asd_Compiler_MSVC)
-	#define asd_DebugTrace(TRACE, COMMENT, ...)									\
-		TRACE.push_back( asd_MakeDebugInfo(COMMENT, __VA_ARGS__) )				\
+	#define asd_DebugTrace(TRACE, COMMENT, ...)										\
+		TRACE.push_back( asd_MakeDebugInfo(COMMENT, __VA_ARGS__) )					\
 
 #else
-	#define asd_DebugTrace(TRACE, ...)											\
-		TRACE.push_back( asd_MakeDebugInfo(__VA_ARGS__) )						\
+	#define asd_DebugTrace(TRACE, ...)												\
+		TRACE.push_back( asd_MakeDebugInfo(__VA_ARGS__) )							\
 
 #endif
 
 
 
+	// asd_PrintStdErr
 #if defined(asd_Compiler_MSVC)
-	#define asd_PrintStdErr(msg, ...)											\
-		asd::fputs(asd_MakeDebugInfo(msg, __VA_ARGS__).ToString(), stderr);		\
+	#define asd_PrintStdErr(MsgFormat, ...)											\
+		asd::fputs(asd_MakeDebugInfo(MsgFormat, __VA_ARGS__).ToString(), stderr);	\
 
 #else
-	#define asd_PrintStdErr(...)												\
-		asd::fputs(asd_MakeDebugInfo(__VA_ARGS__).ToString(), stderr);			\
+	#define asd_PrintStdErr(...)													\
+		asd::fputs(asd_MakeDebugInfo(__VA_ARGS__).ToString(), stderr);				\
 
 #endif
 
 
 
+	// asd_Destructor
+#define asd_Destructor_Start try {
+#define asd_Destructor_End }														\
+	catch (std::exception& e) {														\
+		asd_PrintStdErr("std::exception! %s", e.what());							\
+		assert(false);																\
+	}																				\
+	catch (asd::Exception& e) {														\
+		asd_PrintStdErr("asd::Exception! %s", e.what());							\
+		assert(false);																\
+	}																				\
+	catch (const char* e) {															\
+		asd_PrintStdErr("const char* exception! %s", e);							\
+		assert(false);																\
+	}																				\
+	catch (...) {																	\
+		asd_PrintStdErr("unknown exception!");										\
+		assert(false);																\
+	}																				\
+
+
+
+	// asd_RaiseException
 #ifdef asd_Can_not_use_Exception
 	#error asd_RaiseException 미구현
-	#define asd_RaiseException(msg, ...) \
+	#define asd_RaiseException(MsgFormat, ...) \
 
 #else
 
 	#if defined(asd_Compiler_MSVC)
-		#define asd_RaiseException(msg, ...)									\
-			throw asd::Exception(asd_MakeDebugInfo(msg, __VA_ARGS__));			\
+		#define asd_RaiseException(MsgFormat, ...)									\
+			throw asd::Exception(asd_MakeDebugInfo(MsgFormat, __VA_ARGS__));		\
 
 	#else
-		#define asd_RaiseException(...)											\
-			throw asd::Exception(asd_MakeDebugInfo(__VA_ARGS__));				\
+		#define asd_RaiseException(...)												\
+			throw asd::Exception(asd_MakeDebugInfo(__VA_ARGS__));					\
 
 	#endif
 

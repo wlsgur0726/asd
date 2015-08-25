@@ -91,7 +91,16 @@ namespace asd
 		// STL의 해시 기반 컨테이너에서 사용할 Functor
 		struct Hash
 		{
-			std::size_t operator() (IN const IpAddress& a_addr) const asd_NoThrow;
+			size_t operator() (IN const IpAddress& a_addr) const asd_NoThrow;
 		};
+	};
+}
+
+namespace std
+{
+	template<>
+	struct hash<asd::IpAddress>
+		: public asd::IpAddress::Hash
+	{
 	};
 }

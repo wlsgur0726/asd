@@ -17,7 +17,7 @@ namespace asdtest_string
 	{
 		// strlen
 		{
-			char*	teststr_m =  "0123456789";
+			char*    teststr_m =  "0123456789";
 			wchar_t* teststr_w = L"0123456789";
 
 			auto len_m = asd::strlen(teststr_m);
@@ -68,16 +68,21 @@ namespace asdtest_string
 		std::unordered_map<StringType_asd, int> map;
 		map.emplace(a_keyString, BufSize);
 
+		// Case1. 삽입 당시의 포인터변수로 검색
 		{
 			auto it = map.find(a_keyString);
 			ASSERT_NE(it, map.end());
 			EXPECT_EQ(it->second, BufSize);
 		}
+
+		// Case2. 새로운 포인터변수로 검색
 		{
 			auto it = map.find(key);
 			ASSERT_NE(it, map.end());
 			EXPECT_EQ(it->second, BufSize);
 		}
+
+		// Case3. String객체로 검색
 		{
 			StringType_asd str;
 			str = a_keyString;
@@ -128,7 +133,7 @@ namespace asdtest_string
 	void TestCode_StringClass(const typename StringType_asd::CharType* a_testString)
 	{
 		typename StringType_asd::CharType c = 0;
-		const StringType_std stdString = a_testString;
+		const StringType_std stdString1 = a_testString;
 
 		// 각종 생성자와 대입연산자 테스트
 		const StringType_asd s1(a_testString);
@@ -140,9 +145,10 @@ namespace asdtest_string
 		s6 = a_testString;
 		StringType_asd s7;
 		s7 = s1;
-		StringType_asd s8(stdString);
+		StringType_asd s8(stdString1);
 		StringType_asd s9;
-		s9 = stdString;
+		const StringType_std stdString2 = s1;
+		s9 = stdString2;
 
 		EXPECT_EQ(s1, a_testString);
 		EXPECT_EQ(s1, s2);
@@ -165,7 +171,7 @@ namespace asdtest_string
 			EXPECT_EQ(s1, s4);
 
 			const int BufSize = 512;
-			typename StringType_asd::CharType buf[BufSize] ={0xFF};
+			typename StringType_asd::CharType buf[BufSize];
 			int offset = 0;
 			asd::strcpy(buf+offset, s1);
 
@@ -190,7 +196,7 @@ namespace asdtest_string
 			EXPECT_EQ(s1, s4);
 
 			const int BufSize = 512;
-			typename StringType_asd::CharType buf[BufSize] ={0xFF};
+			typename StringType_asd::CharType buf[BufSize];
 			int offset = 0;
 			asd::strcpy(buf+offset, s1);
 
@@ -210,14 +216,14 @@ namespace asdtest_string
 			void* p = &c;
 
 			s2 = s1;
-			s2 << 123 << 1.23 << true << p << stdString;
+			s2 << 123 << 1.23 << true << p << stdString1;
 
 			s3 = s1;
 			s3 += 123;
 			s3 += 1.23;
 			s3 += true;
 			s3 += p;
-			s3 += stdString;
+			s3 += stdString1;
 
 			s4 =  s1 
 				+ FormatString_Int32(c)
@@ -225,7 +231,7 @@ namespace asdtest_string
 				+ FormatString_String(c)
 				+ FormatString_Pointer(c)
 				+ FormatString_String(c);
-			s5.Format(s4, 123, 1.23, FormatString_True(c), p, stdString.data());
+			s5.Format(s4, 123, 1.23, FormatString_True(c), p, stdString1.data());
 
 			// 값이 모두 같은지 확인.
 			EXPECT_EQ(s2, s3);
@@ -245,8 +251,8 @@ namespace asdtest_string
 			EXPECT_LT(s1, s2);
 
 			// std string과 비교.
-			EXPECT_EQ(s1, stdString);
-			EXPECT_GT(s2, stdString);
+			EXPECT_EQ(s1, stdString1);
+			EXPECT_GT(s2, stdString1);
 
 			// 빈 문자열은 가장 작다.
 			typename StringType_asd::CharType NullChar = '\0';

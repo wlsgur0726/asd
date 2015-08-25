@@ -15,8 +15,8 @@ namespace asd
 
 
 		// a_limitCount가 0이면 무제한
-		ObjectPool(IN std::size_t a_limitCount = 0,
-				   IN std::size_t a_initCount = 0)
+		ObjectPool(IN size_t a_limitCount = 0,
+				   IN size_t a_initCount = 0)
 			asd_Throws(std::bad_alloc)
 		{
 			SetLimitCount(a_limitCount);
@@ -97,16 +97,16 @@ namespace asd
 
 
 
-		void SetLimitCount(IN std::size_t a_limitCount)
+		void SetLimitCount(IN size_t a_limitCount)
 			asd_NoThrow
 		{
 			MtxCtl lock(m_lock, true);
-			m_limitCount = std::max(a_limitCount, (std::size_t)0);
+			m_limitCount = std::max(a_limitCount, (size_t)0);
 		}
 
 
 
-		void AddCount(IN std::size_t a_count)
+		void AddCount(IN size_t a_count)
 			asd_Throws(std::bad_alloc)
 		{
 			if (a_count <= 0)
@@ -122,7 +122,7 @@ namespace asd
 
 
 
-		std::size_t GetCount() const 
+		size_t GetCount() const 
 			asd_NoThrow
 		{
 			return m_pool.size();
@@ -157,7 +157,7 @@ namespace asd
 
 
 		// 0이면 무제한
-		std::size_t m_limitCount;
+		size_t m_limitCount;
 
 		std::stack<Object*> m_pool;
 
