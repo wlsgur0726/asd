@@ -146,7 +146,7 @@ namespace asd
 		using BaseType::reset;
 
 		static const bool IgnoreCase_Default = false;
-
+		static const bool Rigorous_LengthCheck = false;
 
 
 	private:
@@ -195,7 +195,10 @@ namespace asd
 
 			auto ret = GetField_Length(get());
 			assert(ret >= 0);
-			assert(GetField_String(get())[ret] == '\0');
+			if (Rigorous_LengthCheck)
+				assert(asd::strlen(GetField_String(get())) == ret);
+			else
+				assert(GetField_String(get())[ret] == '\0');
 
 			return ret;
 		}
@@ -304,6 +307,14 @@ namespace asd
 				std::memcpy(GetField_String(newBuf),
 							GetData(),
 							sizeof(CharType) * std::min(orgLen, newLen));
+			}
+
+			if (Rigorous_LengthCheck) {
+				const int uninitLen = newLen - orgLen;
+				if (uninitLen > 0)
+					std::memset(GetField_String(newBuf) + orgLen,
+								0xcd,
+								sizeof(CharType) * (uninitLen-1));
 			}
 
 			newBuf[DataStartOffset + newLen] = '\0';
