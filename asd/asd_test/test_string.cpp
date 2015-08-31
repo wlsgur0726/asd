@@ -2,6 +2,7 @@
 #include "asd/string.h"
 #include <unordered_map>
 #include <iostream>
+#include <functional>
 
 namespace asdtest_string
 {
@@ -9,9 +10,63 @@ namespace asdtest_string
 	CHECK(0, asd::strcmp(BufM, RVAL));						\
 	CHECK(0, asd::strcmp(BufW, L ## RVAL));					\
 
-#define TEST_STRCMP_CASE(CHECK, RVAL, IGNORE_CASE)			\
-	CHECK(0, asd::strcmp(BufM, RVAL, IGNORE_CASE));			\
-	CHECK(0, asd::strcmp(BufW, L ## RVAL, IGNORE_CASE));	\
+#define TEST_STRCMP_CASE(CHECK, RVAL, CASE_SENSITIVE)		\
+	CHECK(0, asd::strcmp(BufM, RVAL, CASE_SENSITIVE));		\
+	CHECK(0, asd::strcmp(BufW, L ## RVAL, CASE_SENSITIVE));	\
+
+	template <typename CharType>
+	void GenTestArray(CharType* buf, int option)
+	{
+		int i = 0;
+		if (option == 0) {
+			for (char c='A'; c<='Z'; ++c)
+				buf[i++] = c;
+		}
+		else if (option == 1) {
+			for (char c='a'; c<='z'; ++c)
+				buf[i++] = c;
+		}
+		else {
+			std::srand(std::time(nullptr));
+			for (i=0; i<26; ++i) {
+				if (std::rand() % 2 == 0)
+					buf[i] = 'A' + i;
+				else
+					buf[i] = 'a' + i;
+			}
+		}
+		buf[26] = '\0';
+	}
+
+	template <typename CharType>
+	void CaseConvertTest()
+	{
+		int i;
+
+		CharType ucase[27];
+		CharType lcase[27];
+		CharType testbuf[27];
+		GenTestArray(ucase, 0);
+		GenTestArray(lcase, 1);
+
+		// toupper
+		do {
+			GenTestArray(testbuf, 2);
+		} while (asd::strcmp(ucase, testbuf) == 0);
+		EXPECT_STRNE(ucase, testbuf);
+		for (int i=0; i<27; ++i)
+			testbuf[i] = asd::toupper(testbuf[i]);
+		EXPECT_STREQ(ucase, testbuf);
+
+		// tolower
+		do {
+			GenTestArray(testbuf, 2);
+		} while (asd::strcmp(lcase, testbuf) == 0);
+		EXPECT_STRNE(lcase, testbuf);
+		for (int i=0; i<27; ++i)
+			testbuf[i] = asd::tolower(testbuf[i]);
+		EXPECT_STREQ(lcase, testbuf);
+	}
 
 	TEST(String, GlobalFunction)
 	{
@@ -43,7 +98,7 @@ namespace asdtest_string
 
 			TEST_STRCMP_DEFAULT(EXPECT_NE, "ABC 가나다 123");
 
-			TEST_STRCMP_CASE(EXPECT_EQ, "ABC 가나다 123", true);
+			TEST_STRCMP_CASE(EXPECT_EQ, "ABC 가나다 123", false);
 
 			TEST_STRCMP_DEFAULT(EXPECT_LT, "abc 가나다 000");
 
@@ -53,11 +108,18 @@ namespace asdtest_string
 
 			TEST_STRCMP_DEFAULT(EXPECT_GT, "abc 가나다 123 ");
 		}
+
+		// upper, lower
+		{
+			CaseConvertTest<char>();
+			CaseConvertTest<wchar_t>();
+		}
 	}
 
 
 
-	template <typename StringType_asd>
+	template <typename StringType_asd,
+			  bool CaseSensitive>
 	void TestCode_hash_and_equal(const typename StringType_asd::CharType* a_keyString)
 	{
 		const int BufSize = 512;
@@ -65,7 +127,11 @@ namespace asdtest_string
 		memset(key, 0xff, sizeof(key));
 		asd::strcpy(key, a_keyString);
 
-		std::unordered_map<StringType_asd, int> map;
+		std::unordered_map<StringType_asd, 
+						   int,
+						   asd::hash_String<typename StringType_asd::CharType, CaseSensitive>,
+						   asd::equal_to_String<typename StringType_asd::CharType, CaseSensitive> > map;
+	//	std::unordered_map<StringType_asd, int> map;
 		map.emplace(a_keyString, BufSize);
 
 		// Case1. 삽입 당시의 포인터변수로 검색
@@ -90,15 +156,22 @@ namespace asdtest_string
 			ASSERT_NE(it, map.end());
 			EXPECT_EQ(it->second, BufSize);
 		}
+
+		// 다른 케이스 검색
+		{
+
+		}
 	}
 
 	TEST(String, hash_and_equal)
 	{
 		// MultiByte
-		TestCode_hash_and_equal<asd::MString>("abc가나다123");
+		TestCode_hash_and_equal<asd::MString, true>("abc가나다123");
+		TestCode_hash_and_equal<asd::MString, false>("abc가나다123");
 
 		// Wide
-		TestCode_hash_and_equal<asd::WString>(L"abc가나다123");
+		TestCode_hash_and_equal<asd::WString, true>(L"abc가나다123");
+		TestCode_hash_and_equal<asd::WString, false>(L"abc가나다123");
 	}
 
 

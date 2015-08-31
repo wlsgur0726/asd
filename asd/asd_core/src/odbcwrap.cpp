@@ -1,8 +1,10 @@
 ﻿#include "stdafx.h"
+
 #include "asd/odbcwrap.h"
 #include <sql.h>
 #include <sqlext.h>
 #include <unordered_map>
+#include <functional>
 
 namespace asd
 {
@@ -25,6 +27,8 @@ namespace asd
 			m_what << "\n [" << (index++) << "] " << diagInfo.ToString();
 		}
 	}
+
+
 
 
 	/***** OdbcHandle **************************************************************************/
@@ -83,7 +87,7 @@ namespace asd
 			SQLRETURN r = SQLAllocHandle(a_handleType,
 										 inputHandle,
 										 &m_handle);
-			CheckError(r);
+			CheckError(r, nullptr, 0);
 
 			// 환경핸들인 경우 환경설정
 			if (a_handleType == SQL_HANDLE_ENV) {
@@ -102,22 +106,48 @@ namespace asd
 
 		void CheckError(IN SQLRETURN a_retval)
 		{
+			CheckError(a_retval, nullptr, 0);
+		}
+
+
+		void CheckError(IN SQLRETURN a_retval,
+						IN const SQLCHAR a_ignoreStates[][6],
+						IN int a_ignoreCount)
+		{
 			if (a_retval != SQL_SUCCESS) {
-				SetOdbcErrorList();
-				if (a_retval != SQL_SUCCESS_WITH_INFO)
-					throw DBException(m_diagInfoList);
+				SetLastErrorList();
+				if (a_retval != SQL_SUCCESS_WITH_INFO) {
+					if (a_ignoreStates!=nullptr && a_ignoreCount>0) {
+						for (auto it=m_diagInfoList.begin(); it!=m_diagInfoList.end(); ) {
+							int i;
+							for (i=0; i<a_ignoreCount; ++i) {
+								int cmp = std::memcmp(it->m_state,
+													  a_ignoreStates[i],
+													  5 * sizeof(SQLCHAR));
+								if (cmp == 0)
+									break;
+							}
+							if (i < a_ignoreCount)
+								it = m_diagInfoList.erase(it);
+							else
+								++it;
+						}
+					}
+					if (m_diagInfoList.size() > 0)
+						throw DBException(m_diagInfoList);
+				}
 			}
 		}
 
 
-		void SetOdbcErrorList()
+		void SetLastErrorList()
 		{
 			m_diagInfoList.clear();
 
 			for (int i=1; ; ++i) {
 				SQLCHAR state[6] = {0, 0, 0, 0, 0, 0};
 				SQLINTEGER nativeError;
-				SQLCHAR errMsg[SQL_MAX_MESSAGE_LENGTH + 1];
+				SQLCHAR errMsg[SQL_MAX_MESSAGE_LENGTH];
 				SQLSMALLINT errMsgLen;
 
 				auto r = SQLGetDiagRec(m_handleType,
@@ -140,13 +170,13 @@ namespace asd
 					   state,
 					   sizeof(diagInfo.m_state));
 				diagInfo.m_nativeError = nativeError;
-				diagInfo.m_message = errMsg;
+				diagInfo.m_message = (const char*)errMsg;
 				m_diagInfoList.push_back(diagInfo);
 			}
 		}
 
 
-		virtual void Close()
+		void Close()
 		{
 			if (m_handle != SQL_NULL_HANDLE) {
 				CheckError(SQLFreeHandle(m_handleType, m_handle));
@@ -173,6 +203,7 @@ namespace asd
 
 
 
+
 	/***** DBConnection **************************************************************************/
 
 	struct DBConnectionHandle : public OdbcHandle
@@ -183,7 +214,7 @@ namespace asd
 
 		void Init()
 		{
-			Close();
+			CloseConnectoin();
 			m_envHandle.Init(SQL_HANDLE_ENV, nullptr);
 			OdbcHandle::Init(SQL_HANDLE_DBC, &m_envHandle);
 		}
@@ -207,13 +238,13 @@ namespace asd
 		}
 
 
-		virtual void Close() override
+		void CloseConnectoin()
 		{
 			if (m_connected) {
 				CheckError(SQLDisconnect(m_handle));
 				m_connected = false;
 			}
-			OdbcHandle::Close();
+			Close();
 			m_envHandle.Close();
 		}
 
@@ -221,7 +252,7 @@ namespace asd
 		virtual ~DBConnectionHandle()
 		{
 			asd_Destructor_Start
-				Close();
+				CloseConnectoin();
 			asd_Destructor_End
 		}
 	};
@@ -240,8 +271,10 @@ namespace asd
 	void DBConnection::Close()
 		asd_Throws(DBException)
 	{
-		m_handle->Close();
-		m_handle = DBConnectionHandle_ptr(nullptr);
+		if (m_handle != nullptr) {
+			m_handle->CloseConnectoin();
+			m_handle = DBConnectionHandle_ptr(nullptr);
+		}
 	}
 
 
@@ -254,17 +287,25 @@ namespace asd
 
 
 
+
 	/***** DBStatement **************************************************************************/
 
 	struct DBStatementHandle : public OdbcHandle
 	{
 		DBConnectionHandle_ptr m_conHandle;
 		SQLSMALLINT m_colCount = -1; // 컬럼 개수
-		std::unordered_map<MString, SQLSMALLINT> m_indexMap; // 컬럼명 : 인덱스
+
+		// 컬럼명:인덱스 맵
+		std::unordered_map<MString, 
+						   SQLSMALLINT,
+						   MString::Hash_IgnoreCase,
+						   MString::EqualTo_IgnoreCase> m_indexMap;
 
 
 		void Init(REF DBConnectionHandle_ptr a_conHandle)
 		{
+			CloseStatement();
+
 			assert(a_conHandle != nullptr);
 			m_conHandle = a_conHandle;
 			OdbcHandle::Init(SQL_HANDLE_STMT, m_conHandle.get());
@@ -305,34 +346,22 @@ namespace asd
 
 			// 3. 컬럼을 순회하면서 컬럼명과 인덱스를 매핑한다.
 			for (SQLUSMALLINT i=1; i<=m_colCount; ++i) {
+				SQLCHAR buf[SQL_MAX_MESSAGE_LENGTH];
 				MString colName;
 
-				// 3.1 컬럼명의 길이를 구한다.
-				SQLSMALLINT namelen = -1;
-				SQLRETURN r = SQLColAttribute(m_handle,
-											  i,
-											  SQL_DESC_NAME,
-											  nullptr,
-											  0,
-											  &namelen,
-											  nullptr);
-				if (r != SQL_SUCCESS_WITH_INFO)
-					CheckError(r);
-				assert(namelen >= 0);
-				
-				// 3.2 컬럼명을 구한다.
-				if (namelen > 0) {
-					colName.InitBuffer(namelen);
-					CheckError(SQLColAttribute(m_handle,
-											   i,
-											   SQL_DESC_NAME,
-											   (SQLPOINTER)colName.GetData(),
-											   namelen,
-											   &namelen,
-											   nullptr));
-					assert(colName.GetLength() == namelen);
+				// 3.1 컬럼명을 구한다.
+				SQLSMALLINT retlen;
+				CheckError(SQLColAttribute(m_handle,
+										   i,
+										   SQL_DESC_NAME,
+										   (SQLPOINTER)buf,
+										   sizeof(buf),
+										   &retlen,
+										   nullptr));
+				if (buf[0] != '\0') {
+					colName = (const char*)buf;
 
-					// 3.3 매핑
+					// 3.2 매핑
 					m_indexMap[colName] = i;
 				}
 #ifdef asd_Debug
@@ -365,35 +394,38 @@ namespace asd
 
 
 		SQLLEN GetData(IN SQLUSMALLINT a_colIndex,
-					   IN SQLSMALLINT a_targetType,
+					   IN SQLSMALLINT a_returnType,
 					   OUT void* a_buf,
 					   IN SQLLEN a_bufLen)
 		{
-			SQLLEN remnant = 0;
+			SQLLEN indicator = 0;
 			CheckError(SQLGetData(m_handle,
 								  a_colIndex,
-								  a_targetType,
+								  a_returnType,
 								  a_buf,
 								  a_bufLen,
-								  &remnant));
-			return remnant;
+								  &indicator));
+			return indicator;
 		}
 
 
-		virtual void Close() override
+		void CloseStatement()
 		{
 			if (m_conHandle != nullptr) {
-				CheckError(SQLCloseCursor(m_handle));
+				const SQLCHAR ignore[] = "24000"; // 커서가 열리지 않았는데 닫으려는 경우
+				CheckError(SQLCloseCursor(m_handle),
+						   &ignore,
+						   1);
 				m_conHandle = DBConnectionHandle_ptr();
 			}
-			OdbcHandle::Close();
+			Close();
 		}
 
 
 		virtual ~DBStatementHandle()
 		{
 			asd_Destructor_Start
-				Close();
+				CloseStatement();
 			asd_Destructor_End
 		}
 	};
@@ -423,7 +455,8 @@ namespace asd
 	void DBStatement::Close()
 		asd_Throws(DBException)
 	{
-		m_handle->Close();
+		if (m_handle != nullptr)
+			m_handle->CloseStatement();
 	}
 
 
@@ -451,79 +484,289 @@ namespace asd
 
 
 
-#define asd_Define_CastOperator(Type)								\
-	DBStatement::Caster::operator Type()							\
-		asd_Throws(DBException)										\
 
-#define asd_Define_CastOperator_FixSize(Type, Target_C_Type)		\
-	asd_Define_CastOperator(Type)									\
-	{																\
-		Type r;														\
-		SQLLEN len = m_owner.m_handle->GetData(m_index,				\
-											   Target_C_Type,		\
-											   &r,					\
-											   sizeof(r));			\
-		assert(len == 0);											\
-		return r;													\
-	}																\
+	/***** DBStatement::GetData() Templates **************************************************************************/
 
+	// Caster
+#define asd_Define_CastOperator_Ptr(Type, PtrClass)											\
+	DBStatement::Caster::operator PtrClass<Type>()											\
+		asd_Throws(DBException)																\
+	{																						\
+		PtrClass<Type> ret;																	\
+		Type temp;																			\
+		if (GetData_Base(m_owner.m_handle, m_index, temp) != nullptr)						\
+			ret = PtrClass<Type>(new Type(std::move(temp)));								\
+		return ret;																			\
+	}																						\
 
 
-	asd_Define_CastOperator(MString)
+#define asd_Define_CastOperator(Type)														\
+	DBStatement::Caster::operator Type()													\
+		asd_Throws(DBException, NullDataException)											\
+	{																						\
+		Type ret;																			\
+		if (GetData_Base(m_owner.m_handle, m_index, ret) == nullptr)						\
+			throw NullDataException("is null data.");										\
+		return ret;																			\
+	}																						\
+	asd_Define_CastOperator_Ptr(Type, std::shared_ptr);										\
+	asd_Define_CastOperator_Ptr(Type, std::unique_ptr);										\
+
+
+
+	// Base
+#define asd_Define_GetData(ReturnType, HandleParamName, IndexParamName, ReturnParamName)	\
+	inline ReturnType* GetData_Base(IN DBStatementHandle_ptr&,								\
+									IN uint16_t,											\
+									OUT ReturnType&);										\
+																							\
+																							\
+	template <>																				\
+	ReturnType* DBStatement::GetData<ReturnType>(IN const char* a_columnName,				\
+												 OUT ReturnType& a_return)					\
+		asd_Throws(DBException)																\
+	{																						\
+		return GetData_Base(m_handle, m_handle->GetIndex(a_columnName), a_return);			\
+	}																						\
+																							\
+																							\
+	template <>																				\
+	ReturnType* DBStatement::GetData<ReturnType>(IN uint16_t a_index,						\
+												 OUT ReturnType& a_return)					\
+		asd_Throws(DBException)																\
+	{																						\
+		return GetData_Base(m_handle, a_index, a_return);									\
+	}																						\
+																							\
+																							\
+	asd_Define_CastOperator(ReturnType);													\
+																							\
+																							\
+	inline ReturnType* GetData_Base(IN DBStatementHandle_ptr& HandleParamName,				\
+									IN uint16_t IndexParamName,								\
+									OUT ReturnType& ReturnParamName)						\
+
+
+
+	// Fixed Size
+	template <typename ReturnType>
+	inline ReturnType* GetData_FixedSize(IN DBStatementHandle_ptr& a_handle,
+										 IN SQLUSMALLINT a_index,
+										 IN SQLSMALLINT a_ctype,
+										 OUT ReturnType& a_return)
 	{
-		MString r;
-		SQLLEN len = m_owner.m_handle->GetData(m_index,
-											   SQL_C_CHAR,
-											   nullptr,
-											   0);
-		assert(len >= 0);
-		if (len > 0) {
-			r.InitBuffer(len);
-			len = m_owner.m_handle->GetData(m_index,
-											SQL_C_CHAR,
-											r.GetData(),
-											len);
-			assert(len == 0);
-		}
-		return r;
+		SQLLEN len = a_handle->GetData(a_index,
+									   a_ctype,
+									   &a_return,
+									   sizeof(a_return));
+		if (len == SQL_NULL_DATA)
+			return nullptr;
+		assert(len == sizeof(a_return));
+		return &a_return;
 	}
 
+#define asd_Define_GetData_FixedSize(ReturnType, Target_C_Type)			\
+	asd_Define_GetData(ReturnType, a_handle, a_index, a_return)			\
+	{																	\
+		return GetData_FixedSize<ReturnType>(a_handle,					\
+											 a_index,					\
+											 Target_C_Type,				\
+											 a_return);					\
+	}																	\
 
-	asd_Define_CastOperator(std::shared_ptr<uint8_t>)
+
+
+	// String
+	template <typename StringType, typename CharType>
+	inline StringType* GetData_String(IN DBStatementHandle_ptr& a_handle,
+									  IN SQLUSMALLINT a_index,
+									  IN SQLSMALLINT a_ctype,
+									  OUT StringType& a_return)
 	{
-		typedef std::shared_ptr<uint8_t> BinArr;
-		BinArr r;
-		SQLLEN len = m_owner.m_handle->GetData(m_index,
-											   SQL_C_BINARY,
-											   nullptr,
-											   0);
-		assert(len >= 0);
-		if (len > 0) {
-			r = BinArr(new uint8_t[len],
-					   std::default_delete<uint8_t[]>());
-			len = m_owner.m_handle->GetData(m_index,
-											SQL_C_CHAR,
-											r.get(),
-											len);
-			assert(len == 0);
-		}
-		return r;
+		const int BufSize = 1024;
+		uint8_t buf[BufSize];
+		SQLLEN indicator;
+		do {
+			indicator = a_handle->GetData(a_index,
+										  a_ctype,
+										  buf,
+										  BufSize);
+			if (indicator == SQL_NULL_DATA)
+				return nullptr;
+			a_return += (const CharType*)buf;
+		} while (indicator == SQL_NO_TOTAL);
+		assert(indicator > 0);
+		return &a_return;
 	}
 
+#define asd_Define_GetData_String(ReturnType, CharType, Target_C_Type)		\
+	asd_Define_GetData(ReturnType, a_handle, a_index, a_return)				\
+	{																		\
+		return GetData_String<ReturnType, CharType>(a_handle,				\
+													a_index,				\
+													Target_C_Type,			\
+													a_return);				\
+	}																		\
 
-	asd_Define_CastOperator_FixSize(char, SQL_C_TINYINT);
 
-	asd_Define_CastOperator_FixSize(short, SQL_C_SHORT);
 
-	asd_Define_CastOperator_FixSize(int, SQL_C_LONG);
+	// Binary, Blob
+	template <typename ReturnType>
+	struct GetData_Binary_Callback
+	{
+		inline void operator() (REF ReturnType& a_return,
+								IN void* a_buf,
+								IN SQLLEN a_len);
+	};
 
-	asd_Define_CastOperator_FixSize(int64_t, SQL_C_SBIGINT);
+	template <typename ReturnType>
+	inline ReturnType* GetData_Binary(IN DBStatementHandle_ptr& a_handle,
+									  IN SQLUSMALLINT a_index,
+									  IN GetData_Binary_Callback<ReturnType>& a_readCallback,
+									  REF ReturnType& a_return)
+	{
+		const int BufSize = 1024;
+		uint8_t buf[BufSize];
+		SQLLEN indicator;
 
-	asd_Define_CastOperator_FixSize(float, SQL_C_FLOAT);
+		bool loop = true;
+		while (loop) {
+			indicator = a_handle->GetData(a_index,
+										  SQL_C_BINARY,
+										  buf,
+										  BufSize);
+			if (indicator == SQL_NULL_DATA)
+				return nullptr;
 
-	asd_Define_CastOperator_FixSize(double, SQL_C_DOUBLE);
+			SQLLEN addLen;
+			if (indicator == SQL_NO_TOTAL)
+				addLen = BufSize;
+			else {
+				assert(indicator > 0);
+				addLen = indicator;
+				loop = false;
+			}
+			a_readCallback(a_return, buf, addLen);
+		}
+		return &a_return;
+	}
 
-	asd_Define_CastOperator_FixSize(bool, SQL_C_BIT);
+#define asd_Define_GetData_Binary(ReturnType, ReturnTypeName, BufParamName, LenParamName)		\
+	asd_Define_GetData(ReturnType, a_handle, a_index, a_return)									\
+	{																							\
+		GetData_Binary_Callback<ReturnType> callback;											\
+		return GetData_Binary<ReturnType>(a_handle,												\
+										  a_index,												\
+										  callback,												\
+										  a_return);											\
+	}																							\
+																								\
+	template<>																					\
+	inline void																					\
+	GetData_Binary_Callback<ReturnType>::operator() (REF ReturnType& ReturnTypeName,			\
+													 IN void* BufParamName,						\
+													 IN SQLLEN LenParamName)					\
 
-	asd_Define_CastOperator_FixSize(SQL_TIMESTAMP_STRUCT, SQL_C_TIMESTAMP);
+
+
+	// Proxy
+	template <typename ProxyType, typename ReturnType>
+	struct GetData_UseProxy_Callback
+	{
+		inline ReturnType* operator() (IN const ProxyType& a_proxy,
+									   OUT ReturnType& a_return);
+	};
+
+	template <typename ProxyType, typename ReturnType>
+	ReturnType* GetData_UseProxy(IN DBStatementHandle_ptr& a_handle,
+								 IN SQLUSMALLINT a_index,
+								 OUT ReturnType& a_return)
+	{
+		ProxyType t;
+		if (GetData_Base(a_handle, a_index, t) == nullptr)
+			return nullptr;
+		GetData_UseProxy_Callback<ProxyType, ReturnType> functor;
+		return functor(t, a_return);
+	}
+
+#define asd_Define_GetData_UseProxy(ProxyType, ProxyParamName, ReturnType, ReturnParamName)				\
+	asd_Define_GetData(ReturnType, a_handle, a_index, a_return)											\
+	{																									\
+		return GetData_UseProxy<ProxyType, ReturnType>(a_handle, a_index, a_return);					\
+	}																									\
+																										\
+	template<>																							\
+	inline ReturnType*																					\
+	GetData_UseProxy_Callback<ProxyType, ReturnType>::operator() (IN const ProxyType& ProxyParamName,	\
+																  OUT ReturnType& ReturnParamName)		\
+
+
+
+
+	/***** DBStatement::GetData() Specialization **************************************************************************/
+
+	asd_Define_GetData_FixedSize(char, SQL_C_TINYINT);
+
+	asd_Define_GetData_FixedSize(short, SQL_C_SHORT);
+
+	asd_Define_GetData_FixedSize(int, SQL_C_LONG);
+
+	asd_Define_GetData_FixedSize(int64_t, SQL_C_SBIGINT);
+
+	asd_Define_GetData_FixedSize(float, SQL_C_FLOAT);
+
+	asd_Define_GetData_FixedSize(double, SQL_C_DOUBLE);
+
+	asd_Define_GetData_FixedSize(bool, SQL_C_BIT);
+
+	asd_Define_GetData_FixedSize(SQL_TIMESTAMP_STRUCT, SQL_C_TIMESTAMP);
+
+	asd_Define_GetData_String(MString, char, SQL_C_CHAR);
+
+	asd_Define_GetData_String(WString, wchar_t, SQL_C_WCHAR);
+
+	asd_Define_GetData_String(std::string, char, SQL_C_CHAR);
+
+	asd_Define_GetData_String(std::wstring, wchar_t, SQL_C_WCHAR);
+
+	asd_Define_GetData_Binary(REF std::vector<uint8_t>, a_return,
+							  IN /*void* */ a_buf,
+							  IN /*SQLLEN */ a_len)
+	{
+		const auto oldSize = a_return.size();
+		a_return.resize(oldSize + a_len);
+		std::memcpy(a_return.data() + oldSize,
+					a_buf,
+					a_len);
+	}
+
+	asd_Define_GetData_Binary(REF SharedArray<uint8_t>, a_return,
+							  IN /*void* */ a_buf,
+							  IN /*SQLLEN */ a_len)
+	{
+		const auto oldSize = a_return.GetCount();
+		a_return.Resize(oldSize + a_len, true);
+		std::memcpy(a_return.get() + oldSize,
+					a_buf,
+					a_len);
+	}
+
+	asd_Define_GetData_UseProxy(IN SQL_TIMESTAMP_STRUCT, a_proxy,
+								OUT tm, a_return)
+	{
+		a_return.tm_year	= a_proxy.year;
+		a_return.tm_mon 	= a_proxy.month - 1;
+		a_return.tm_mday	= a_proxy.day;
+		a_return.tm_hour	= a_proxy.hour;
+		a_return.tm_min 	= a_proxy.minute;
+		a_return.tm_sec 	= a_proxy.second;
+		return &a_return;
+	}
+
+	asd_Define_GetData_UseProxy(IN SQL_TIMESTAMP_STRUCT, a_proxy,
+								OUT Time, a_return)
+	{
+		a_return.From(a_proxy);
+		return &a_return;
+	}
 }

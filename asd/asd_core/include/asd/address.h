@@ -66,27 +66,7 @@ namespace asd
 		static int Compare(IN const IpAddress& a_left,
 						   IN const IpAddress& a_right) asd_NoThrow;
 
-		inline int Compare(IN const IpAddress& a_rval) const asd_NoThrow {
-			return Compare(*this, a_rval);
-		}
-		inline bool operator == (IN const IpAddress& a_rval) const asd_NoThrow {
-			return Compare(a_rval) == 0;
-		}
-		inline bool operator != (IN const IpAddress& a_rval) const asd_NoThrow {
-			return Compare(a_rval) != 0;
-		}
-		inline bool operator < (IN const IpAddress& a_rval) const asd_NoThrow {
-			return Compare(a_rval) < 0;
-		}
-		inline bool operator <= (IN const IpAddress& a_rval) const asd_NoThrow {
-			return Compare(a_rval) <= 0;
-		}
-		inline bool operator > (IN const IpAddress& a_rval) const asd_NoThrow {
-			return Compare(a_rval) > 0;
-		}
-		inline bool operator >= (IN const IpAddress& a_rval) const asd_NoThrow {
-			return Compare(a_rval) >= 0;
-		}
+		asd_Define_CompareOperator(Compare, IpAddress);
 
 		// STL의 해시 기반 컨테이너에서 사용할 Functor
 		struct Hash

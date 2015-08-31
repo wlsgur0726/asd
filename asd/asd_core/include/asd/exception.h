@@ -84,20 +84,20 @@ namespace asd
 	// asd_Destructor
 #define asd_Destructor_Start try {
 #define asd_Destructor_End }														\
-	catch (std::exception& e) {														\
-		asd_PrintStdErr("std::exception! %s", e.what());							\
+	catch (asd::Exception& e) {														\
+		asd_PrintStdErr("asd::Exception! %s\n", e.what());							\
 		assert(false);																\
 	}																				\
-	catch (asd::Exception& e) {														\
-		asd_PrintStdErr("asd::Exception! %s", e.what());							\
+	catch (std::exception& e) {														\
+		asd_PrintStdErr("std::exception! %s\n", e.what());							\
 		assert(false);																\
 	}																				\
 	catch (const char* e) {															\
-		asd_PrintStdErr("const char* exception! %s", e);							\
+		asd_PrintStdErr("const char* exception! %s\n", e);							\
 		assert(false);																\
 	}																				\
 	catch (...) {																	\
-		asd_PrintStdErr("unknown exception!");										\
+		asd_PrintStdErr("unknown exception!\n");									\
 		assert(false);																\
 	}																				\
 

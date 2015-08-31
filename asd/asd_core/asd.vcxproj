@@ -188,11 +188,13 @@
     <ClInclude Include="include\asd\objpool.h" />
     <ClInclude Include="include\asd\odbcwrap.h" />
     <ClInclude Include="include\asd\semaphore.h" />
+    <ClInclude Include="include\asd\sharedarray.h" />
     <ClInclude Include="include\asd\socket.h" />
     <ClInclude Include="include\asd\string.h" />
     <ClInclude Include="include\asd\tempbuffer.h" />
     <ClInclude Include="include\asd\test.h" />
     <ClInclude Include="include\asd\threadpool.h" />
+    <ClInclude Include="include\asd\time.h" />
     <ClInclude Include="include\asd\util.h" />
     <ClInclude Include="src\stdafx.h" />
   </ItemGroup>
@@ -207,6 +209,7 @@
     <ClCompile Include="src\string.cpp" />
     <ClCompile Include="src\test.cpp" />
     <ClCompile Include="src\threadpool.cpp" />
+    <ClCompile Include="src\time.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\libiconv-1.14\windows\msvc2015\libiconv.vcxproj">

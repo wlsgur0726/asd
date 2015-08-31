@@ -287,7 +287,7 @@ namespace asd
 
 	int strcmp(IN const char* a_str1, 
 			   IN const char* a_str2,
-			   IN bool a_ignoreCase /*= false*/) asd_NoThrow
+			   IN bool a_caseSensitive /*= true*/) asd_NoThrow
 	{
 		if (SamePtr(a_str1, a_str2))
 			return 0;
@@ -298,7 +298,7 @@ namespace asd
 		if (a_str2 == nullptr)
 			a_str2 = (const char*)&NullChar;
 
-		if (a_ignoreCase == false)
+		if (a_caseSensitive)
 			return ::strcmp(a_str1, a_str2);
 
 #if defined(asd_Platform_Windows)
@@ -311,7 +311,7 @@ namespace asd
 
 	int strcmp(IN const wchar_t* a_str1, 
 			   IN const wchar_t* a_str2,
-			   IN bool a_ignoreCase /*= false*/) asd_NoThrow
+			   IN bool a_caseSensitive /*= true*/) asd_NoThrow
 	{
 		if (SamePtr(a_str1, a_str2))
 			return 0;
@@ -322,7 +322,7 @@ namespace asd
 		if (a_str2 == nullptr)
 			a_str2 = &NullChar;
 
-		if (a_ignoreCase == false)
+		if (a_caseSensitive)
 			return ::wcscmp(a_str1, a_str2);
 
 #if defined(asd_Platform_Windows)
@@ -334,9 +334,9 @@ namespace asd
 
 
 
-	template<typename DstType, typename SrcType, bool AsciiOnly=false>
-	inline void strcpy_internal(OUT DstType* a_dst,
-								IN const SrcType* a_src) asd_NoThrow
+	template<typename ReturnType, typename ProxyType, bool AsciiOnly=false>
+	inline void strcpy_internal(OUT ReturnType* a_dst,
+								IN const ProxyType* a_src) asd_NoThrow
 	{
 		// 잘못된 메모리를 접근하는 경우는 없다. (caller를 믿는다)
 		for (; *a_src!='\0'; ++a_src,++a_dst) {
@@ -344,11 +344,11 @@ namespace asd
 				bool isAsciiChar = (0x7F - *a_src) >= 0;
 				assert(isAsciiChar);
 			}
-			*a_dst = (DstType)*a_src;
+			*a_dst = (ReturnType)*a_src;
 		}
 
 		assert(*a_src == '\0');
-		*a_dst = (DstType)*a_src;
+		*a_dst = (ReturnType)*a_src;
 	}
 
 
