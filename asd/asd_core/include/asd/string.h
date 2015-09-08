@@ -219,7 +219,6 @@ namespace asd
 		typedef equal_to_String<CharType, false>	EqualTo_IgnoreCase;
 
 		static const bool CaseSensitive_Default = true;
-		static const bool Rigorous_LengthCheck = false;
 
 
 		BasicString() asd_NoThrow
@@ -246,10 +245,7 @@ namespace asd
 
 			auto cnt = BaseType::GetCount() - 1;
 			assert(cnt >= 0);
-			if (Rigorous_LengthCheck)
-				assert(asd::strlen(p) == cnt);
-			else
-				assert(p[cnt] == '\0');
+			assert(p[cnt] == '\0');
 
 			return cnt;
 		}
@@ -277,9 +273,19 @@ namespace asd
 			return GetData();
 		}
 
+		inline operator CharType*() asd_NoThrow
+		{
+			return GetData();
+		}
+
 
 
 		inline operator const void*() const asd_NoThrow
+		{
+			return GetData();
+		}
+
+		inline operator void*() asd_NoThrow
 		{
 			return GetData();
 		}
@@ -311,15 +317,7 @@ namespace asd
 			}
 			assert(a_newLen > 0);
 
-			size_t orgLen = GetLength();
 			BaseType::Resize(a_newLen + 1, a_preserveOldData);
-			if (Rigorous_LengthCheck) {
-				const int uninitLen = a_newLen - orgLen;
-				if (uninitLen > 0)
-					std::memset(BaseType::get() + orgLen,
-								0xcd,
-								sizeof(CharType) * (uninitLen-1));
-			}
 			BaseType::get()[a_newLen] = '\0';
 
 			assert(GetLength() > 0);
@@ -655,6 +653,79 @@ namespace asd
 					   sizeof(str_false) / sizeof(CharType) - 1);
 			}
 			return *this;
+		}
+
+
+
+		// std style
+		typedef CharType value_type;
+		typedef size_t size_type;
+		
+		inline const value_type* data() const asd_NoThrow
+		{
+			return GetData();
+		}
+
+		inline value_type* data() asd_NoThrow
+		{
+			return GetData();
+		}
+
+		inline const value_type* c_str() const asd_NoThrow
+		{
+			return GetData();
+		}
+
+		inline value_type* c_str() asd_NoThrow
+		{
+			return GetData();
+		}
+
+		inline size_type size() const asd_NoThrow
+		{
+			return GetLength();
+		}
+
+		inline size_type length() const asd_NoThrow
+		{
+			return GetLength();
+		}
+
+		inline void resize(IN size_type a_count) asd_NoThrow
+		{
+			Resize(a_count, true);
+			assert(data()[size()] == '\0');
+			assert(size() == a_count);
+		}
+
+		inline void resize(IN size_type a_count,
+						   IN value_type a_fill) asd_NoThrow
+		{
+			const auto OldLen = size();
+			resize(a_count);
+			if (a_count > OldLen) {
+				const auto NewLen = size();
+				value_type* p = data();
+				for (auto i=OldLen; i<NewLen; ++i)
+					p[i] = a_fill;
+			}
+		}
+
+		inline ThisType& append(IN const CharType* a_str,
+								IN size_type a_len) asd_NoThrow
+		{
+			Append(a_str, a_len);
+			return *this;
+		}
+
+		inline ThisType& append(IN const ThisType& a_str) asd_NoThrow
+		{
+			return append(a_str, a_str.size());
+		}
+
+		inline ThisType& append(IN const CharType* a_str) asd_NoThrow
+		{
+			return append(a_str, asd::strlen(a_str));
 		}
 	};
 

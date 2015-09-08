@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "asd/asdbase.h"
-#include "asd/string.h"
+#include "asd/exception.h"
 #include <ctime>
 #include <sqltypes.h>
 

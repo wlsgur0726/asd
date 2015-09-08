@@ -76,7 +76,7 @@
 #	define asd_Throws(...)
 #
 #else
-#	define asd_NoThrow throw()
+#	define asd_NoThrow noexcept
 #	define asd_Throws(...) throw(__VA_ARGS__)
 #
 #endif

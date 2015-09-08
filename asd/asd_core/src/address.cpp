@@ -345,7 +345,7 @@ namespace asd
 		}
 
 		size_t port = a_addr.GetPort();
-		port << (SizeOfSizeT - 2);
+		port <<= (SizeOfSizeT - 2);
 		ret ^= port;
 
 		return ret;

@@ -81,5 +81,44 @@ namespace asd
 			assert(a_index < GetCount());
 			return *(BaseType::get() + a_index);
 		}
+
+
+
+		// std style
+		typedef ElemType value_type;
+		typedef size_t size_type;
+
+		inline const value_type* data() const
+		{
+			return BaseType::get();
+		}
+
+		inline value_type* data()
+		{
+			return BaseType::get();
+		}
+
+		inline size_type size() const
+		{
+			return GetCount();
+		}
+
+		inline void resize(IN size_type a_count)
+		{
+			Resize(a_count, true);
+		}
+
+		inline void resize(IN size_type a_count,
+						   IN value_type a_fill)
+		{
+			const auto OldLen = size();
+			resize(a_count);
+			if (a_count > OldLen) {
+				const auto NewLen = size();
+				value_type* p = data();
+				for (auto i=OldLen; i<NewLen; ++i)
+					p[i] = a_fill;
+			}
+		}
 	};
 }
