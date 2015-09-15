@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\asd\test.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\asd\socket.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -68,9 +65,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\test.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\socket.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

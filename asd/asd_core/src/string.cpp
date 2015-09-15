@@ -184,29 +184,50 @@ namespace asd
 
 
 #if !defined(asd_Platform_Windows)
+#define asd_vsctprintf_Common_Logic			\
+	va_list args;							\
+	va_copy(args, a_args);					\
+	int r = asd::vsprintf((CharType*)buf,	\
+						  (int)size,		\
+						  a_format,			\
+						  args);			\
+	if (r >= 0)								\
+		return r;							\
+	size *= 2;								\
+
 	template<typename CharType>
 	inline int vsctprintf(IN const CharType* a_format,
 						  IN va_list a_args) asd_NoThrow
 	{
-		const int LimitBytes = 1024 * 1024 * 8;
-		int size = 1024 * 4;
+		const int LimitBytes = 1024 * 1024 * 16;
+		const int StartBytes = 1024 * 512;
+		int size = StartBytes;
+
+#if defined(asd_Compiler_GCC)
 		do {
-			TempBuffer<char> tempbuf(size);
-			va_list args;
-			va_copy(args, a_args);
-			int r = asd::vsprintf((CharType*)((char*)tempbuf),
-								  (int)size,
-								  a_format,
-								  args);
-			if (r >= 0)
-				return r;
-			size *= 2;
+			uint8_t buf[size];
+			asd_vsctprintf_Common_Logic;
 		} while (size <= LimitBytes);
+
+#else 
+		uint8_t* buf;
+		uint8_t stackBuf[StartBytes];
+		std::unique_ptr<uint8_t> heapBuf;
+		buf = stackBuf;
+		do {
+			asd_vsctprintf_Common_Logic;
+			buf = new uint8_t[size];
+			heapBuf.reset(buf, 
+						  std::default_delete<uint8_t[]>());
+		} while (size <= LimitBytes);
+
+#endif // defined(asd_Compiler_GCC)
 
 		// fail
 		return -1;
 	}
-#endif
+
+#endif // !defined(asd_Platform_Windows)
 
 
 

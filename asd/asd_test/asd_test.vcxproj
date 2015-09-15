@@ -167,9 +167,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="test.cpp" />
     <ClCompile Include="test_exception.cpp" />
     <ClCompile Include="test_iconv.cpp" />
     <ClCompile Include="test_objpool.cpp" />
+    <ClCompile Include="test_odbc.cpp" />
     <ClCompile Include="test_semaphore.cpp" />
     <ClCompile Include="test_string.cpp" />
     <ClCompile Include="test_template.cpp" />
@@ -184,6 +186,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="test.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="iconvtest_cp949.txt" />

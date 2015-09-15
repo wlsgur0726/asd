@@ -107,7 +107,7 @@ namespace asd
 
 	// SizeOfChar값 단위로 문자열 길이를 구한다.
 	template<int SizeOfChar>
-	size_t strlen(IN const void* a_str) asd_NoThrow
+	inline size_t strlen(IN const void* a_str) asd_NoThrow
 	{
 		static_assert(SizeOfChar==1 || SizeOfChar==2 || SizeOfChar==4,
 					  "invalid SizeOfChar");
@@ -128,7 +128,7 @@ namespace asd
 
 
 	template<typename CHARTYPE>
-	CHARTYPE toupper(IN CHARTYPE a_char)
+	inline CHARTYPE toupper(IN CHARTYPE a_char)
 	{
 		if (a_char < 'a' || a_char > 'z')
 			return a_char;
@@ -136,7 +136,7 @@ namespace asd
 	}
 
 	template<typename CHARTYPE>
-	CHARTYPE tolower(IN CHARTYPE a_char)
+	inline CHARTYPE tolower(IN CHARTYPE a_char)
 	{
 		if (a_char < 'A' || a_char > 'Z')
 			return a_char;
@@ -216,7 +216,7 @@ namespace asd
 		typedef hash_String<CharType, true>			Hash_CaseSensitive;
 		typedef hash_String<CharType, false>		Hash_IgnoreCase;
 		typedef equal_to_String<CharType, true>		EqualTo_CaseSensitive;
-		typedef equal_to_String<CharType, false>	EqualTo_IgnoreCase;
+		typedef equal_to_String<CharType, false>	EqualTo_CaseInsensitive;
 
 		static const bool CaseSensitive_Default = true;
 
@@ -560,10 +560,10 @@ namespace asd
 
 		// std::string 관련.
 		asd_String_Define_CompareFunction(a_left,
-								   const SupportType_StdString&,
-								   a_right,
-								   a_caseSensitive,
-								   CaseSensitive_Default)
+										  const SupportType_StdString&,
+										  a_right,
+										  a_caseSensitive,
+										  CaseSensitive_Default)
 		{
 			return Compare(a_left,
 						   a_right.data(),

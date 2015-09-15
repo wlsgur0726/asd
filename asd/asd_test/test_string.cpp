@@ -87,7 +87,7 @@ namespace asdtest_string
 			char BufM[BufSize];
 			memset(BufM, 0xff, sizeof(BufM));
 			wchar_t BufW[BufSize];
-			memset(BufW, 0xff, sizeof(BufM));
+			memset(BufW, 0xff, sizeof(BufW));
 
 			asd::sprintf(BufM, BufSize, 
 						 "%s %s %d", "abc", "가나다", 123);
@@ -131,7 +131,6 @@ namespace asdtest_string
 						   int,
 						   asd::hash_String<typename StringType_asd::CharType, CaseSensitive>,
 						   asd::equal_to_String<typename StringType_asd::CharType, CaseSensitive> > map;
-	//	std::unordered_map<StringType_asd, int> map;
 		map.emplace(a_keyString, BufSize);
 
 		// Case1. 삽입 당시의 포인터변수로 검색

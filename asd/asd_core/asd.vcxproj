@@ -192,7 +192,6 @@
     <ClInclude Include="include\asd\socket.h" />
     <ClInclude Include="include\asd\string.h" />
     <ClInclude Include="include\asd\tempbuffer.h" />
-    <ClInclude Include="include\asd\test.h" />
     <ClInclude Include="include\asd\threadpool.h" />
     <ClInclude Include="include\asd\time.h" />
     <ClInclude Include="include\asd\util.h" />
@@ -207,7 +206,6 @@
     <ClCompile Include="src\semaphore.cpp" />
     <ClCompile Include="src\socket.cpp" />
     <ClCompile Include="src\string.cpp" />
-    <ClCompile Include="src\test.cpp" />
     <ClCompile Include="src\threadpool.cpp" />
     <ClCompile Include="src\time.cpp" />
   </ItemGroup>

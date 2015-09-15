@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "asd/time.h"
+#include "asd/tempbuffer.h"
 
 namespace asd
 {
@@ -444,17 +445,24 @@ namespace asd
 					   Millisecond());
 		}
 		else {
+			const size_t Limit = 1024 * 1024;
+			size_t bufsize = 64;
 			tm t;
-			size_t len = std::strftime(nullptr,
-									   std::numeric_limits<size_t>::max(),
-									   a_format,
-									   &To(t));
-			ret.Resize(len);
-			len = std::strftime(ret.GetData(),
-								len + 1,
-								a_format,
-								&t);
-			assert(ret.GetLength() == len);
+			To(t);
+			do {
+				ret.Resize(bufsize);
+				size_t len = std::strftime(ret.GetData(),
+										   bufsize,
+										   a_format,
+										   &t);
+				if (len > 0) {
+					ret.Resize(len, true);
+					assert(ret.GetLength() == len);
+					break;
+				}
+				assert(len == 0);
+				bufsize *= 2;
+			} while (bufsize <= Limit);
 		}
 		return ret;
 	}
@@ -506,7 +514,7 @@ namespace asd
 
 	asd_Define_ConvertFunction_From(IN tm, a_src)
 	{
-		Init(a_src.tm_year,
+		Init(a_src.tm_year + 1900,
 			 a_src.tm_mon + 1,
 			 a_src.tm_mday,
 			 a_src.tm_hour,
@@ -518,7 +526,8 @@ namespace asd
 
 	asd_Define_ConvertFunction_To(OUT tm, a_dst)
 	{
-		a_dst.tm_year = Year();
+		memset(&a_dst, 0, sizeof(a_dst));
+		a_dst.tm_year = Year() - 1900;
 		a_dst.tm_mon = Month() - 1;
 		a_dst.tm_mday = Day();
 		a_dst.tm_hour = Hour();
@@ -546,6 +555,7 @@ namespace asd
 
 	asd_Define_ConvertFunction_To(SQL_TIMESTAMP_STRUCT, a_dst)
 	{
+		memset(&a_dst, 0, sizeof(a_dst));
 		a_dst.year = Year();
 		a_dst.month = Month();
 		a_dst.day = Day();

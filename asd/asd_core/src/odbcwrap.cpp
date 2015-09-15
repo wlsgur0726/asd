@@ -3,7 +3,6 @@
 #include <sql.h>
 #include <sqlext.h>
 #include <unordered_map>
-#include <functional>
 
 namespace asd
 {
@@ -31,11 +30,19 @@ namespace asd
 
 	struct TypeTableInitializer
 	{
-		SQLSMALLINT m_table[SQLType::UNKNOWN_TYPE + 1];
+		SQLSMALLINT m_enumToCode[SQLType::UNKNOWN_TYPE + 1];
+		std::unordered_map<SQLSMALLINT, SQLType> m_codeToEnum;
 
 		TypeTableInitializer()
 		{
-#define asd_InitTypeTable(ENUM) m_table[SQLType::ENUM] = SQL_ ## ENUM
+#define asd_InitTypeTable(ENUM)													\
+			{																	\
+				const SQLSMALLINT TypeCode = SQL_ ## ENUM;						\
+				assert(m_codeToEnum.find(TypeCode) == m_codeToEnum.end());		\
+				m_codeToEnum[TypeCode] = SQLType::ENUM;							\
+				m_enumToCode[SQLType::ENUM] = TypeCode;							\
+			}																	\
+
 			asd_InitTypeTable(CHAR);
 			asd_InitTypeTable(VARCHAR);
 			asd_InitTypeTable(WVARCHAR);
@@ -50,18 +57,27 @@ namespace asd
 			asd_InitTypeTable(TINYINT);
 			asd_InitTypeTable(FLOAT);
 			asd_InitTypeTable(DOUBLE);
-			asd_InitTypeTable(DATETIME);
 			asd_InitTypeTable(DATE);
 			asd_InitTypeTable(TIME);
+			asd_InitTypeTable(TIMESTAMP);
 			asd_InitTypeTable(UNKNOWN_TYPE);
 		}
 
-		inline SQLSMALLINT operator[] (IN SQLType a_index) const
+		inline SQLSMALLINT operator[] (IN SQLType a_enum) const
 		{
-			return m_table[a_index];
+			return m_enumToCode[a_enum];
+		}
+
+		inline SQLType operator[] (IN SQLSMALLINT a_code) const
+		{
+			auto it = m_codeToEnum.find(a_code);
+			if (it == m_codeToEnum.end())
+				asd_RaiseException("SQLTypeCode(%d) is not suported", a_code);
+			return it->second;
 		}
 	};
 	const TypeTableInitializer TypeTable;
+
 
 
 	/***** OdbcHandle **************************************************************************/
@@ -120,7 +136,7 @@ namespace asd
 			SQLRETURN r = SQLAllocHandle(a_handleType,
 										 inputHandle,
 										 &m_handle);
-			CheckError(r, nullptr, 0);
+			CheckError(r);
 
 			// 환경핸들인 경우 환경설정
 			if (a_handleType == SQL_HANDLE_ENV) {
@@ -137,38 +153,32 @@ namespace asd
 		}
 
 
-		void CheckError(IN SQLRETURN a_retval)
-		{
-			CheckError(a_retval, nullptr, 0);
-		}
+		typedef std::function<bool(IN SQLRETURN,
+								   IN const DBDiagInfo&)> ErrProc;
 
+		static bool IgnoreWarning(IN SQLRETURN a_retval,
+								  IN const DBDiagInfo&)
+		{
+			if (a_retval == SQL_SUCCESS_WITH_INFO)
+				return true;
+			return false;
+		};
 
 		void CheckError(IN SQLRETURN a_retval,
-						IN const SQLCHAR a_ignoreStates[][6],
-						IN int a_ignoreCount)
+						IN ErrProc a_errproc = IgnoreWarning)
 		{
 			if (a_retval != SQL_SUCCESS) {
 				SetLastErrorList();
-				if (a_retval != SQL_SUCCESS_WITH_INFO) {
-					if (a_ignoreStates!=nullptr && a_ignoreCount>0) {
-						for (auto it=m_diagInfoList.begin(); it!=m_diagInfoList.end(); ) {
-							int i;
-							for (i=0; i<a_ignoreCount; ++i) {
-								int cmp = strcmp(it->m_state,
-												 (const char*)a_ignoreStates[i],
-												 false);
-								if (cmp == 0)
-									break;
-							}
-							if (i < a_ignoreCount)
-								it = m_diagInfoList.erase(it);
-							else
-								++it;
-						}
+				if (a_errproc != nullptr) {
+					for (auto it=m_diagInfoList.begin(); it!=m_diagInfoList.end(); ) {
+						if (a_errproc(a_retval, *it))
+							it = m_diagInfoList.erase(it);
+						else
+							++it;
 					}
-					if (m_diagInfoList.size() > 0)
-						throw DBException(m_diagInfoList);
 				}
+				if (m_diagInfoList.size() > 0)
+					throw DBException(m_diagInfoList);
 			}
 		}
 
@@ -243,7 +253,7 @@ namespace asd
 	{
 		OdbcHandle m_envHandle;
 		bool m_connected = false;
-
+		bool m_autoCommit = true;
 
 		void Init()
 		{
@@ -270,8 +280,31 @@ namespace asd
 		}
 
 
+		void SetAutoCommit(IN bool a_auto)
+		{
+			SQLRETURN r = SQLSetConnectAttr(m_handle,
+											SQL_ATTR_AUTOCOMMIT,
+											(SQLPOINTER)(a_auto ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF),
+											SQL_IS_INTEGER);
+			CheckError(r);
+			m_autoCommit = a_auto;
+		}
+
+
+		void EndTran(IN bool a_commit)
+		{
+			CheckError(SQLEndTran(m_handleType,
+								  m_handle,
+								  a_commit ? SQL_COMMIT : SQL_ROLLBACK));
+			SetAutoCommit(true);
+		}
+
+
 		void CloseConnectoin()
 		{
+			if (m_autoCommit == false)
+				EndTran(false);
+
 			if (m_connected) {
 				CheckError(SQLDisconnect(m_handle));
 				m_connected = false;
@@ -296,6 +329,24 @@ namespace asd
 	{
 		m_handle = DBConnectionHandle_ptr(new DBConnectionHandle);
 		m_handle->Open(a_constr);
+	}
+
+
+	void DBConnection::BeginTran()
+	{
+		m_handle->SetAutoCommit(false);
+	}
+
+
+	void DBConnection::CommitTran()
+	{
+		m_handle->EndTran(true);
+	}
+
+
+	void DBConnection::RollbackTran()
+	{
+		m_handle->EndTran(false);
 	}
 
 
@@ -347,15 +398,19 @@ namespace asd
 		DBConnectionHandle_ptr m_conHandle;
 		SQLSMALLINT m_colCount = -1; // 컬럼 개수
 
+		// 인덱스:컬럼명 맵
+		std::vector<MString> m_columnNameList;
+
 		// 컬럼명:인덱스 맵
 		std::unordered_map<MString, 
 						   SQLSMALLINT,
 						   MString::Hash_IgnoreCase,
-						   MString::EqualTo_IgnoreCase> m_indexMap;
+						   MString::EqualTo_CaseInsensitive> m_columnIndexMap;
 
 		// Prepare문 또는 Stored Procedure의 Parameter
 		std::unordered_map<SQLUSMALLINT, Parameter_ptr> m_paramMap_byParamNum;
 		std::unordered_map<void*, Parameter_ptr> m_paramMap_byBoundPtr;
+
 
 		void Init(REF DBConnectionHandle_ptr a_conHandle)
 		{
@@ -364,10 +419,6 @@ namespace asd
 			assert(a_conHandle != nullptr);
 			m_conHandle = a_conHandle;
 			OdbcHandle::Init(SQL_HANDLE_STMT, m_conHandle.get());
-			CheckError(SQLSetStmtAttr(m_handle,
-									  SQL_ATTR_CURSOR_SCROLLABLE,
-									  (SQLPOINTER)SQL_TRUE,
-									  SQL_IS_INTEGER));
 		}
 
 
@@ -447,103 +498,136 @@ namespace asd
 		}
 
 
-		SQLLEN Excute()
+		int GetMarkerCount(IN const char* a_query)
 		{
-			BindParameter();
-			CheckError(SQLExecute(m_handle));
-
-			SQLLEN rows;
-			CheckError(SQLRowCount(m_handle, &rows));
-			return rows;
+			int cnt = 0;
+			for (auto p=a_query; *p!='\0'; ++p) {
+				if (*p == '?')
+					++cnt;
+			}
+			return cnt;
 		}
 
 
-		SQLLEN Excute(IN const char* a_query)
+		SQLLEN Execute(IN const char* a_query,
+					   IN DBStatement::FetchCallback a_callback)
 		{
-			BindParameter();
-			CheckError(SQLExecDirect(m_handle,
-									 (SQLCHAR*)a_query,
-									 SQL_NTS));
-
-			SQLLEN rows;
-			CheckError(SQLRowCount(m_handle, &rows));
-			return rows;
-		}
-
-
-		bool m_firstFetch = true;
-		bool Fetch()
-		{
-			assert(m_conHandle != nullptr);
-
-			// 1. Fetch
-			SQLRETURN r = SQLFetch(m_handle);
-			if (r == SQL_NO_DATA_FOUND) {
-				return false;
+			// 1. BindParameter, Execute
+			if (a_query == nullptr) {
+				BindParameter();
+				CheckError(SQLExecute(m_handle));
+			}
+			else {
+				if (m_paramMap_byParamNum.size()>0 && GetMarkerCount(a_query)>0)
+					BindParameter();
+				CheckError(SQLExecDirect(m_handle,
+										 (SQLCHAR*)a_query,
+										 SQL_NTS));
 			}
 
-			CheckError(r);
+			SQLLEN rows;
+			CheckError(SQLRowCount(m_handle, &rows));
 
-			// 2. 최초 Fetch인 경우 컬럼명과 인덱스를 매핑한다.
-			if (m_firstFetch) {
-				m_firstFetch = false;
-				assert(m_indexMap.empty());
+			// 2. Fetch Loop
+			int result = 1;
+			do {
+				// 2-1. 컬럼명과 인덱스를 매핑한다.
+				{
+					// 2-1-1. 컬럼의 개수를 구한다.
+					m_colCount = -1;
+					CheckError(SQLNumResultCols(m_handle, &m_colCount));
+					assert(m_colCount >= 0);
 
-				// 2-1. 컬럼의 개수를 구한다.
-				m_colCount = -1;
-				CheckError(SQLNumResultCols(m_handle, &m_colCount));
-				assert(m_colCount >= 0);
+					// 2-1-2. 컬럼명 목록을 초기화한다.
+					m_columnIndexMap.clear();
+					m_columnNameList.clear();
+					m_columnNameList.resize(m_colCount);
 
-				// 2-2. 컬럼을 순회하면서 컬럼명과 인덱스를 매핑한다.
-				for (SQLUSMALLINT i=1; i<=m_colCount; ++i) {
-					SQLCHAR buf[SQL_MAX_MESSAGE_LENGTH];
-					MString colName;
-
-					// 2-2-1. 컬럼명을 구한다.
-					SQLSMALLINT retlen;
-					CheckError(SQLColAttribute(m_handle,
-											   i,
-											   SQL_DESC_NAME,
-											   (SQLPOINTER)buf,
-											   sizeof(buf),
-											   &retlen,
-											   nullptr));
-					// 2-2-2. 매핑
-					if (buf[0] != '\0') {
-						colName = (const char*)buf;
-						m_indexMap[colName] = i;
+					// 2-1-3. 컬럼을 순회하면서 컬럼명과 인덱스를 매핑한다.
+					for (SQLUSMALLINT i=1; i<=m_colCount; ++i) {
+						MString colName = GetColumnName(i);
+						if (colName.GetLength() > 0)
+							m_columnIndexMap[colName] = i;
 					}
 				}
-			}
-			return true;
+
+				// 2-2. 일괄적으로 Fetch를 수행하면서 FetchCallback을 호출해준다.
+				int record = 1;
+				while (true) {
+					SQLRETURN r = SQLFetch(m_handle);
+					if (r == SQL_NO_DATA_FOUND)
+						break; // 현재 Result에서 모든 Record를 Fetch했음.
+
+					bool invalid = false;
+					CheckError(r, [&](IN SQLRETURN a_ret,
+									  IN const DBDiagInfo& a_err)
+					{
+						if (a_ret == SQL_SUCCESS_WITH_INFO)
+							return true;
+
+						if (0 == asd::strcmp("24000", a_err.m_state, false)) {
+							// 커서가 열리지 않은 경우
+							invalid = true;
+							return true;
+						}
+						return false;
+					});
+					if (invalid)
+						goto ExitFetchLoop;
+
+					if (a_callback != nullptr)
+						a_callback(result, record);
+					++record;
+				}
+				++result;
+			} while (MoreResult());
+
+		ExitFetchLoop:
+			// 3. 바인드했던 출력인자들에 대한 후속처리를 수행.
+			for (auto& param : m_paramMap_byParamNum)
+				param.second->AfterFetch();
+			return rows;
 		}
 
 
 		bool MoreResult()
 		{
 			assert(m_conHandle != nullptr);
-
-			m_firstFetch = true;
-			m_indexMap.clear();
 			SQLRETURN r = SQLMoreResults(m_handle);
-			if (r == SQL_NO_DATA) {
-				// 모든 데이터를 fetch 완료한 후
-				// 바인드했던 출력인자들에 대한 처리를 수행.
-				for (auto& param : m_paramMap_byParamNum)
-					param.second->AfterFetch();
-
+			if (r == SQL_NO_DATA)
 				return false;
-			}
 
 			CheckError(r);
 			return true;
 		}
 
 
+		MString GetColumnName(IN SQLUSMALLINT a_colIndex)
+		{
+			if (a_colIndex > m_columnNameList.size())
+				asd_RaiseException("column[%u] does not exist", a_colIndex);
+
+			auto& ret = m_columnNameList[a_colIndex - 1];
+			if (ret.GetLength() == 0) {
+				SQLCHAR buf[SQL_MAX_MESSAGE_LENGTH];
+				SQLSMALLINT retlen;
+				CheckError(SQLColAttribute(m_handle,
+										   a_colIndex,
+										   SQL_DESC_NAME,
+										   (SQLPOINTER)buf,
+										   sizeof(buf),
+										   &retlen,
+										   nullptr));
+				ret.Append((const char*)buf, retlen);
+			}
+			return ret;
+		}
+
+
 		SQLUSMALLINT GetColumnIndex(IN const char* a_colName) const
 		{
-			const auto it = m_indexMap.find(a_colName);
-			if (it == m_indexMap.end())
+			const auto it = m_columnIndexMap.find(a_colName);
+			if (it == m_columnIndexMap.end())
 				return std::numeric_limits<SQLUSMALLINT>::max();
 			return it->second;
 		}
@@ -565,9 +649,9 @@ namespace asd
 		}
 
 
-		void GetParameter(IN SQLUSMALLINT a_paramNumber,
-						  OUT void*& a_bufPtr,
-						  OUT SQLLEN& a_indicator)
+		void GetParam(IN SQLUSMALLINT a_paramNumber,
+					  OUT void*& a_bufPtr,
+					  OUT SQLLEN& a_indicator)
 		{
 			auto it = m_paramMap_byParamNum.find(a_paramNumber);
 			if (it == m_paramMap_byParamNum.end()) {
@@ -577,9 +661,9 @@ namespace asd
 		}
 
 
-		void GetParameter(IN void* a_key,
-						  OUT void*& a_bufPtr,
-						  OUT SQLLEN& a_indicator)
+		void GetParam(IN void* a_key,
+					  OUT void*& a_bufPtr,
+					  OUT SQLLEN& a_indicator)
 		{
 			auto it = m_paramMap_byBoundPtr.find(a_key);
 			if (it == m_paramMap_byBoundPtr.end()) {
@@ -589,18 +673,33 @@ namespace asd
 		}
 
 
+		void ClearParam()
+		{
+			CheckError(SQLFreeStmt(m_handle, SQL_RESET_PARAMS));
+			m_paramMap_byParamNum.clear();
+			m_paramMap_byBoundPtr.clear();
+		}
+
+
 		void CloseStatement()
 		{
 			if (m_conHandle != nullptr) {
-				const SQLCHAR ignore[] = "24000"; // 커서가 열리지 않았는데 닫으려는 경우
 				CheckError(SQLCloseCursor(m_handle),
-						   &ignore,
-						   1);
+						   [](IN SQLRETURN a_ret,
+							  IN const DBDiagInfo& a_err)
+				{
+					if (a_ret == SQL_SUCCESS_WITH_INFO)
+						return true;
+
+					// 커서가 열리지 않았는데 닫으려는 경우
+					if (asd::strcmp("24000", a_err.m_state, false) == 0)
+						return true;
+					return false;
+				});
+				ClearParam();
 				m_conHandle = DBConnectionHandle_ptr();
 			}
 			Close();
-			m_paramMap_byParamNum.clear();
-			m_paramMap_byBoundPtr.clear();
 		}
 
 
@@ -642,36 +741,44 @@ namespace asd
 	}
 
 
-	int64_t DBStatement::Excute()
+	int64_t DBStatement::Execute(IN FetchCallback a_callback)
 		asd_Throws(DBException)
 	{
 		assert(m_handle != nullptr);
-		return m_handle->Excute();
+		return m_handle->Execute(nullptr, a_callback);
 	}
 
 
-	int64_t DBStatement::Excute(IN const char* a_query)
+	int64_t DBStatement::Execute(IN const char* a_query,
+								 IN FetchCallback a_callback)
 		asd_Throws(DBException)
 	{
 		assert(m_handle != nullptr);
-		return m_handle->Excute(a_query);
+		return m_handle->Execute(a_query, a_callback);
 	}
 
 
-	void DBStatement::FetchLoop(IN FetchCallback a_callback)
+	void DBStatement::ClearParam()
 		asd_Throws(DBException)
 	{
 		assert(m_handle != nullptr);
-		int result = 1;
-		do {
-			int record = 1;
-			while (m_handle->Fetch()) {
-				if (a_callback != nullptr)
-					a_callback(result, record);
-				++record;
-			}
-			++result;
-		} while (m_handle->MoreResult());
+		m_handle->ClearParam();
+	}
+
+
+	MString DBStatement::GetColumnName(IN uint16_t a_columnIndex)
+		asd_Throws(Exception, DBException)
+	{
+		assert(m_handle != nullptr);
+		return m_handle->GetColumnName(a_columnIndex);
+	}
+
+
+	uint16_t DBStatement::GetColumnCount() const asd_NoThrow
+	{
+		assert(m_handle != nullptr);
+		assert(m_handle->m_colCount == m_handle->m_columnNameList.size());
+		return m_handle->m_colCount;
 	}
 
 
@@ -693,7 +800,6 @@ namespace asd
 
 
 
-
 	thread_local DBStatement::Caster* t_lastCaster;
 
 	struct Caster_GetData : public DBStatement::Caster
@@ -707,11 +813,11 @@ namespace asd
 	DBStatement::Caster& DBStatement::GetData(IN uint16_t a_columnIndex)
 		asd_Throws(DBException)
 	{
-		thread_local Caster_GetData caster;
-		caster.m_handle = m_handle.get();
-		caster.m_index = a_columnIndex;
-		t_lastCaster = &caster;
-		return caster;
+		thread_local Caster_GetData t_caster;
+		t_caster.m_handle = m_handle.get();
+		t_caster.m_index = a_columnIndex;
+		t_lastCaster = &t_caster;
+		return t_caster;
 	}
 
 	DBStatement::Caster& DBStatement::GetData(IN const char* a_columnName)
@@ -722,7 +828,7 @@ namespace asd
 
 
 
-	struct Caster_GetParameter : public DBStatement::Caster
+	struct Caster_GetParam : public DBStatement::Caster
 	{
 		DBStatementHandle* m_handle;
 		uint16_t m_index;
@@ -730,60 +836,55 @@ namespace asd
 		asd_DBStatement_Declare_CastOperatorList;
 	};
 
-	DBStatement::Caster& DBStatement::GetParameter(IN uint16_t a_paramNumber)
+	DBStatement::Caster& DBStatement::GetParam(IN uint16_t a_paramNumber)
 		asd_Throws(DBException)
 	{
-		thread_local Caster_GetParameter caster;
-		caster.m_handle = m_handle.get();
-		caster.m_index = a_paramNumber;
-		t_lastCaster = &caster;
-		return caster;
+		thread_local Caster_GetParam t_caster;
+		t_caster.m_handle = m_handle.get();
+		t_caster.m_index = a_paramNumber;
+		t_lastCaster = &t_caster;
+		return t_caster;
 	}
 
 
 
 	/***** Templates **************************************************************************/
 
-	// Convert
+	// Convert Direction
 	const bool Left_To_Right = true;
 	const bool Right_To_Left = false;
-
-	inline constexpr bool Is_Left_To_Right(IN const bool a_direction)
+	inline constexpr bool Is_Left_To_Right(IN bool a_direction)
 	{
 		return a_direction == Left_To_Right;
 	}
-	inline constexpr bool Is_Right_To_Left(IN const bool a_direction)
+	inline constexpr bool Is_Right_To_Left(IN bool a_direction)
 	{
 		return a_direction == Right_To_Left;
 	}
 
 
+	// Type별로 Specialize를 한번만 하기 위해
+	// a_direction를 런타임 인자로 둔다.
 	template <typename Type>
 	inline void ConvertStream(IN bool a_direction,
 							  REF Type& a_data,
 							  REF void*& a_buf,
 							  REF SQLLEN& a_len);
 
-	template <typename Type>
-	inline void Call_ConvertStream(IN bool a_direction,
-								   REF Type& a_data,
-								   REF void*& a_buf,
-								   REF SQLLEN& a_len)
-	{
-		ConvertStream<Type>(a_direction, a_data, a_buf, a_len);
-	}
-
 	template <typename Left, typename Right>
 	inline void ConvertData(IN bool a_direction,
 							REF Left& a_left,
 							REF Right& a_right);
 
-	template <typename Left, typename Right>
-	inline void Call_ConvertData(IN bool a_direction,
-								 REF Left& a_left,
-								 REF Right& a_right)
+
+	// 아래 두가지 용도로 랩핑해준다.
+	// - const body에서 사용
+	// - GCC에서 발생하는 'specialization of ... after instantiation' 에러를 회피
+	template <typename Src, typename Dst>
+	inline void Call_ConvertData(IN const Src& a_src,
+								 OUT Dst& a_dst)
 	{
-		ConvertData<Left, Right>(a_direction, a_left, a_right);
+		ConvertData<Src, Dst>(Left_To_Right, (Src&)a_src, a_dst);
 	}
 
 
@@ -818,11 +919,11 @@ namespace asd
 				addLen = BufSize;
 			else {
 				assert(indicator > 0);
-				addLen = indicator;
-				loop = false;
+				addLen = std::min(indicator, BufSize);
+				loop = indicator > BufSize;
 			}
 			void* p = buf;
-			Call_ConvertStream<ReturnType>(Right_To_Left, a_return, p, addLen);
+			ConvertStream<ReturnType>(Right_To_Left, a_return, p, addLen);
 		}
 		return &a_return;
 	}
@@ -831,7 +932,7 @@ namespace asd
 	DBStatement::Caster::operator PtrClass<Type>()											\
 		asd_Throws(DBException)																\
 	{																						\
-		/* avoid build error */																\
+		/* unused function, avoid build error */											\
 		assert(false);																		\
 		return t_lastCaster->operator PtrClass<Type>();										\
 	}																						\
@@ -850,9 +951,17 @@ namespace asd
 	DBStatement::Caster::operator Type()													\
 		asd_Throws(DBException, NullDataException)											\
 	{																						\
-		/* avoid build error */																\
+		/* unused function, avoid build error */											\
 		assert(false);																		\
 		return t_lastCaster->operator Type();												\
+	}																						\
+																							\
+	DBStatement::Caster::operator Type*()													\
+		asd_Throws(DBException)																\
+	{																						\
+		/* unused function, avoid build error */											\
+		assert(false);																		\
+		return t_lastCaster->operator Type*();												\
 	}																						\
 																							\
 	Caster_GetData::operator Type()															\
@@ -862,6 +971,14 @@ namespace asd
 		if (GetData_Internal<Type>(m_handle, m_index, ret) == nullptr)						\
 			throw NullDataException("is null data.");										\
 		return ret;																			\
+	}																						\
+																							\
+	Caster_GetData::operator Type*()														\
+		asd_Throws(DBException)																\
+	{																						\
+		thread_local Type t_temp;															\
+		t_temp = Type();																	\
+		return GetData_Internal<Type>(m_handle, m_index, t_temp);							\
 	}																						\
 																							\
 	asd_Define_Caster_GetData_Ptr(Type, std::shared_ptr);									\
@@ -883,12 +1000,12 @@ namespace asd
 																							\
 																							\
 	template <>																				\
-	ReturnType* DBStatement::GetData<ReturnType>(IN uint16_t a_index,						\
+	ReturnType* DBStatement::GetData<ReturnType>(IN uint16_t a_enum,						\
 												 OUT ReturnType& a_return)					\
 		asd_Throws(DBException)																\
 	{																						\
 		return GetData_Internal<ReturnType>(m_handle.get(),									\
-											a_index,										\
+											a_enum,											\
 											a_return);										\
 	}																						\
 
@@ -903,15 +1020,15 @@ namespace asd
 
 
 
-	// GetParameter() template
+	// GetParam() template
 	template <typename ReturnType>
-	inline ReturnType* GetParameter_Internal(IN DBStatementHandle* a_handle,
-											 IN SQLUSMALLINT a_paramNumber,
-											 REF ReturnType& a_return)
+	inline ReturnType* GetParam_Internal(IN DBStatementHandle* a_handle,
+										 IN SQLUSMALLINT a_paramNumber,
+										 REF ReturnType& a_return)
 	{
 		void* buf;
 		SQLLEN ind;
-		a_handle->GetParameter(a_paramNumber, buf, ind);
+		a_handle->GetParam(a_paramNumber, buf, ind);
 		if (ind == SQL_NULL_DATA)
 			return nullptr;
 
@@ -919,47 +1036,64 @@ namespace asd
 		return &a_return;
 	}
 
-#define asd_Define_Caster_GetParameter_Ptr(Type, PtrClass)									\
-	Caster_GetParameter::operator PtrClass<Type>()											\
+#define asd_Define_Caster_GetParam_Ptr(Type, PtrClass)										\
+	Caster_GetParam::operator PtrClass<Type>()												\
 		asd_Throws(DBException)																\
 	{																						\
 		PtrClass<Type> ret;																	\
 		Type temp;																			\
-		if (GetParameter_Internal<Type>(m_handle, m_index, temp) != nullptr)				\
+		if (GetParam_Internal<Type>(m_handle, m_index, temp) != nullptr)					\
 			ret = PtrClass<Type>(new Type(std::move(temp)));								\
 		return ret;																			\
 	}																						\
 
-#define asd_Define_GetParameter(Type)														\
-	Caster_GetParameter::operator Type()													\
+#define asd_Define_GetParam(Type)															\
+	Caster_GetParam::operator Type()														\
 		asd_Throws(DBException, NullDataException)											\
 	{																						\
 		Type ret;																			\
-		if (GetParameter_Internal<Type>(m_handle, m_index, ret) == nullptr)					\
+		if (GetParam_Internal<Type>(m_handle, m_index, ret) == nullptr)						\
 			throw NullDataException("is null data.");										\
 		return ret;																			\
 	}																						\
 																							\
-	asd_Define_Caster_GetParameter_Ptr(Type, std::shared_ptr);								\
-	asd_Define_Caster_GetParameter_Ptr(Type, std::unique_ptr);								\
-																							\
-	template<>																				\
-	Type* DBStatement::GetParameter<Type>(IN uint16_t a_paramNumber,						\
-										  OUT Type& a_return)								\
+	Caster_GetParam::operator Type*()														\
 		asd_Throws(DBException)																\
 	{																						\
-		return GetParameter_Internal<Type>(m_handle.get(),									\
-										   a_paramNumber,									\
-										   a_return);										\
+		thread_local Type t_temp;															\
+		return GetParam_Internal<Type>(m_handle, m_index, t_temp);							\
+	}																						\
+																							\
+	asd_Define_Caster_GetParam_Ptr(Type, std::shared_ptr);									\
+	asd_Define_Caster_GetParam_Ptr(Type, std::unique_ptr);									\
+																							\
+	template<>																				\
+	Type* DBStatement::GetParam<Type>(IN uint16_t a_paramNumber,							\
+									  OUT Type& a_return)									\
+		asd_Throws(DBException)																\
+	{																						\
+		return GetParam_Internal<Type>(m_handle.get(), a_paramNumber, a_return);			\
 	}																						\
 																							\
 	template <>																				\
-	bool DBStatement::IsNull<Type>(IN Type* a_boundPtr)										\
+	bool DBStatement::IsNullParam<Type>(IN uint16_t a_columnIndex)							\
 		asd_Throws(Exception)																\
 	{																						\
 		void* buf;																			\
 		SQLLEN ind;																			\
-		m_handle->GetParameter(a_boundPtr, buf, ind);										\
+		m_handle->GetParam(a_columnIndex, buf, ind);										\
+		if (ind == SQL_NULL_DATA)															\
+			return true;																	\
+		return false;																		\
+	}																						\
+																							\
+	template <>																				\
+	bool DBStatement::IsNullParam<Type>(IN Type* a_boundPtr)								\
+		asd_Throws(Exception)																\
+	{																						\
+		void* buf;																			\
+		SQLLEN ind;																			\
+		m_handle->GetParam(a_boundPtr, buf, ind);											\
 		if (ind == SQL_NULL_DATA)															\
 			return true;																	\
 		return false;																		\
@@ -970,14 +1104,13 @@ namespace asd
 	// Specialization Getter, Define Convert
 #define asd_Define_ConvertStream(Type, SQL_C_Type, DirParamName, DataParamName, BufParamName, LenParamName)		\
 	asd_Define_GetData_SetTypecode(Type, SQL_C_Type);															\
-	asd_Define_GetParameter(Type);																				\
+	asd_Define_GetParam(Type);																					\
 																												\
 	template <>																									\
 	inline void ConvertStream<Type>(IN bool DirParamName,														\
 									REF Type& DataParamName,													\
 									REF void*& BufParamName,													\
 									REF SQLLEN& LenParamName)													\
-
 
 #define asd_Define_ConvertStream_TypicalCase(Type, SQL_C_Type)													\
 	asd_Define_ConvertStream(Type, SQL_C_Type, a_direction, a_data, a_bufPtr, a_dataLen)						\
@@ -991,7 +1124,6 @@ namespace asd
 			a_data = *((Type*)a_bufPtr);																		\
 		}																										\
 	}																											\
-
 
 #define asd_Define_ConvertStream_BinaryCase(Type, SQL_C_Type, IsString)											\
 	asd_Define_ConvertStream(Type, SQL_C_Type, a_direction, a_data, a_bufPtr, a_dataLen)						\
@@ -1021,36 +1153,46 @@ namespace asd
 		}																										\
 	}																											\
 
-
-#define asd_Define_ConvertData_ProxyCase(ReturnType, ReturnParamName, ProxyType, ProxyParamName, DirParamName)	\
+#define asd_Define_ConvertData_ProxyCase(SrcType, SrcParamName, ProxyType, ProxyParamName, DirParamName)		\
+	inline void ConvertData_Internal(IN bool DirParamName,														\
+									 REF SrcType& SrcParamName,													\
+									 REF ProxyType& ProxyParamName);											\
+																												\
 	template <>																									\
-	inline ReturnType* GetData_Internal<ReturnType>(IN DBStatementHandle* a_handle,								\
-													IN SQLUSMALLINT a_index,									\
-													REF ReturnType& a_return)									\
+	inline SrcType* GetData_Internal<SrcType>(IN DBStatementHandle* a_handle,									\
+											  IN SQLUSMALLINT a_enum,											\
+											  REF SrcType& a_return)											\
 	{																											\
 		ProxyType t;																							\
-		if (GetData_Internal<ProxyType>(a_handle, a_index, t) == nullptr)										\
+		if (GetData_Internal<ProxyType>(a_handle, a_enum, t) == nullptr)										\
 			return nullptr;																						\
-		Call_ConvertData<ProxyType, ReturnType>(Left_To_Right, t, a_return);									\
+		Call_ConvertData<ProxyType, SrcType>(t, a_return);														\
 		return &a_return;																						\
 	}																											\
 																												\
-	asd_Define_GetData(ReturnType);																				\
+	asd_Define_GetData(SrcType);																				\
 																												\
-	asd_Define_GetParameter(ReturnType);																		\
+	asd_Define_GetParam(SrcType);																				\
 																												\
 	template<>																									\
-	inline void ConvertData<ProxyType, ReturnType>(IN bool a_direction,											\
-												   REF ProxyType& a_proxy,										\
-												   REF ReturnType& a_result)									\
+	inline void ConvertData<ProxyType, SrcType>(IN bool a_direction,											\
+												REF ProxyType& a_proxy,											\
+												REF SrcType& a_result)											\
 	{																											\
-		Call_ConvertData<ReturnType, ProxyType>(!a_direction, a_result, a_proxy);								\
+		ConvertData_Internal(!a_direction, a_result, a_proxy);													\
 	}																											\
 																												\
 	template<>																									\
-	inline void ConvertData<ReturnType, ProxyType>(IN bool DirParamName,										\
-												   REF ReturnType& ReturnParamName,								\
-												   REF ProxyType& ProxyParamName)								\
+	inline void ConvertData<SrcType, ProxyType>(IN bool DirParamName,											\
+												REF SrcType& a_result,											\
+												REF ProxyType& a_proxy)											\
+	{																											\
+		ConvertData_Internal(a_direction, a_result, a_proxy);													\
+	}																											\
+																												\
+	inline void ConvertData_Internal(IN bool DirParamName,														\
+									 REF SrcType& SrcParamName,													\
+									 REF ProxyType& ProxyParamName)												\
 
 
 
@@ -1070,8 +1212,8 @@ namespace asd
 	//  |        |  !null : use temp buffer,             |  !null : reference to bound variable    |
 	//  |        |          copy value to temp buffer    |                                         |
 	//  +--------+---------------------------------------+-----------------------------------------+
-	//  | Out    |  null only,                           |   null : ignore output result           |
-	//  |        |  use temp buffer                      |  !null : output to bound variable       |
+	//  | Out    |   null : ignore output result         |   null : ignore output result           |
+	//  |        |  !null : use temp buffer              |  !null : output to bound variable       |
 	//  |        |                                       |                                         |
 	//  +--------+---------------------------------------+-----------------------------------------+
 	//  | InOut  |  use temp buffer                      |  not null only,                         |
@@ -1092,84 +1234,71 @@ namespace asd
 					  Param_Direction == SQL_PARAM_INPUT_OUTPUT,
 					  "invalid template parameter : Param_Direction");
 
+		static const SQLLEN NotInitIndicaotr = SQL_NULL_DATA - 123;
+		static_assert(NotInitIndicaotr < 0 && SQL_NULL_DATA < 0,
+					  "SQL_NULL_DATA값 확인 요망");
+
 		SQLSMALLINT m_dbType = TypeTable[SQLType::UNKNOWN_TYPE];
 		SQLULEN m_bufferSize = 0;
 		SQLSMALLINT m_columnScale = 0;
 		Type* m_bindingTarget = nullptr;
 		SQLLEN m_indicator = SQL_NULL_DATA;
-		Type* m_temp = nullptr;
+		Type m_temp;
 
-		virtual void Init(REF Type* a_bindingTarget,
-						  IN bool a_nullInput,
-						  IN SQLSMALLINT a_dbType,
-						  IN SQLULEN a_bufferSize,
-						  IN SQLSMALLINT a_columnScale)
+
+		Parameter_Template(REF Type* a_bindingTarget,
+						   IN bool a_nullInput,
+						   IN SQLSMALLINT a_dbType,
+						   IN SQLULEN a_bufferSize,
+						   IN SQLSMALLINT a_columnScale)
 		{
 			m_dbType = a_dbType;
 			m_bufferSize = a_bufferSize;
 			m_columnScale = a_columnScale;
-			m_bindingTarget = a_bindingTarget;
-			m_indicator = a_nullInput ? SQL_NULL_DATA : ~SQL_NULL_DATA;
-			if (Bind == false) {
-				if (Param_Direction!=SQL_PARAM_INPUT || a_bindingTarget!=nullptr) {
-					if (a_bindingTarget == nullptr) {
-						assert(Param_Direction != SQL_PARAM_INPUT);
-						m_temp = new Type;
-					}
-					else {
-						m_temp = new Type(*a_bindingTarget);
-						m_bindingTarget = nullptr;
-					}
-				}
-			}
 
-			// 설계상의 Validation Check
-			{
-				switch (Param_Direction) {
-					case SQL_PARAM_INPUT: {
-						if (Bind) {
-							assert(m_temp == nullptr);
-						}
-						else {
-							assert((a_bindingTarget == nullptr) == (m_temp == nullptr));
-							assert((a_bindingTarget == nullptr) == a_nullInput);
-						}
-						break;
+			// Null 여부
+			m_indicator = a_nullInput ? SQL_NULL_DATA : NotInitIndicaotr;
+
+			// 입력값 초기화, 바인딩 목표 설정
+			m_bindingTarget = a_bindingTarget;
+			const bool SetNotNull = (Bind==false && a_nullInput==false);
+			switch (Param_Direction) {
+				case SQL_PARAM_INPUT: {
+					assert((a_bindingTarget == nullptr) == a_nullInput);
+					if (SetNotNull) {
+						assert(a_bindingTarget != nullptr);
+						m_temp = *a_bindingTarget;
+						m_bindingTarget = &m_temp;
 					}
-					case SQL_PARAM_OUTPUT: {
-						if (Bind) {
-							assert(m_temp == nullptr);
-							assert((a_bindingTarget == nullptr) == a_nullInput);
-						}
-						else {
-							assert(m_temp != nullptr);
-							assert(m_bindingTarget == nullptr);
-							assert(a_nullInput == false);
-						}
-						break;
-					}
-					case SQL_PARAM_INPUT_OUTPUT: {
-						if (Bind) {
-							assert(m_temp == nullptr);
-							assert(m_bindingTarget != nullptr);
-						}
-						else {
-							assert(m_temp != nullptr);
-							assert(m_bindingTarget == nullptr);
-							assert((a_bindingTarget == nullptr) == a_nullInput);
-						}
-						break;
-					}
-					default:
-						assert(false);
-						break;
+					break;
 				}
+				case SQL_PARAM_OUTPUT: {
+					if (Bind)
+						assert((a_bindingTarget == nullptr) == a_nullInput);
+					if (SetNotNull)
+						m_bindingTarget = &m_temp;
+					break;
+				}
+				case SQL_PARAM_INPUT_OUTPUT: {
+					if (Bind == false) {
+						m_bindingTarget = &m_temp;
+						if (a_nullInput == false) {
+							assert(a_bindingTarget != nullptr);
+							m_temp = *a_bindingTarget;
+						}
+					}
+					assert(m_bindingTarget != nullptr);
+					break;
+				}
+				default:
+					assert(false);
+					break;
 			}
 		}
 
 
-		virtual void RequestParamInfo(IN DBStatementHandle& a_stmtHandle,
-									  IN SQLUSMALLINT a_paramNumber)
+		void RequestParamInfo(IN DBStatementHandle& a_stmtHandle,
+							  IN SQLUSMALLINT a_paramNumber)
 		{
 			const auto& MaramMap = a_stmtHandle.m_paramMap_byParamNum;
 			assert(MaramMap.find(a_paramNumber) != MaramMap.end());
@@ -1204,64 +1333,44 @@ namespace asd
 
 			switch (Param_Direction) {
 				case SQL_PARAM_INPUT: {
-					if (Bind) {
-						if (m_bindingTarget == nullptr) {
-							assert(m_indicator == SQL_NULL_DATA);
-							a_buffer = nullptr;
-							a_bufferSize = 0;
-						}
-						else {
-							assert(m_indicator != SQL_NULL_DATA);
-							ConvertStream<Type>(Left_To_Right, *m_bindingTarget, a_buffer, m_indicator);
-							a_bufferSize = m_indicator;
-						}
+					if (m_indicator == SQL_NULL_DATA) {
+						a_buffer = nullptr;
+						a_bufferSize = 0;
 					}
 					else {
-						if (m_temp == nullptr) {
-							assert(m_indicator == SQL_NULL_DATA);
-							a_buffer = nullptr;
-							a_bufferSize = 0;
-						}
-						else {
-							assert(m_indicator != SQL_NULL_DATA);
-							ConvertStream<Type>(Left_To_Right, *m_temp, a_buffer, m_indicator);
-							a_bufferSize = m_indicator;
-						}
+						assert(m_bindingTarget != nullptr);
+						ConvertStream<Type>(Left_To_Right, *m_bindingTarget, a_buffer, m_indicator);
+						a_bufferSize = m_indicator;
+						assert(m_indicator >= 0);
 					}
 					break;
 				}
 				case SQL_PARAM_OUTPUT: {
-					if (Bind) {
-						if (m_bindingTarget == nullptr) {
-							assert(m_indicator == SQL_NULL_DATA);
-							a_buffer = nullptr;
-							a_bufferSize = 0;
-						}
-						else {
-							assert(m_indicator != SQL_NULL_DATA);
-							ConvertStream<Type>(Left_To_Right, *m_bindingTarget, a_buffer, m_indicator);
-							assert(m_bufferSize >= (SQLULEN)m_indicator && m_indicator >= 0);
-							a_bufferSize = m_bufferSize;
-						}
+					if (m_indicator == SQL_NULL_DATA) {
+						a_buffer = nullptr;
+						a_bufferSize = 0;
 					}
 					else {
-						assert(m_temp != nullptr);
-						assert(m_indicator != SQL_NULL_DATA);
-						ConvertStream<Type>(Left_To_Right, *m_temp, a_buffer, m_indicator);
-						assert(m_bufferSize >= (SQLULEN)m_indicator && m_indicator >= 0);
+						assert(m_bindingTarget != nullptr);
+						ConvertStream<Type>(Left_To_Right, *m_bindingTarget, a_buffer, m_indicator);
+						assert(m_indicator >= 0);
+						if (m_bufferSize < (SQLULEN)m_indicator)
+							m_bufferSize = (SQLULEN)m_indicator;
+						assert(m_bufferSize >= (SQLULEN)m_indicator);
 						a_bufferSize = m_bufferSize;
 					}
 					break;
 				}
 				case SQL_PARAM_INPUT_OUTPUT: {
-					Type* p = Bind ? m_bindingTarget : m_temp;
-					assert(p != nullptr);
-
+					assert(m_bindingTarget != nullptr);
 					SQLLEN inputLen;
-					ConvertStream<Type>(Left_To_Right, *p, a_buffer, inputLen);
-					if (m_indicator != SQL_NULL_DATA)
+					ConvertStream<Type>(Left_To_Right, *m_bindingTarget, a_buffer, inputLen);
+					if (m_indicator != SQL_NULL_DATA) {
 						m_indicator = inputLen;
-					assert(m_bufferSize >= (SQLULEN)m_indicator && m_indicator >= 0);
+						assert(m_indicator >= 0);
+						if (m_bufferSize < (SQLULEN)m_indicator)
+							m_bufferSize = (SQLULEN)m_indicator;
+					}
 					a_bufferSize = m_bufferSize;
 					break;
 				}
@@ -1275,32 +1384,8 @@ namespace asd
 		virtual void GetBoundObj(OUT void*& a_objPtr,
 								 OUT SQLLEN& a_indicator) const override
 		{
+			a_objPtr = m_bindingTarget;
 			a_indicator = m_indicator;
-			if (m_bindingTarget != nullptr) {
-				assert(m_temp == nullptr);
-				a_objPtr = m_bindingTarget;
-			}
-			else if (m_temp != nullptr) {
-				assert(m_bindingTarget == nullptr);
-				a_objPtr = m_temp;
-			}
-			else {
-				assert(Param_Direction == SQL_PARAM_INPUT);
-				a_objPtr = nullptr;
-			}
-		}
-
-
-		virtual void Fin()
-		{
-			if (m_temp != nullptr)
-				delete m_temp;
-		}
-
-
-		virtual ~Parameter_Template()
-		{
-			Fin();
 		}
 	};
 
@@ -1330,24 +1415,16 @@ namespace asd
 			typename BaseType::Type
 			Type;
 
+		using BaseType::BaseType;
 		using BaseType::m_bufferSize;
 		using BaseType::m_indicator;
 		using BaseType::m_bindingTarget;
-		using BaseType::m_temp;
-
-		inline static size_t ToBytes(IN const size_t a_charCount)
-		{
-			if (IsStringType)
-				return sizeof(ValType) * (a_charCount + 1);
-			else
-				return a_charCount;
-		}
 
 		inline static size_t ToCharCount(IN const size_t a_byte)
 		{
 			assert(a_byte % sizeof(ValType) == 0);
 			if (IsStringType)
-				return (a_byte / sizeof(ValType)) - 1;
+				return a_byte / sizeof(ValType);
 			else
 				return a_byte;
 		}
@@ -1364,23 +1441,26 @@ namespace asd
 								 OUT SQLLEN*& a_indicator) override
 		{
 			// Output이 유효한 경우 버퍼를 충분히 준비한다.
-			Binary* p = Bind ? m_bindingTarget : m_temp;
 			SQLLEN inputSize = SQL_NULL_DATA;
 			if (Param_Direction != SQL_PARAM_INPUT) {
-				RequestParamInfo(a_requester, a_paramNumber);
+				BaseType::RequestParamInfo(a_requester, a_paramNumber);
 				assert(m_bufferSize > 0);
-				if (p == nullptr)
-					assert(Bind && Param_Direction == SQL_PARAM_OUTPUT);
+				if (m_indicator == SQL_NULL_DATA)
+					assert(Param_Direction == SQL_PARAM_OUTPUT);
 				else {
-					inputSize = ToBytes(p->size());
+					assert(m_bindingTarget != nullptr);
+					inputSize = m_bindingTarget->size();
 					assert(inputSize >= 0);
 					if (m_bufferSize > (SQLULEN)inputSize) {
-						p->resize(ToCharCount(m_bufferSize), '\0');
+						const size_t NullChar = IsStringType ? 1 : 0;
+						m_bindingTarget->resize(ToCharCount(m_bufferSize) - NullChar);
+						if (IsStringType)
+							((ValType*)m_bindingTarget->data())[inputSize] = '\0';
 					}
 					else if (IsSharedPtr) {
 						// 공유버퍼인 경우 다른 공유자에게 영향을 주면 안되므로
-						// 새로 버퍼를 할당한다.
-						p->resize(p->size());
+						// 버퍼를 새로 할당한다.
+						m_bindingTarget->resize(m_bindingTarget->size());
 					}
 				}
 			}
@@ -1395,7 +1475,8 @@ namespace asd
 								  a_buffer,
 								  a_indicator);
 
-			// Output 버퍼를 준비 할 때 호출한 resize로 인하여
+			// 위의 BaseType::GetBindInfo가 리턴된 후
+			// Output 버퍼를 준비 할 때 호출했던 resize()로 인하여
 			// m_indicator에 실제 입력값보다 큰 값이 들어갈 수 있으므로 
 			// 이를 보정해준다.
 			if (Param_Direction != SQL_PARAM_INPUT) {
@@ -1403,8 +1484,8 @@ namespace asd
 					m_indicator = inputSize;
 					assert(m_indicator != SQL_NULL_DATA);
 					assert(m_indicator >= 0);
-					assert(p != nullptr);
-					assert(p->size() >= (size_t)m_indicator);
+					assert(m_bindingTarget != nullptr);
+					assert(m_bindingTarget->size() >= (size_t)m_indicator);
 				}
 			}
 		}
@@ -1418,16 +1499,14 @@ namespace asd
 			if (m_indicator == SQL_NULL_DATA)
 				return;
 
-			Binary* p = Bind ? m_bindingTarget : m_temp;
-			if (p == nullptr) {
-				assert(Bind && Param_Direction == SQL_PARAM_OUTPUT);
+			if (m_bindingTarget == nullptr) {
+				assert(Param_Direction == SQL_PARAM_OUTPUT);
 				return;
 			}
 			
 			assert(m_indicator >= 0);
-			assert((size_t)m_indicator <= p->size());
-			const size_t NullChar = IsStringType ? 1 : 0;
-			p->resize(ToCharCount(m_indicator) + NullChar);
+			assert((size_t)m_indicator <= m_bindingTarget->size());
+			m_bindingTarget->resize(ToCharCount(m_indicator));
 		}
 	};
 
@@ -1441,27 +1520,32 @@ namespace asd
 	struct Parameter_Proxy : public DBStatementHandle::Parameter
 	{
 		T* m_bindingTarget = nullptr;
+		bool m_nullInput = true;
 		ProxyType m_proxyObj;
 		DBStatementHandle::Parameter_ptr m_proxyParam;
 
-		void Init(REF T* a_bindingTarget,
-				  IN bool a_nullInput,
-				  IN SQLSMALLINT a_dbType,
-				  IN SQLULEN a_bufferSize,
-				  IN SQLSMALLINT a_columnScale)
+
+		Parameter_Proxy(REF T* a_bindingTarget,
+						IN bool a_nullInput,
+						IN SQLSMALLINT a_dbType,
+						IN SQLULEN a_bufferSize,
+						IN SQLSMALLINT a_columnScale)
 		{
-			ProxyType* p;
-			m_bindingTarget = a_bindingTarget;
-			if (m_bindingTarget == nullptr) {
-				if (Bind && Param_Direction==SQL_PARAM_OUTPUT)
-					p = nullptr;
-				else
-					p = &m_proxyObj;
+			m_nullInput = a_nullInput;
+			if (Bind)
+				m_bindingTarget = a_bindingTarget;
+
+			ProxyType* p = nullptr;
+			if (a_bindingTarget != nullptr) {
+				p = &m_proxyObj;
+				if (Bind==false && Param_Direction!=SQL_PARAM_OUTPUT && a_nullInput==false) {
+					// 셋팅 시점 복사
+					Call_ConvertData<T, ProxyType>(*a_bindingTarget, m_proxyObj);
+				}
 			}
 			else {
-				p = &m_proxyObj;
-				if (Bind == false)
-					Call_ConvertData<T, ProxyType>(Left_To_Right, *m_bindingTarget, m_proxyObj);
+				if (Bind==false && Param_Direction!=SQL_PARAM_INPUT)
+					p = &m_proxyObj;
 			}
 			m_proxyParam = CreateParameter<ProxyType, Param_Direction, true>(p,
 																			 a_nullInput,
@@ -1469,6 +1553,7 @@ namespace asd
 																			 a_bufferSize,
 																			 a_columnScale);
 		}
+
 
 		virtual void GetBindInfo(IN DBStatementHandle& a_requester,
 								 IN SQLUSMALLINT a_paramNumber,
@@ -1482,8 +1567,16 @@ namespace asd
 		{
 			assert(m_proxyParam != nullptr);
 			
-			if (Bind && m_bindingTarget!=nullptr)
-				Call_ConvertData<T, ProxyType>(Left_To_Right, *m_bindingTarget, m_proxyObj);
+			const bool NeedCopy 
+				=  Bind 
+				&& Param_Direction != SQL_PARAM_OUTPUT
+				&& m_nullInput == false
+				&& m_bindingTarget != nullptr;
+
+			if (NeedCopy) {
+				// Execute 시점 복사
+				Call_ConvertData<T, ProxyType>(*m_bindingTarget, m_proxyObj);
+			}
 
 			m_proxyParam->GetBindInfo(a_requester,
 									  a_paramNumber,
@@ -1496,28 +1589,32 @@ namespace asd
 									  a_indicator);
 		}
 
+
 		virtual void AfterFetch() override
 		{
 			assert(m_proxyParam != nullptr);
 			m_proxyParam->AfterFetch();
 
-			if (Bind) {
+			if (Bind && Param_Direction!=SQL_PARAM_INPUT) {
 				void* p;
 				SQLLEN ind;
 				m_proxyParam->GetBoundObj(p, ind);
 
-				if (p!=nullptr && m_bindingTarget!=nullptr && ind!=SQL_NULL_DATA)
-					Call_ConvertData<T, ProxyType>(Right_To_Left, *m_bindingTarget, *(ProxyType*)p);
+				if (p!=nullptr && m_bindingTarget!=nullptr && ind!=SQL_NULL_DATA) {
+					assert(p == &m_proxyObj);
+					Call_ConvertData<ProxyType, T>(m_proxyObj, *m_bindingTarget);
+				}
 			}
 		}
+
 
 		virtual void GetBoundObj(OUT void*& a_objPtr,
 								 OUT SQLLEN& a_indicator) const override
 		{
 			assert(m_proxyParam != nullptr);
+
 			void* p;
-			SQLLEN ind;
-			m_proxyParam->GetBoundObj(p, ind);
+			m_proxyParam->GetBoundObj(p, a_indicator);
 
 			if (Bind) {
 				a_objPtr = m_bindingTarget;
@@ -1526,12 +1623,12 @@ namespace asd
 				if (p == nullptr)
 					a_objPtr = nullptr;
 				else {
-					thread_local T tempObj;
-					Call_ConvertData<T, ProxyType>(Right_To_Left, tempObj, *(ProxyType*)p);
-					a_objPtr = &tempObj;
+					thread_local T t_tempObj;
+					assert(p == &m_proxyObj);
+					Call_ConvertData<ProxyType, T>(m_proxyObj, t_tempObj);
+					a_objPtr = &t_tempObj;
 				}
 			}
-			a_indicator = ind;
 		}
 	};
 
@@ -1549,35 +1646,49 @@ namespace asd
 		typedef																					\
 			ParamClass<Type, GetTypecode<Type>(), Param_Direction, Bind, __VA_ARGS__>			\
 			PT;																					\
-		auto p = new PT;																		\
-		p->Init(a_bindingTarget, a_nullInput, a_dbType, a_bufferSize, a_columnScale);			\
+		auto p = new PT(a_bindingTarget, a_nullInput, a_dbType, a_bufferSize, a_columnScale);	\
 		return DBStatementHandle::Parameter_ptr(p);												\
 	}																							\
 
 
-	// SetInParam
-#define asd_Define_SetInParam(Type, ParamClass, ...)													\
+#define asd_Define_BindParam(Type, ParamClass, ...)														\
+																										\
+	/* SetInParam */																					\
 	asd_Specialize_CreateParameter(Type, ParamClass, SQL_PARAM_INPUT, false, __VA_ARGS__);				\
 																										\
 	template <>																							\
 	void DBStatement::SetInParam<Type>(IN uint16_t a_paramNumber,										\
-									   IN Type* a_value,												\
+									   IN const Type& a_value,											\
 									   IN SQLType a_columnType,											\
 									   IN uint32_t a_columnSize,										\
 									   IN uint16_t a_columnScale)										\
 		asd_Throws(DBException)																			\
 	{																									\
-		auto p = CreateParameter<Type, SQL_PARAM_INPUT, false>(a_value,									\
-															   a_value == nullptr,						\
+		auto p = CreateParameter<Type, SQL_PARAM_INPUT, false>((Type*)&a_value,							\
+															   false,									\
 															   TypeTable[a_columnType],					\
 															   a_columnSize,							\
 															   a_columnScale);							\
 		m_handle->PrepareParameter(a_paramNumber, nullptr, p);											\
 	}																									\
-
-
-	// BindInParam
-#define asd_Define_BindInParam(Type, ParamClass, ...)													\
+																										\
+	template <>																							\
+	void DBStatement::SetInParam_NullInput<Type>(IN uint16_t a_paramNumber,								\
+												 IN SQLType a_columnType,								\
+												 IN uint32_t a_columnSize,								\
+												 IN uint16_t a_columnScale)								\
+		asd_Throws(DBException)																			\
+	{																									\
+		auto p = CreateParameter<Type, SQL_PARAM_INPUT, false>(nullptr,									\
+															   true,									\
+															   TypeTable[a_columnType],					\
+															   a_columnSize,							\
+															   a_columnScale);							\
+		m_handle->PrepareParameter(a_paramNumber, nullptr, p);											\
+	}																									\
+																										\
+																										\
+	/* BindInParam */																					\
 	asd_Specialize_CreateParameter(Type, ParamClass, SQL_PARAM_INPUT, true, __VA_ARGS__);				\
 																										\
 	template <>																							\
@@ -1595,10 +1706,10 @@ namespace asd
 															  a_columnScale);							\
 		m_handle->PrepareParameter(a_paramNumber, a_value, p);											\
 	}																									\
-
-
-	// SetOutParam
-#define asd_Define_SetOutParam(Type, ParamClass, ...)													\
+																										\
+																										\
+																										\
+	/* SetOutParam */																					\
 	asd_Specialize_CreateParameter(Type, ParamClass, SQL_PARAM_OUTPUT, false, __VA_ARGS__);				\
 																										\
 	template <>																							\
@@ -1615,10 +1726,24 @@ namespace asd
 																a_columnScale);							\
 		m_handle->PrepareParameter(a_paramNumber, nullptr, p);											\
 	}																									\
-
-
-	// BindOutParam
-#define asd_Define_BindOutParam(Type, ParamClass, ...)													\
+																										\
+	template <>																							\
+	void DBStatement::SetOutParam_NullInput<Type>(IN uint16_t a_paramNumber,							\
+												  IN SQLType a_columnType,								\
+												  IN uint32_t a_columnSize,								\
+												  IN uint16_t a_columnScale)							\
+		asd_Throws(DBException)																			\
+	{																									\
+		auto p = CreateParameter<Type, SQL_PARAM_OUTPUT, false>(nullptr,								\
+																true,									\
+																TypeTable[a_columnType],				\
+																a_columnSize,							\
+																a_columnScale);							\
+		m_handle->PrepareParameter(a_paramNumber, nullptr, p);											\
+	}																									\
+																										\
+																										\
+	/* BindOutParam */																					\
 	asd_Specialize_CreateParameter(Type, ParamClass, SQL_PARAM_OUTPUT, true, __VA_ARGS__);				\
 																										\
 	template <>																							\
@@ -1636,31 +1761,45 @@ namespace asd
 															   a_columnScale);							\
 		m_handle->PrepareParameter(a_paramNumber, a_varptr, p);											\
 	}																									\
-
-
-	// SetInOutParam
-#define asd_Define_SetInOutParam(Type, ParamClass, ...)													\
+																										\
+																										\
+																										\
+	/* SetInOutParam */																					\
 	asd_Specialize_CreateParameter(Type, ParamClass, SQL_PARAM_INPUT_OUTPUT, false, __VA_ARGS__);		\
 																										\
 	template <>																							\
 	void DBStatement::SetInOutParam<Type>(IN uint16_t a_paramNumber,									\
-										  IN Type* a_value,												\
+										  IN const Type& a_value,										\
 										  IN SQLType a_columnType,										\
 										  IN uint32_t a_columnSize,										\
 										  IN uint16_t a_columnScale)									\
 		asd_Throws(DBException)																			\
 	{																									\
-		auto p = CreateParameter<Type, SQL_PARAM_INPUT_OUTPUT, false>(a_value,							\
-																	  a_value == nullptr,				\
+		auto p = CreateParameter<Type, SQL_PARAM_INPUT_OUTPUT, false>((Type*)&a_value,					\
+																	  false,							\
 																	  TypeTable[a_columnType],			\
 																	  a_columnSize,						\
 																	  a_columnScale);					\
 		m_handle->PrepareParameter(a_paramNumber, nullptr, p);											\
 	}																									\
-
-
-	// BindInOutParam
-#define asd_Define_BindInOutParam(Type, ParamClass, ...)												\
+																										\
+	template <>																							\
+	void DBStatement::SetInOutParam_NullInput<Type>(IN uint16_t a_paramNumber,							\
+													IN SQLType a_columnType,							\
+													IN uint32_t a_columnSize,							\
+													IN uint16_t a_columnScale)							\
+		asd_Throws(DBException)																			\
+	{																									\
+		auto p = CreateParameter<Type, SQL_PARAM_INPUT_OUTPUT, false>(nullptr,							\
+																	  true,								\
+																	  TypeTable[a_columnType],			\
+																	  a_columnSize,						\
+																	  a_columnScale);					\
+		m_handle->PrepareParameter(a_paramNumber, nullptr, p);											\
+	}																									\
+																										\
+																										\
+	/* BindInOutParam */																				\
 	asd_Specialize_CreateParameter(Type, ParamClass, SQL_PARAM_INPUT_OUTPUT, true, __VA_ARGS__);		\
 																										\
 	template <>																							\
@@ -1683,44 +1822,21 @@ namespace asd
 
 
 #define asd_Define_BindParam_TypicalCase(Type)										\
-	asd_Define_SetInParam(Type, Parameter_Template, 0);								\
-	asd_Define_BindInParam(Type, Parameter_Template, 0);							\
-																					\
-	asd_Define_SetOutParam(Type, Parameter_Template, 0);							\
-	asd_Define_BindOutParam(Type, Parameter_Template, 0);							\
-																					\
-	asd_Define_SetInOutParam(Type, Parameter_Template, 0);							\
-	asd_Define_BindInOutParam(Type, Parameter_Template, 0);							\
-
+	asd_Define_BindParam(Type, Parameter_Template, 0);								\
 
 #define asd_Define_BindParam_BinaryCase(Type, IsString, IsSharedPtr)				\
-	asd_Define_SetInParam(Type, Parameter_Binary, IsString, IsSharedPtr);			\
-	asd_Define_BindInParam(Type, Parameter_Binary, IsString, IsSharedPtr);			\
-																					\
-	asd_Define_SetOutParam(Type, Parameter_Binary, IsString, IsSharedPtr);			\
-	asd_Define_BindOutParam(Type, Parameter_Binary, IsString, IsSharedPtr);			\
-																					\
-	asd_Define_SetInOutParam(Type, Parameter_Binary, IsString, IsSharedPtr);		\
-	asd_Define_BindInOutParam(Type, Parameter_Binary, IsString, IsSharedPtr);		\
-
+	asd_Define_BindParam(Type, Parameter_Binary, IsString, IsSharedPtr);			\
 
 #define asd_Define_BindParam_ProxyCase(Type, ProxyType)								\
-	asd_Define_SetInParam(Type, Parameter_Proxy, ProxyType);						\
-	asd_Define_BindInParam(Type, Parameter_Proxy, ProxyType);						\
-																					\
-	asd_Define_SetOutParam(Type, Parameter_Proxy, ProxyType);						\
-	asd_Define_BindOutParam(Type, Parameter_Proxy, ProxyType);						\
-																					\
-	asd_Define_SetInOutParam(Type, Parameter_Proxy, ProxyType);						\
-	asd_Define_BindInOutParam(Type, Parameter_Proxy, ProxyType);					\
+	asd_Define_BindParam(Type, Parameter_Proxy, ProxyType);							\
 
 
 
 
 	/***** Tempalte Specialization **************************************************************************/
 
-	asd_Define_ConvertStream_TypicalCase(char, SQL_C_TINYINT);
-	asd_Define_BindParam_TypicalCase(char);
+	asd_Define_ConvertStream_TypicalCase(int8_t, SQL_C_TINYINT);
+	asd_Define_BindParam_TypicalCase(int8_t);
 
 	asd_Define_ConvertStream_TypicalCase(short, SQL_C_SHORT);
 	asd_Define_BindParam_TypicalCase(short);
@@ -1743,6 +1859,12 @@ namespace asd
 	asd_Define_ConvertStream_TypicalCase(SQL_TIMESTAMP_STRUCT, SQL_C_TIMESTAMP);
 	asd_Define_BindParam_TypicalCase(SQL_TIMESTAMP_STRUCT);
 
+	asd_Define_ConvertStream_TypicalCase(SQL_DATE_STRUCT, SQL_C_DATE);
+	asd_Define_BindParam_TypicalCase(SQL_DATE_STRUCT);
+
+	asd_Define_ConvertStream_TypicalCase(SQL_TIME_STRUCT, SQL_C_TIME);
+	asd_Define_BindParam_TypicalCase(SQL_TIME_STRUCT);
+
 	asd_Define_ConvertStream_BinaryCase(MString, SQL_C_CHAR, true);
 	asd_Define_BindParam_BinaryCase(MString, true, true);
 
@@ -1761,34 +1883,31 @@ namespace asd
 	asd_Define_ConvertStream_BinaryCase(SharedArray<uint8_t>, SQL_C_BINARY, false);
 	asd_Define_BindParam_BinaryCase(SharedArray<uint8_t>, false, true);
 
-	asd_Define_ConvertData_ProxyCase(tm, a_return, SQL_TIMESTAMP_STRUCT, a_proxy, a_direction)
+	asd_Define_ConvertData_ProxyCase(tm, a_src, SQL_TIMESTAMP_STRUCT, a_proxy, a_direction)
 	{
 		if (Is_Left_To_Right(a_direction)) {
-			a_proxy.year		= a_return.tm_year;
-			a_proxy.month		= a_return.tm_mon + 1;
-			a_proxy.day			= a_return.tm_mday;
-			a_proxy.hour		= a_return.tm_hour;
-			a_proxy.minute		= a_return.tm_min;
-			a_proxy.second		= a_return.tm_sec;
+			memset(&a_proxy, 0, sizeof(a_proxy));
+			a_proxy.year		= a_src.tm_year + 1900;
+			a_proxy.month		= a_src.tm_mon + 1;
+			a_proxy.day			= a_src.tm_mday;
+			a_proxy.hour		= a_src.tm_hour;
+			a_proxy.minute		= a_src.tm_min;
+			a_proxy.second		= a_src.tm_sec;
 			a_proxy.fraction	= 0;
 		}
 		else {
-			a_return.tm_year	= a_proxy.year;
-			a_return.tm_mon 	= a_proxy.month - 1;
-			a_return.tm_mday	= a_proxy.day;
-			a_return.tm_hour	= a_proxy.hour;
-			a_return.tm_min 	= a_proxy.minute;
-			a_return.tm_sec 	= a_proxy.second;
+			// 요일정보를 채우기 위해 Time Class를 사용
+			Time(a_proxy).To(a_src);
 		}
 	}
 	asd_Define_BindParam_ProxyCase(tm, SQL_TIMESTAMP_STRUCT);
 
-	asd_Define_ConvertData_ProxyCase(Time, a_return, SQL_TIMESTAMP_STRUCT, a_proxy, a_direction)
+	asd_Define_ConvertData_ProxyCase(Time, a_src, SQL_TIMESTAMP_STRUCT, a_proxy, a_direction)
 	{
 		if (Is_Left_To_Right(a_direction))
-			a_return.To(a_proxy);
+			a_src.To(a_proxy);
 		else
-			a_return.From(a_proxy);
+			a_src.From(a_proxy);
 	}
 	asd_Define_BindParam_ProxyCase(Time, SQL_TIMESTAMP_STRUCT);
 }
