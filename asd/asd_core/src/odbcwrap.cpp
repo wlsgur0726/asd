@@ -333,18 +333,21 @@ namespace asd
 
 
 	void DBConnection::BeginTran()
+		asd_Throws(DBException)
 	{
 		m_handle->SetAutoCommit(false);
 	}
 
 
 	void DBConnection::CommitTran()
+		asd_Throws(DBException)
 	{
 		m_handle->EndTran(true);
 	}
 
 
 	void DBConnection::RollbackTran()
+		asd_Throws(DBException)
 	{
 		m_handle->EndTran(false);
 	}

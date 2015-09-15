@@ -1,6 +1,5 @@
 ﻿#include "stdafx.h"
 #include "asd/time.h"
-#include "asd/tempbuffer.h"
 
 namespace asd
 {
