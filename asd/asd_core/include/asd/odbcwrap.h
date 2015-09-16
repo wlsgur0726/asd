@@ -117,8 +117,6 @@ namespace asd
 
 		// Prameter 관련 함수들 설명
 		//   - 공통
-		//     - 값을 넘길때 값이 담긴 변수의 포인터를 넘기는데 nullptr을 주면 DB에 null값을 전달한다.
-		//     - BindInOutParam만 예외적으로 null 입력 여부를 판별하는 변수가 있다.
 		//     - a_columnType  : DB 상의 타입. UNKNOWN_TYPE이면 Execute() 직전에 정보를 쿼리하여 적용한다.
 		//                       (SQLBindParameter()의 5번째 인자)
 		//     - a_columnSize  : Output 결과를 받을 버퍼의 크기 (byte 단위, SQLBindParameter()의 6번째 인자)
