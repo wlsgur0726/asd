@@ -18,9 +18,9 @@ namespace asd
 				  IN const int a_line,
 				  IN const char* a_function,
 				  IN const char* a_comment = "",
-				  IN ...) asd_NoThrow;
+				  IN ...) noexcept;
 
-		MString ToString() const asd_NoThrow;
+		MString ToString() const noexcept;
 	};
 	typedef std::vector<DebugInfo> DebugTrace;
 
@@ -31,13 +31,13 @@ namespace asd
 	public:
 		MString m_what;
 
-		Exception() asd_NoThrow;
-		Exception(IN const char* a_what) asd_NoThrow;
-		Exception(IN const MString& a_what) asd_NoThrow;
-		Exception(IN const DebugInfo& a_dbginfo) asd_NoThrow;
-		virtual ~Exception() asd_NoThrow;
+		Exception() noexcept;
+		Exception(IN const char* a_what) noexcept;
+		Exception(IN const MString& a_what) noexcept;
+		Exception(IN const DebugInfo& a_dbginfo) noexcept;
+		virtual ~Exception() noexcept;
 
-		virtual const char* what() const asd_NoThrow override;
+		virtual const char* what() const noexcept override;
 	};
 
 

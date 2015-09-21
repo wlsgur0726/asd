@@ -14,7 +14,7 @@ namespace asd
 		typedef TempBuffer<T> ThisType;
 
 
-		TempBuffer(IN size_t a_count) asd_NoThrow {
+		TempBuffer(IN size_t a_count) noexcept {
 			assert(a_count > 0);
 			auto buf = std::get_temporary_buffer<Object>((ptrdiff_t)a_count);
 			m_arr = buf.first;
@@ -22,13 +22,13 @@ namespace asd
 		}
 
 
-		TempBuffer(MOVE ThisType&& a_rval) asd_NoThrow
+		TempBuffer(MOVE ThisType&& a_rval) noexcept
 		{
 			*this = std::move(a_rval);
 		}
 
 
-		inline TempBuffer& operator = (MOVE ThisType&& a_rval) asd_NoThrow
+		inline TempBuffer& operator = (MOVE ThisType&& a_rval) noexcept
 		{
 			this->~TempBuffer();
 			m_arr = a_rval.m_arr;
@@ -38,7 +38,7 @@ namespace asd
 		}
 
 
-		~TempBuffer() asd_NoThrow
+		~TempBuffer() noexcept
 		{
 			if (m_arr != nullptr) {
 				std::return_temporary_buffer<Object>(m_arr);
@@ -49,21 +49,21 @@ namespace asd
 		}
 
 
-		inline operator void* () const asd_NoThrow
+		inline operator void* () const noexcept
 		{
 			assert(m_arr != nullptr);
 			return m_arr;
 		}
 
 
-		inline operator Object* () const asd_NoThrow
+		inline operator Object* () const noexcept
 		{
 			assert(m_arr != nullptr);
 			return m_arr;
 		}
 
 
-		inline size_t GetCount() const asd_NoThrow
+		inline size_t GetCount() const noexcept
 		{
 			assert(m_count > 0);
 			return m_count;
@@ -71,7 +71,7 @@ namespace asd
 
 
 		inline Object& At(IN size_t a_index) const 
-			asd_Throws(asd::Exception)
+			noexcept(false)
 		{
 			if (a_index < 0 || a_index >= GetCount()) {
 				asd_RaiseException("invalid argument (a_index : %lld)", (int64_t)a_index);
@@ -81,7 +81,7 @@ namespace asd
 
 
 		inline Object& operator [] (IN size_t a_index) const
-			asd_Throws(asd::Exception)
+			noexcept(false)
 		{
 			return At(a_index);
 		}
@@ -90,7 +90,7 @@ namespace asd
 		template<typename... ARGS>
 		inline void Constructor(IN size_t a_index,
 								IN ARGS&&... a_constructorArgs)
-			asd_Throws(asd::Exception)
+			noexcept(false)
 		{
 			Object& obj = At(a_index);
 			new(&obj) Object(a_constructorArgs...);
@@ -98,7 +98,7 @@ namespace asd
 
 
 		inline void Destrucotr(IN size_t a_index)
-			asd_Throws(asd::Exception)
+			noexcept(false)
 		{
 			Object& obj = At(a_index);
 			obj.~Objcet();

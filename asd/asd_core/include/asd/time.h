@@ -29,7 +29,7 @@ namespace asd
 		int32_t m_data[2] = {0, 0};
 
 	public:
-		Time() asd_NoThrow;
+		Time() noexcept;
 
 
 		Time(IN int a_year,
@@ -39,7 +39,7 @@ namespace asd
 			 IN int a_minute = 0,
 			 IN int a_second = 0,
 			 IN int a_millisecond = 0) 
-			asd_Throws(Exception);
+			noexcept(false);
 
 
 		// 값 조회/셋팅
@@ -50,44 +50,44 @@ namespace asd
 				  IN int a_minute = 0,
 				  IN int a_second = 0,
 				  IN int a_millisecond = 0)
-			asd_Throws(Exception);
+			noexcept(false);
 
-		int Year() const asd_NoThrow;
+		int Year() const noexcept;
 		void Year(IN int a_year)
-			asd_Throws(Exception);
+			noexcept(false);
 
-		int Month() const asd_NoThrow;
+		int Month() const noexcept;
 		void Month(IN int a_month)
-			asd_Throws(Exception);
+			noexcept(false);
 
-		int Day() const asd_NoThrow;
+		int Day() const noexcept;
 		void Day(IN int a_day)
-			asd_Throws(Exception);
+			noexcept(false);
 
-		int Hour() const asd_NoThrow;
+		int Hour() const noexcept;
 		void Hour(IN int a_hour)
-			asd_Throws(Exception);
+			noexcept(false);
 
-		int Minute() const asd_NoThrow;
+		int Minute() const noexcept;
 		void Minute(IN int a_minute)
-			asd_Throws(Exception);
+			noexcept(false);
 
-		int Second() const asd_NoThrow;
+		int Second() const noexcept;
 		void Second(IN int a_second)
-			asd_Throws(Exception);
+			noexcept(false);
 
-		int Millisecond() const asd_NoThrow;
+		int Millisecond() const noexcept;
 		void Millisecond(IN int a_millisecond)
-			asd_Throws(Exception);
+			noexcept(false);
 
-		DayOfTheWeek DayOfTheWeek() const asd_NoThrow;
+		DayOfTheWeek DayOfTheWeek() const noexcept;
 
-		MString ToString(const char* a_format = nullptr) const asd_NoThrow;
+		MString ToString(const char* a_format = nullptr) const noexcept;
 
 
 		// 비교
 		static int Compare(IN const Time& a_left,
-						   IN const Time& a_right) asd_NoThrow;
+						   IN const Time& a_right) noexcept;
 
 		asd_Define_CompareOperator(Compare, Time);
 
@@ -95,17 +95,17 @@ namespace asd
 		// 다른 타입 지원
 #define asd_Time_Declare_ConvertFunction(Type)				\
 		Time& From(IN const Type& a_src)					\
-			asd_Throws(Exception);							\
+			noexcept(false);								\
 															\
 		Time(IN const Type& a_src)							\
-			asd_Throws(Exception);							\
+			noexcept(false);								\
 															\
 		Time& operator = (IN const Type& a_src)				\
-			asd_Throws(Exception);							\
+			noexcept(false);								\
 															\
-		Type& To(OUT Type& a_dst) const asd_NoThrow;		\
+		Type& To(OUT Type& a_dst) const noexcept;			\
 															\
-		operator Type() const asd_NoThrow;					\
+		operator Type() const noexcept;						\
 		
 		asd_Time_Declare_ConvertFunction(tm);
 		asd_Time_Declare_ConvertFunction(SQL_TIMESTAMP_STRUCT);

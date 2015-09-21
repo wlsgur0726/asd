@@ -17,7 +17,6 @@ namespace asd
 		// a_limitCount가 0이면 무제한
 		ObjectPool(IN size_t a_limitCount = 0,
 				   IN size_t a_initCount = 0)
-			asd_Throws(std::bad_alloc)
 		{
 			SetLimitCount(a_limitCount);
 			AddCount(a_initCount);
@@ -25,8 +24,7 @@ namespace asd
 
 
 
-		virtual ~ObjectPool() 
-			asd_NoThrow
+		virtual ~ObjectPool() noexcept
 		{
 			Clear();
 		}
@@ -35,7 +33,6 @@ namespace asd
 
 		template<typename... ARGS>
 		Object* Get(ARGS&&... a_constructorArgs)
-			asd_Throws(asd::Exception, std::bad_alloc)
 		{
 			Object* ret = nullptr;
 
@@ -57,8 +54,7 @@ namespace asd
 
 
 		// 풀링되면 true, 풀이 꽉 차면 false 리턴
-		bool Release(MOVE Object*& a_obj)
-			asd_NoThrow
+		bool Release(MOVE Object*& a_obj) noexcept
 		{
 			if (a_obj == nullptr)
 				return true;
@@ -73,8 +69,7 @@ namespace asd
 
 
 
-		void Clear()
-			asd_NoThrow
+		void Clear() noexcept
 		{
 			const int BufSize = 1024;
 			Object* buf[BufSize];
@@ -97,8 +92,7 @@ namespace asd
 
 
 
-		void SetLimitCount(IN size_t a_limitCount)
-			asd_NoThrow
+		void SetLimitCount(IN size_t a_limitCount) noexcept
 		{
 			MtxCtl lock(m_lock, true);
 			m_limitCount = std::max(a_limitCount, (size_t)0);
@@ -107,7 +101,6 @@ namespace asd
 
 
 		void AddCount(IN size_t a_count)
-			asd_Throws(std::bad_alloc)
 		{
 			if (a_count <= 0)
 				return;
@@ -122,8 +115,7 @@ namespace asd
 
 
 
-		size_t GetCount() const 
-			asd_NoThrow
+		size_t GetCount() const noexcept
 		{
 			return m_pool.size();
 		}
@@ -137,8 +129,7 @@ namespace asd
 
 
 		// 풀링되면 true, 풀이 꽉 차면 false 리턴
-		inline bool Release_Internal(IN Object* a_obj)
-			asd_NoThrow
+		inline bool Release_Internal(IN Object* a_obj) noexcept
 		{
 			assert(a_obj != nullptr);
 

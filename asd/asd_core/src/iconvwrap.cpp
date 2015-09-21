@@ -57,7 +57,7 @@ namespace asd
 
 
 
-	inline bool IsValidEncoding(IN Encoding a_enc) asd_NoThrow
+	inline bool IsValidEncoding(IN Encoding a_enc) noexcept
 	{
 		return a_enc >= 0 && a_enc < Encoding_Last;
 	}
@@ -80,7 +80,7 @@ namespace asd
 
 
 
-	const char* GetEncodingName(IN Encoding a_enc) asd_NoThrow
+	const char* GetEncodingName(IN Encoding a_enc) noexcept
 	{
 		Check_EncodingInfo_Table();
 		if (IsValidEncoding(a_enc) == false) {
@@ -115,7 +115,7 @@ namespace asd
 
 
 #define asd_Define_GetDefaultEncoding(CharType)						\
-	Encoding GetDefaultEncoding(IN const CharType*) asd_NoThrow		\
+	Encoding GetDefaultEncoding(IN const CharType*) noexcept		\
 	{																\
 		Encoding ret = DefaultEncoding_ ## CharType;				\
 		assert(IsValidEncoding(ret));								\
@@ -134,7 +134,7 @@ namespace asd
 
 #define asd_Define_SetDefaultEncoding(CharType)						\
 	void SetDefaultEncoding(IN Encoding a_enc,						\
-							IN const CharType*) asd_NoThrow			\
+							IN const CharType*) noexcept			\
 	{																\
 		assert(IsValidEncoding(a_enc));								\
 		DefaultEncoding_ ## CharType = a_enc;						\
@@ -146,7 +146,7 @@ namespace asd
 
 
 
-	int SizeOfCharUnit_Min(IN Encoding a_enc) asd_NoThrow
+	int SizeOfCharUnit_Min(IN Encoding a_enc) noexcept
 	{
 		Check_EncodingInfo_Table();
 		if (IsValidEncoding(a_enc) == false)
@@ -157,7 +157,7 @@ namespace asd
 
 
 
-	float SizeOfCharUnit_Avg(IN Encoding a_enc) asd_NoThrow
+	float SizeOfCharUnit_Avg(IN Encoding a_enc) noexcept
 	{
 		Check_EncodingInfo_Table();
 		if (IsValidEncoding(a_enc) == false)
@@ -168,7 +168,7 @@ namespace asd
 
 
 
-	int SizeOfCharUnit_Max(IN Encoding a_enc) asd_NoThrow
+	int SizeOfCharUnit_Max(IN Encoding a_enc) noexcept
 	{
 		Check_EncodingInfo_Table();
 		if (IsValidEncoding(a_enc) == false)
@@ -190,21 +190,21 @@ namespace asd
 
 
 
-	IconvWrap::IconvWrap() asd_NoThrow
+	IconvWrap::IconvWrap() noexcept
 	{
 		m_icd = ICONV_InvalidDescriptor;
 	}
 
 
 
-	IconvWrap::IconvWrap(MOVE IconvWrap&& a_rval) asd_NoThrow
+	IconvWrap::IconvWrap(MOVE IconvWrap&& a_rval) noexcept
 	{
 		*this = std::move(a_rval);
 	}
 
 
 
-	IconvWrap& IconvWrap::operator = (MOVE IconvWrap&& a_rval) asd_NoThrow
+	IconvWrap& IconvWrap::operator = (MOVE IconvWrap&& a_rval) noexcept
 	{
 		Close(m_icd);
 
@@ -220,7 +220,7 @@ namespace asd
 
 
 	int IconvWrap::Init(IN Encoding a_before,
-						IN Encoding a_after) asd_NoThrow
+						IN Encoding a_after) noexcept
 	{
 		Close(m_icd);
 
@@ -245,27 +245,25 @@ namespace asd
 
 
 	
-	int IconvWrap::Convert(IN const void* a_inBuffer,
-						   IN size_t a_inBufSize_byte,
-						   OUT void* a_outBuffer,
-						   INOUT size_t& a_outSize_byte) const asd_NoThrow
+	size_t IconvWrap::Convert(IN const void* a_inBuffer,
+							  IN size_t a_inBufSize_byte,
+							  OUT void* a_outBuffer,
+							  INOUT size_t& a_outSize_byte) const noexcept
 	{
 		assert(m_icd != ICONV_InvalidDescriptor);
 		assert(m_before != Encoding_Last);
 		assert(m_after != Encoding_Last);
 
-		int ret;
 		const char* inBuf = (const char*)a_inBuffer;
 		size_t inSiz = a_inBufSize_byte;
 		char* outBuf = (char*)a_outBuffer;
-		ret = iconv(m_icd,
-					&inBuf,
-					&inSiz,
-					&outBuf,
-					&a_outSize_byte);
+		auto ret = iconv(m_icd,
+						 &inBuf,
+						 &inSiz,
+						 &outBuf,
+						 &a_outSize_byte);
 		if (ret < 0)
 			ret = errno;
-
 		return ret;
 	}
 
@@ -273,16 +271,15 @@ namespace asd
 
 	std::shared_ptr<char> IconvWrap::Convert(IN const void* a_inBuffer,
 											 IN size_t a_inSize,
-											 OUT size_t* a_outSize_byte /*= nullptr*/) const asd_NoThrow
+											 OUT size_t* a_outSize_byte /*= nullptr*/) const noexcept
 	{
 		assert(m_ratio > 0);
-		size_t bufsize = a_inSize * m_ratio + 1;
+		size_t bufsize = (size_t)(a_inSize * m_ratio + 1);
 		for(int i=0; i<3; ++i) {
 			size_t outsize = bufsize;
 			char* buf = new char[bufsize];
 
-			int r = Convert(a_inBuffer, a_inSize, buf, outsize);
-			if (r == 0) {
+			if (Convert(a_inBuffer, a_inSize, buf, outsize) == 0) {
 				// 성공
 				assert(bufsize - outsize > 0);
 				assert(outsize >= 0);
@@ -300,7 +297,7 @@ namespace asd
 
 
 
-	IconvWrap::~IconvWrap() asd_NoThrow
+	IconvWrap::~IconvWrap() noexcept
 	{
 		Close(m_icd);
 	}
@@ -311,7 +308,7 @@ namespace asd
 	thread_local IconvWrap_ptr t_converterTable[Encoding_Last][Encoding_Last];
 
 	const IconvWrap& GetConverter(IN Encoding a_srcEncoding,
-								  IN Encoding a_dstEncoding) asd_NoThrow
+								  IN Encoding a_dstEncoding) noexcept
 	{
 		IconvWrap_ptr& ic = t_converterTable[a_srcEncoding][a_dstEncoding];
 		if (ic == nullptr) {
@@ -325,7 +322,7 @@ namespace asd
 
 
 
-	inline bool IsWideEncoding(IN Encoding a_enc) asd_NoThrow
+	inline bool IsWideEncoding(IN Encoding a_enc) noexcept
 	{
 		return a_enc == GetDefaultEncoding<wchar_t>();
 	}
@@ -335,7 +332,7 @@ namespace asd
 	template<typename ResultType>
 	inline ResultType ConvTo_Internal(IN const void* a_srcString,
 									  IN Encoding a_srcEncoding,
-									  IN Encoding a_dstEncoding) asd_NoThrow
+									  IN Encoding a_dstEncoding) noexcept
 	{
 		if (a_srcString == nullptr)
 			return ResultType();
@@ -360,7 +357,7 @@ namespace asd
 
 	// To Multi-Byte
 #define asd_Define_ConvToM(CharType)														\
-	MString ConvToM(IN const CharType* a_srcString) asd_NoThrow								\
+	MString ConvToM(IN const CharType* a_srcString) noexcept								\
 	{																						\
 		return ConvTo_Internal<MString>(a_srcString,										\
 										GetDefaultEncoding<CharType>(),						\
@@ -368,7 +365,7 @@ namespace asd
 	}																						\
 																							\
 	MString ConvToM(IN const CharType* a_srcString,											\
-					IN Encoding a_dstEncoding) asd_NoThrow									\
+					IN Encoding a_dstEncoding) noexcept										\
 	{																						\
 		if (IsWideEncoding(a_dstEncoding)) {												\
 			asd_PrintStdErr("invalid parameter (a_dstEncoding)");							\
@@ -388,7 +385,7 @@ namespace asd
 
 	MString ConvToM(IN const void* a_srcString,
 					IN Encoding a_srcEncoding,
-					IN Encoding a_dstEncoding) asd_NoThrow
+					IN Encoding a_dstEncoding) noexcept
 	{
 		if (IsWideEncoding(a_dstEncoding)) {
 			asd_PrintStdErr("invalid parameter (a_dstEncoding)");
@@ -403,7 +400,7 @@ namespace asd
 
 	// To Wide
 #define asd_Define_ConvToX(X, ReturnType, SrcCharType)										\
-	ReturnType ConvTo ## X (IN const SrcCharType* a_srcString) asd_NoThrow					\
+	ReturnType ConvTo ## X (IN const SrcCharType* a_srcString) noexcept						\
 	{																						\
 		return ConvTo_Internal<ReturnType>(a_srcString,										\
 										   GetDefaultEncoding<SrcCharType>(),				\
@@ -417,7 +414,7 @@ namespace asd
 	asd_Define_ConvToX(W, WString, char32_t)
 
 	WString ConvToW(IN const void* a_srcString,
-					IN Encoding a_srcEncoding) asd_NoThrow
+					IN Encoding a_srcEncoding) noexcept
 	{
 		return ConvTo_Internal<WString>((const char*)a_srcString,
 										a_srcEncoding,

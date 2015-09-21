@@ -7,12 +7,12 @@ namespace asd
 	struct FinallyWork
 	{
 		std::function<void()> m_work = nullptr;
-		FinallyWork(IN std::function<void()> a_work) asd_NoThrow
+		FinallyWork(IN std::function<void()> a_work) noexcept
 		{
 			m_work = a_work;
 		}
 
-		~FinallyWork() asd_NoThrow 
+		~FinallyWork() noexcept 
 		{
 			if (m_work != nullptr)
 				m_work();

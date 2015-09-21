@@ -12,7 +12,7 @@ namespace asd
 		int m_nativeError = 0;
 		MString m_message;
 
-		MString ToString() const asd_NoThrow;
+		MString ToString() const noexcept;
 	};
 
 	typedef std::vector<DBDiagInfo> DBDiagInfoList;
@@ -23,7 +23,7 @@ namespace asd
 	{
 	public:
 		DBDiagInfoList m_diagInfoList;
-		DBException(IN const DBDiagInfoList& a_diagInfoList) asd_NoThrow;
+		DBException(IN const DBDiagInfoList& a_diagInfoList) noexcept;
 	};
 
 
@@ -69,22 +69,22 @@ namespace asd
 
 	public:
 		void Open(IN const char* a_constr)
-			asd_Throws(DBException);
+			noexcept(false);
 
 		void BeginTran()
-			asd_Throws(DBException);
+			noexcept(false);
 
 		void CommitTran()
-			asd_Throws(DBException);
+			noexcept(false);
 
 		void RollbackTran()
-			asd_Throws(DBException);
+			noexcept(false);
 
 		void Close()
-			asd_Throws(DBException);
+			noexcept(false);
 
 		virtual ~DBConnection()
-			asd_NoThrow;
+			noexcept;
 	};
 
 
@@ -97,21 +97,23 @@ namespace asd
 
 	public:
 		DBStatement()
-			asd_NoThrow;
+			noexcept;
+
 
 
 		DBStatement(REF DBConnection& a_conHandle)
-			asd_Throws(DBException);
+			noexcept(false);
+
 
 
 		void Init(REF DBConnection& a_conHandle)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 
 		// 쿼리를 준비시킨다.
 		void Prepare(IN const char* a_query)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 
@@ -137,7 +139,7 @@ namespace asd
 						IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 						IN uint32_t a_columnSize = 0,
 						IN uint16_t a_columnScale = 0)
-			asd_Throws(DBException);
+			noexcept(false);
 
 		// null값을 입력한다.
 		template <typename T>
@@ -145,7 +147,7 @@ namespace asd
 								  IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 								  IN uint32_t a_columnSize = 0,
 								  IN uint16_t a_columnScale = 0)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 		// 입력인자 바인딩
@@ -155,7 +157,7 @@ namespace asd
 						 IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 						 IN uint32_t a_columnSize = 0,
 						 IN uint16_t a_columnScale = 0)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 
@@ -165,7 +167,7 @@ namespace asd
 						 IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 						 IN uint32_t a_columnSize = 0,
 						 IN uint16_t a_columnScale = 0)
-			asd_Throws(DBException);
+			noexcept(false);
 
 		// 출력인자를 무시한다.
 		template <typename T>
@@ -173,7 +175,7 @@ namespace asd
 								   IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 								   IN uint32_t a_columnSize = 0,
 								   IN uint16_t a_columnScale = 0)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 		// 출력인자 바인딩
@@ -184,7 +186,7 @@ namespace asd
 						  IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 						  IN uint32_t a_columnSize = 0,
 						  IN uint16_t a_columnScale = 0)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 
@@ -195,7 +197,7 @@ namespace asd
 						   IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 						   IN uint32_t a_columnSize = 0,
 						   IN uint16_t a_columnScale = 0)
-			asd_Throws(DBException);
+			noexcept(false);
 
 		// null값을 입력한다.
 		template <typename T>
@@ -203,7 +205,7 @@ namespace asd
 									 IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 									 IN uint32_t a_columnSize = 0,
 									 IN uint16_t a_columnScale = 0)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 		// 입출력인자 바인딩
@@ -216,7 +218,7 @@ namespace asd
 							IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 							IN uint32_t a_columnSize = 0,
 							IN uint16_t a_columnScale = 0)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 
@@ -227,82 +229,82 @@ namespace asd
 		
 		// Prepare된 쿼리를 실행하고 Fetch한다.
 		int64_t Execute(IN FetchCallback a_callback)
-			asd_Throws(DBException);
+			noexcept(false);
 
 		// a_query로 입력받은 쿼리를 바로 실행하고 Fetch한다.
 		int64_t Execute(IN const char* a_query,
 						IN FetchCallback a_callback)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 
 		// 셋팅 혹은 바인딩된 파라메터를 모두 제거
 		void ClearParam()
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 
 		// 핸들을 닫는다.
 		void Close()
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 		virtual ~DBStatement()
-			asd_NoThrow;
+			noexcept;
 
 
 
 		// 결과 조회.
 		// FetchCallback 내에서, 혹은 Execute()리턴 후 사용한다.
 		MString GetColumnName(IN uint16_t a_columnIndex)
-			asd_Throws(Exception, DBException);
+			noexcept(false);
 
 
-		uint16_t GetColumnCount() const asd_NoThrow;
+		uint16_t GetColumnCount() const noexcept;
 
 
 		template <typename T>
 		T* GetData(IN const char* a_columnName,
 				   OUT T& a_return)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 		template <typename T>
 		T* GetData(IN uint16_t a_columnIndex,
 				   OUT T& a_return)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 		template <typename T>
 		T* GetParam(IN uint16_t a_paramNumber,
 					OUT T& a_return)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 		template <typename T>
 		bool IsNullParam(IN uint16_t a_columnIndex)
-			asd_Throws(Exception);
+			noexcept(false);
 
 
 		template <typename T>
 		bool IsNullParam(IN T* a_boundPtr)
-			asd_Throws(Exception);
+			noexcept(false);
 
 
 		struct Caster
 		{
 #define asd_DBStatement_Declare_CastOperator(Type)							\
 			virtual operator Type()						/* (1) */			\
-				asd_Throws(DBException, NullDataException);					\
+				noexcept(false);											\
 																			\
 			virtual operator Type*()					/* (2) */			\
-				asd_Throws(DBException);									\
+				noexcept(false);											\
 																			\
 			virtual operator std::shared_ptr<Type>()	/* (3) */			\
-				asd_Throws(DBException);									\
+				noexcept(false);											\
 																			\
 			virtual operator std::unique_ptr<Type>()	/* (4) */			\
-				asd_Throws(DBException);									\
+				noexcept(false);											\
 
 			// (1) : 사본을 복사하여 리턴한다. 
 			//       해당 파라메터가 만약 null값인 경우 NullDataException이 발생한다.
@@ -340,15 +342,15 @@ namespace asd
 
 
 		Caster& GetData(IN uint16_t a_columnIndex)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 		Caster& GetData(IN const char* a_columnName)
-			asd_Throws(DBException);
+			noexcept(false);
 
 
 		Caster& GetParam(IN uint16_t a_paramNumber)
-			asd_Throws(DBException);
+			noexcept(false);
 	};
 
 }

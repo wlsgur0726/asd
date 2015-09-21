@@ -15,7 +15,7 @@ namespace asd
 {
 	thread_local std::thread::id t_tid;
 
-	const std::thread::id& GetCurrentThreadID() asd_NoThrow
+	const std::thread::id& GetCurrentThreadID() noexcept
 	{
 		if (t_tid == std::thread::id())
 			t_tid = std::this_thread::get_id();
@@ -26,7 +26,7 @@ namespace asd
 
 
 	thread_local uint32_t t_HW_Concurrency = 0xFFFFFFFF;
-	const uint32_t& Get_HW_Concurrency() asd_NoThrow
+	const uint32_t& Get_HW_Concurrency() noexcept
 	{
 		if (t_HW_Concurrency == 0xFFFFFFFF) {
 			t_HW_Concurrency = std::thread::hardware_concurrency();
@@ -100,7 +100,7 @@ namespace asd
 
 
 	Mutex::Mutex() 
-		asd_Throws(asd::Exception) 
+		noexcept(false) 
 	{
 		m_data = new MutexData;
 	}
@@ -108,7 +108,7 @@ namespace asd
 
 
 	Mutex::Mutex(MOVE Mutex&& a_rval)
-		asd_Throws(asd::Exception)
+		noexcept(false)
 	{
 		(*this) = std::move(a_rval);
 	}
@@ -116,7 +116,7 @@ namespace asd
 
 
 	Mutex& Mutex::operator = (MOVE Mutex&& a_rval) 
-		asd_Throws(asd::Exception)
+		noexcept(false)
 	{
 		if (m_data != nullptr)
 			delete m_data;
@@ -130,7 +130,7 @@ namespace asd
 
 
 	Mutex::~Mutex() 
-		asd_NoThrow
+		noexcept
 	{
 		asd_Destructor_Start
 			if (m_data == nullptr)
@@ -211,7 +211,7 @@ namespace asd
 
 
 	SpinMutex::SpinMutex()
-		asd_Throws(asd::Exception)
+		noexcept(false)
 	{
 		if (Get_HW_Concurrency() <= 1)
 			m_mtx = new Mutex;
@@ -222,7 +222,7 @@ namespace asd
 
 
 	SpinMutex::~SpinMutex()
-		asd_NoThrow
+		noexcept
 	{
 		if (m_mtx != nullptr)
 			delete m_mtx;

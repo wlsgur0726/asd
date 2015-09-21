@@ -41,8 +41,6 @@ namespace asdtest_string
 	template <typename CharType>
 	void CaseConvertTest()
 	{
-		int i;
-
 		CharType ucase[27];
 		CharType lcase[27];
 		CharType testbuf[27];

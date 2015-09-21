@@ -69,7 +69,7 @@ namespace asd
 
 
 
-	IpAddress::IpAddress(IN Family a_addrFamily /*= IPv4*/) asd_NoThrow
+	IpAddress::IpAddress(IN Family a_addrFamily /*= IPv4*/) noexcept
 	{
 		m_addrFamily = a_addrFamily;
 	}
@@ -77,7 +77,7 @@ namespace asd
 
 
 	IpAddress::IpAddress(IN const char* a_domain,
-						 IN uint16_t a_port /*= 0*/) asd_Throws(asd::Exception)
+						 IN uint16_t a_port /*= 0*/) noexcept(false)
 	{
 		AddrInfos ais(a_domain);
 		if (ais.m_error != 0) {
@@ -113,14 +113,14 @@ namespace asd
 
 
 
-	IpAddress::IpAddress(IN const IpAddress& a_cp) asd_NoThrow
+	IpAddress::IpAddress(IN const IpAddress& a_cp) noexcept
 	{
 		*this = a_cp;
 	}
 
 
 
-	IpAddress& IpAddress::operator = (IN const IpAddress& a_cp) asd_NoThrow
+	IpAddress& IpAddress::operator = (IN const IpAddress& a_cp) noexcept
 	{
 		this->~IpAddress();
 		m_addrFamily = a_cp.m_addrFamily;
@@ -134,14 +134,14 @@ namespace asd
 
 
 
-	IpAddress::IpAddress(MOVE IpAddress&& a_rval) asd_NoThrow
+	IpAddress::IpAddress(MOVE IpAddress&& a_rval) noexcept
 	{
 		*this = std::move(a_rval);
 	}
 
 
 
-	IpAddress& IpAddress::operator = (MOVE IpAddress&& a_rval) asd_NoThrow
+	IpAddress& IpAddress::operator = (MOVE IpAddress&& a_rval) noexcept
 	{
 		this->~IpAddress();
 		m_addrFamily = a_rval.m_addrFamily;
@@ -155,12 +155,12 @@ namespace asd
 
 
 #define asd_IpAddress_Define_Init(NativeType, Family)									\
-	IpAddress::IpAddress(IN const NativeType& a_native) asd_NoThrow						\
+	IpAddress::IpAddress(IN const NativeType& a_native) noexcept						\
 	{																					\
 		*this = a_native;																\
 	}																					\
 																						\
-	IpAddress& IpAddress::operator = (IN const NativeType& a_native) asd_NoThrow		\
+	IpAddress& IpAddress::operator = (IN const NativeType& a_native) noexcept			\
 	{																					\
 		this->~IpAddress();																\
 		m_addrlen = sizeof(NativeType);													\
@@ -176,28 +176,28 @@ namespace asd
 
 
 
-	IpAddress::operator const sockaddr* () const asd_NoThrow
+	IpAddress::operator const sockaddr* () const noexcept
 	{
 		return m_addr;
 	}
 
 
 
-	int IpAddress::GetAddrLen() const asd_NoThrow
+	int IpAddress::GetAddrLen() const noexcept
 	{
 		return m_addrlen;
 	}
 
 
 
-	IpAddress::Family IpAddress::GetAddressFamily() const asd_NoThrow
+	IpAddress::Family IpAddress::GetAddressFamily() const noexcept
 	{
 		return m_addrFamily;
 	}
 
 
 
-	void* IpAddress::GetIp(OUT int* a_len /*= nullptr*/) const asd_NoThrow
+	void* IpAddress::GetIp(OUT int* a_len /*= nullptr*/) const noexcept
 	{
 		if (m_addr == nullptr)
 			return nullptr;
@@ -231,7 +231,7 @@ namespace asd
 
 
 	
-	uint16_t IpAddress::GetPort() const asd_NoThrow
+	uint16_t IpAddress::GetPort() const noexcept
 	{
 		if (m_addr == nullptr)
 			return 0;
@@ -254,7 +254,7 @@ namespace asd
 
 
 
-	MString IpAddress::ToString() const asd_NoThrow
+	MString IpAddress::ToString() const noexcept
 	{
 		if (m_addr == nullptr)
 			return "";
@@ -271,7 +271,7 @@ namespace asd
 
 
 	int IpAddress::Compare(IN const IpAddress& a_left,
-						   IN const IpAddress& a_right) asd_NoThrow
+						   IN const IpAddress& a_right) noexcept
 	{
 		if (a_left.m_addr == a_right.m_addr) {
 			assert(a_left.m_addrFamily == a_right.m_addrFamily);
@@ -318,7 +318,7 @@ namespace asd
 
 
 
-	size_t IpAddress::Hash::operator () (IN const IpAddress& a_addr) const asd_NoThrow
+	size_t IpAddress::Hash::operator () (IN const IpAddress& a_addr) const noexcept
 	{
 		if (a_addr.m_addr == nullptr)
 			return 0;

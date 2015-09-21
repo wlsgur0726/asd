@@ -62,26 +62,26 @@ namespace asd
 
 	public:
 		Socket(IN IpAddress::Family a_addressFamily = IpAddress::IPv4,
-			   IN Socket::Type a_socketType = TCP) asd_NoThrow;
+			   IN Socket::Type a_socketType = TCP) noexcept;
 
 
-		Socket(MOVE Socket&& a_rval) asd_NoThrow;
+		Socket(MOVE Socket&& a_rval) noexcept;
 
 
 		virtual
-		~Socket() asd_NoThrow;
+		~Socket() noexcept;
 
 
 		Socket&
-		operator = (MOVE Socket&& a_rval) asd_NoThrow;
+		operator = (MOVE Socket&& a_rval) noexcept;
 
 
 		Handle
-		GetNativeHandle() const asd_NoThrow;
+		GetNativeHandle() const noexcept;
 
 
 		void
-		Close() asd_NoThrow;
+		Close() noexcept;
 
 
 		// 실제 소켓을 생성하는 함수.
@@ -91,125 +91,125 @@ namespace asd
 		Error
 		Init(IN IpAddress::Family a_addressFamily,
 			 IN Socket::Type a_socketType,
-			 IN bool a_force) asd_NoThrow;
+			 IN bool a_force) noexcept;
 
 
 		Error
 		SetSockOpt(IN int a_level,
 				   IN int a_optname,
 				   IN const void* a_optval,
-				   IN uint32_t a_optlen) asd_NoThrow;
+				   IN uint32_t a_optlen) noexcept;
 
 
 		Error
 		GetSockOpt(IN int a_level,
 				   IN int a_optname,
 				   OUT void* a_optval,
-				   INOUT uint32_t& a_optlen) const asd_NoThrow;
+				   INOUT uint32_t& a_optlen) const noexcept;
 
 
 		Error
-		SetSockOpt_ReuseAddr(IN bool a_set) asd_NoThrow;
+		SetSockOpt_ReuseAddr(IN bool a_set) noexcept;
 
 
 		Error
-		GetSockOpt_ReuseAddr(OUT bool& a_result) const asd_NoThrow;
+		GetSockOpt_ReuseAddr(OUT bool& a_result) const noexcept;
 
 
 		Error
-		SetSockOpt_UseNagle(IN bool a_set) asd_NoThrow;
+		SetSockOpt_UseNagle(IN bool a_set) noexcept;
 
 
 		Error
-		GetSockOpt_UseNagle(OUT bool& a_result) const asd_NoThrow;
+		GetSockOpt_UseNagle(OUT bool& a_result) const noexcept;
 
 
 		Error
 		SetSockOpt_Linger(IN bool a_use,
-						  IN uint16_t a_sec) asd_NoThrow;
+						  IN uint16_t a_sec) noexcept;
 
 
 		Error
 		GetSockOpt_Linger(OUT bool& a_use,
-						  OUT uint16_t& a_sec) const asd_NoThrow;
+						  OUT uint16_t& a_sec) const noexcept;
 
 
 		Error
-		SetSockOpt_RecvBufSize(IN int a_byte) asd_NoThrow;
+		SetSockOpt_RecvBufSize(IN int a_byte) noexcept;
 
 
 		Error
-		GetSockOpt_RecvBufSize(OUT int& a_byte) const asd_NoThrow;
+		GetSockOpt_RecvBufSize(OUT int& a_byte) const noexcept;
 
 
 		Error
-		SetSockOpt_SendBufSize(IN int a_byte) asd_NoThrow;
+		SetSockOpt_SendBufSize(IN int a_byte) noexcept;
 
 
 		Error
-		GetSockOpt_SendBufSize(OUT int& a_byte) const asd_NoThrow;
+		GetSockOpt_SendBufSize(OUT int& a_byte) const noexcept;
 
 
 		Error
-		SetNonblock(IN bool a_nonblock) asd_NoThrow;
+		SetNonblock(IN bool a_nonblock) noexcept;
 
 
 		Error
-		CheckNonblock(OUT bool& a_result) const asd_NoThrow;
+		CheckNonblock(OUT bool& a_result) const noexcept;
 
 
 		Error
-		GetSockName(OUT IpAddress& a_addr) const asd_NoThrow;
+		GetSockName(OUT IpAddress& a_addr) const noexcept;
 
 
 		Error
-		GetPeerName(OUT IpAddress& a_addr) const asd_NoThrow;
+		GetPeerName(OUT IpAddress& a_addr) const noexcept;
 
 
 		// a_addr의 AddressFamily를 적용하여 초기화한다.
 		Error
-		Bind(IN const IpAddress& a_addr) asd_NoThrow;
+		Bind(IN const IpAddress& a_addr) noexcept;
 
 
 		// backlog 기본값 참고 : https://kldp.org/node/113987
 		Error
-		Listen(IN int a_backlog = 1024) asd_NoThrow;
+		Listen(IN int a_backlog = 1024) noexcept;
 
 
 		Error
 		Accept(OUT Socket& a_newbe,
-			   OUT IpAddress& a_address) asd_NoThrow;
+			   OUT IpAddress& a_address) noexcept;
 
 
 		// a_dest의 AddressFamily를 적용하여 초기화한다.
 		Error
-		Connect(IN const IpAddress& a_dest) asd_NoThrow;
+		Connect(IN const IpAddress& a_dest) noexcept;
 
 
 		IoResult
 		Send(IN const void* a_buffer,
 			 IN int a_bufferSize,
-			 IN int a_flags = 0) asd_NoThrow;
+			 IN int a_flags = 0) noexcept;
 
 
 		IoResult
 		SendTo(IN const void* a_buffer,
 			   IN int a_bufferSize,
 			   IN const IpAddress& a_dest,
-			   IN int a_flags = 0) asd_NoThrow;
+			   IN int a_flags = 0) noexcept;
 
 
 		IoResult
 		Recv(OUT void* a_buffer,
 			 IN int a_bufferSize,
-			 IN int a_flags = 0) asd_NoThrow;
+			 IN int a_flags = 0) noexcept;
 
 
 		IoResult
 		RecvFrom(OUT void* a_buffer,
 				 IN int a_bufferSize,
 				 OUT IpAddress& a_src,
-				 IN int a_flags = 0) asd_NoThrow;
+				 IN int a_flags = 0) noexcept;
 
 
 	private:

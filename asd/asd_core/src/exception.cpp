@@ -9,7 +9,7 @@ namespace asd
 						 IN const int a_line,
 						 IN const char* a_function,
 						 IN const char* a_comment /*= ""*/,
-						 IN ...) asd_NoThrow
+						 IN ...) noexcept
 						 : m_file(a_file)
 						 , m_line(a_line)
 						 , m_function(a_function)
@@ -24,7 +24,7 @@ namespace asd
 		va_end(args);
 	}
 
-	MString DebugInfo::ToString() const asd_NoThrow
+	MString DebugInfo::ToString() const noexcept
 	{
 		MString s;
 		s.Format(ToStringFormat,
@@ -35,31 +35,31 @@ namespace asd
 		return s;
 	}
 
-	Exception::Exception()  asd_NoThrow
+	Exception::Exception()  noexcept
 	{
 		m_what = "unknown asd::Exception ";
 	}
 
-	Exception::Exception(const char* a_what) asd_NoThrow
+	Exception::Exception(const char* a_what) noexcept
 	{
 		m_what = a_what;
 	}
 
-	Exception::Exception(const MString& a_what) asd_NoThrow
+	Exception::Exception(const MString& a_what) noexcept
 	{
 		m_what = a_what;
 	}
 
-	Exception::Exception(const DebugInfo& a_dbginfo) asd_NoThrow
+	Exception::Exception(const DebugInfo& a_dbginfo) noexcept
 	{
 		m_what = a_dbginfo.ToString();
 	}
 	
-	Exception::~Exception() asd_NoThrow
+	Exception::~Exception() noexcept
 	{
 	}
 
-	const char* Exception::what() const asd_NoThrow
+	const char* Exception::what() const noexcept
 	{
 		return m_what;
 	}

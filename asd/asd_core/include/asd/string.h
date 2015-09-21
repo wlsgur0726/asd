@@ -8,106 +8,106 @@ namespace asd
 	int vsprintf(OUT char* a_targetbuf,
 				 IN int a_bufsize,
 				 IN const char* a_format,
-				 IN va_list& a_args) asd_NoThrow;
+				 IN va_list& a_args) noexcept;
 
 	int vsprintf(OUT wchar_t* a_targetbuf,
 				 IN int a_bufsize,
 				 IN const wchar_t* a_format,
-				 IN va_list& a_args) asd_NoThrow;
+				 IN va_list& a_args) noexcept;
 
 
 	int vfprintf(IN FILE* a_fp,
 				 IN const char* a_format,
-				 IN va_list& a_args) asd_NoThrow;
+				 IN va_list& a_args) noexcept;
 
 	int vfprintf(IN FILE* a_fp,
 				 IN const wchar_t* a_format,
-				 IN va_list& a_args) asd_NoThrow;
+				 IN va_list& a_args) noexcept;
 
 
 	int vprintf(IN const char* a_format,
-				IN va_list& a_args) asd_NoThrow;
+				IN va_list& a_args) noexcept;
 
 	int vprintf(IN const wchar_t* a_format,
-				IN va_list& a_args) asd_NoThrow;
+				IN va_list& a_args) noexcept;
 
 
 	int sprintf(OUT char* a_targetbuf,
 				IN int a_bufsize,
 				IN const char* a_format,
-				IN ...) asd_NoThrow;
+				IN ...) noexcept;
 
 	int sprintf(OUT wchar_t* a_targetbuf,
 				IN int a_bufsize,
 				IN const wchar_t* a_format,
-				IN ...) asd_NoThrow;
+				IN ...) noexcept;
 
 
 	int printf(IN const char* a_format,
-			   IN ...) asd_NoThrow;
+			   IN ...) noexcept;
 
 	int printf(IN const wchar_t* a_format,
-			   IN ...) asd_NoThrow;
+			   IN ...) noexcept;
 
 
 	int vscprintf(IN const char* a_format,
-				  IN va_list& a_args) asd_NoThrow;
+				  IN va_list& a_args) noexcept;
 
 	int vscprintf(IN const wchar_t* a_format,
-				  IN va_list& a_args) asd_NoThrow;
+				  IN va_list& a_args) noexcept;
 
 
 	int scprintf(IN const char* a_format,
-				 IN ...) asd_NoThrow;
+				 IN ...) noexcept;
 
 	int scprintf(IN const wchar_t* a_format,
-				 IN ...) asd_NoThrow;
+				 IN ...) noexcept;
 
 
 	int fputs(IN const char* a_str,
-			  IN FILE* a_fp) asd_NoThrow;
+			  IN FILE* a_fp) noexcept;
 
 	int fputs(IN const wchar_t* a_str,
-			  IN FILE* a_fp) asd_NoThrow;
+			  IN FILE* a_fp) noexcept;
 
 	
-	int puts(IN const char* a_str) asd_NoThrow;
+	int puts(IN const char* a_str) noexcept;
 
-	int puts(IN const wchar_t* a_str) asd_NoThrow;
+	int puts(IN const wchar_t* a_str) noexcept;
 
 
 	int strcmp(IN const char* a_str1, 
 			   IN const char* a_str2,
-			   IN bool a_caseSensitive = true) asd_NoThrow;
+			   IN bool a_caseSensitive = true) noexcept;
 
 	int strcmp(IN const wchar_t* a_str1, 
 			   IN const wchar_t* a_str2,
-			   IN bool a_caseSensitive = true) asd_NoThrow;
+			   IN bool a_caseSensitive = true) noexcept;
 
 
 	char* strcpy(OUT char* a_dst,
-				 IN const char* a_src) asd_NoThrow;
+				 IN const char* a_src) noexcept;
 
 	wchar_t* strcpy(OUT wchar_t* a_dst,
-					IN const wchar_t* a_src) asd_NoThrow;
+					IN const wchar_t* a_src) noexcept;
 
 
 	// Ascii문자열만 사용 할 것.
 	char* strcpy(OUT char* a_dst,
-				 IN const wchar_t* a_src) asd_NoThrow;
+				 IN const wchar_t* a_src) noexcept;
 
 	// Ascii문자열만 사용 할 것.
 	wchar_t* strcpy(OUT wchar_t* a_dst,
-					IN const char* a_src) asd_NoThrow;
+					IN const char* a_src) noexcept;
 
 
-	size_t strlen(IN const char* a_str) asd_NoThrow;
+	size_t strlen(IN const char* a_str) noexcept;
 
-	size_t strlen(IN const wchar_t* a_str) asd_NoThrow;
+	size_t strlen(IN const wchar_t* a_str) noexcept;
 
 	// SizeOfChar값 단위로 문자열 길이를 구한다.
 	template<int SizeOfChar>
-	inline size_t strlen(IN const void* a_str) asd_NoThrow
+	inline size_t strlen(IN const void* a_str) noexcept
 	{
 		static_assert(SizeOfChar==1 || SizeOfChar==2 || SizeOfChar==4,
 					  "invalid SizeOfChar");
@@ -124,7 +124,7 @@ namespace asd
 
 	// 위 템플릿함수의 런타임 버전
 	size_t strlen(IN const void* a_str,
-				  IN int a_sizeOfChar) asd_NoThrow;
+				  IN int a_sizeOfChar) noexcept;
 
 
 	template<typename CHARTYPE>
@@ -148,7 +148,7 @@ namespace asd
 	template<typename CharType, bool CaseSensitive = true>
 	struct hash_String
 	{
-		inline size_t operator() (IN const CharType* a_src) const asd_NoThrow
+		inline size_t operator() (IN const CharType* a_src) const noexcept
 		{
 			const int cnt = sizeof(size_t) / sizeof(CharType);
 			static_assert(sizeof(size_t) >= sizeof(CharType),
@@ -192,7 +192,7 @@ namespace asd
 	struct equal_to_String
 	{
 		inline bool operator()(IN const CharType* a_left,
-							   IN const CharType* a_right) const asd_NoThrow
+							   IN const CharType* a_right) const noexcept
 		{
 			return asd::strcmp(a_left, a_right, CaseSensitive) == 0;
 		}
@@ -221,7 +221,7 @@ namespace asd
 		static const bool CaseSensitive_Default = true;
 
 
-		BasicString() asd_NoThrow
+		BasicString() noexcept
 		{
 		}
 
@@ -229,7 +229,7 @@ namespace asd
 
 		template<typename... ARGS>
 		BasicString(IN const CharType* a_format,
-					IN ARGS&&... a_args) asd_NoThrow
+					IN ARGS&&... a_args) noexcept
 		{
 			Format(a_format, a_args...);
 		}
@@ -237,7 +237,7 @@ namespace asd
 
 
 		// '\0'을 제외한 캐릭터 수를 리턴
-		inline size_t GetLength() const asd_NoThrow
+		inline size_t GetLength() const noexcept
 		{
 			CharType* p = BaseType::get();
 			if (p == nullptr)
@@ -253,7 +253,7 @@ namespace asd
 
 
 		// 문자열의 시작 포인터를 리턴
-		inline CharType* GetData() const asd_NoThrow
+		inline CharType* GetData() const noexcept
 		{
 			CharType* ret = BaseType::get();
 			if (ret == nullptr) {
@@ -268,38 +268,38 @@ namespace asd
 
 
 
-		inline operator const CharType*() const asd_NoThrow
+		inline operator const CharType*() const noexcept
 		{
 			return GetData();
 		}
 
-		inline operator CharType*() asd_NoThrow
-		{
-			return GetData();
-		}
-
-
-
-		inline operator const void*() const asd_NoThrow
-		{
-			return GetData();
-		}
-
-		inline operator void*() asd_NoThrow
+		inline operator CharType*() noexcept
 		{
 			return GetData();
 		}
 
 
 
-		inline operator SupportType_StdString() const asd_NoThrow
+		inline operator const void*() const noexcept
+		{
+			return GetData();
+		}
+
+		inline operator void*() noexcept
+		{
+			return GetData();
+		}
+
+
+
+		inline operator SupportType_StdString() const noexcept
 		{
 			return SupportType_StdString(GetData(), GetLength());
 		}
 
 
 
-		inline size_t GetHash() const asd_NoThrow
+		inline size_t GetHash() const noexcept
 		{
 			hash_String<CharType, CaseSensitive_Default> func;
 			return func(GetData());
@@ -309,7 +309,7 @@ namespace asd
 
 		// 값을 수정하는 모든 메소드들은 반드시 이것을 호출한다.
 		inline void Resize(IN size_t a_newLen,
-						   IN bool a_preserveOldData = false) asd_NoThrow
+						   IN bool a_preserveOldData = false) noexcept
 		{
 			if (a_newLen == 0) {
 				BaseType::Resize(a_newLen, a_preserveOldData);
@@ -329,7 +329,7 @@ namespace asd
 		//  a_str  :  추가할 문자열
 		//  a_len  :  a_str에서 '\0'을 제외한 원소 개수 (a_len = strlen(a_str))
 		inline void Append(IN const CharType* a_str,
-						   IN size_t a_len) asd_NoThrow
+						   IN size_t a_len) noexcept
 		{
 			const auto orgLen = GetLength();
 			const auto addLen = a_len;
@@ -352,7 +352,7 @@ namespace asd
 
 
 		ThisType& Format(IN const CharType* a_format,
-						 IN ...) asd_NoThrow
+						 IN ...) noexcept
 		{
 			va_list args;
 			va_start(args, a_format);
@@ -365,7 +365,7 @@ namespace asd
 
 
 		inline ThisType& FormatV(IN const CharType* a_format,
-								 IN va_list& a_args) asd_NoThrow
+								 IN va_list& a_args) noexcept
 		{
 			auto length = asd::vscprintf(a_format, a_args);
 			assert(length >= 0);
@@ -387,37 +387,37 @@ namespace asd
 #define asd_String_Define_CompareOperator(CompareFunction, TemplateType, CaseSensitive_DefaultVar)		\
 																										\
 		inline int Compare(IN TemplateType a_rval,														\
-						   IN bool a_caseSensitive = CaseSensitive_DefaultVar) const asd_NoThrow		\
+						   IN bool a_caseSensitive = CaseSensitive_DefaultVar) const noexcept			\
 		{																								\
 			return CompareFunction(GetData(), a_rval, a_caseSensitive);									\
 		}																								\
 																										\
-		inline bool operator == (IN TemplateType a_rval) const asd_NoThrow								\
+		inline bool operator == (IN TemplateType a_rval) const noexcept									\
 		{																								\
 			return Compare(a_rval) == 0;																\
 		}																								\
 																										\
-		inline bool operator != (IN TemplateType a_rval) const asd_NoThrow								\
+		inline bool operator != (IN TemplateType a_rval) const noexcept									\
 		{																								\
 			return Compare(a_rval) != 0;																\
 		}																								\
 																										\
-		inline bool operator < (IN TemplateType a_rval) const asd_NoThrow								\
+		inline bool operator < (IN TemplateType a_rval) const noexcept									\
 		{																								\
 			return Compare(a_rval) < 0;																	\
 		}																								\
 																										\
-		inline bool operator <= (IN TemplateType a_rval) const asd_NoThrow								\
+		inline bool operator <= (IN TemplateType a_rval) const noexcept									\
 		{																								\
 			return Compare(a_rval) <= 0;																\
 		}																								\
 																										\
-		inline bool operator > (IN TemplateType a_rval) const asd_NoThrow								\
+		inline bool operator > (IN TemplateType a_rval) const noexcept									\
 		{																								\
 			return Compare(a_rval) > 0;																	\
 		}																								\
 																										\
-		inline bool operator >= (IN TemplateType a_rval) const asd_NoThrow								\
+		inline bool operator >= (IN TemplateType a_rval) const noexcept									\
 		{																								\
 			return Compare(a_rval) >= 0;																\
 		}																								\
@@ -435,43 +435,43 @@ namespace asd
 																										\
 		inline static int Compare(IN TemplateType a_templateVar,										\
 								  IN const CharType* a_stringVar,										\
-								  IN bool a_caseSensitive = CaseSensitive_DefaultVar) asd_NoThrow		\
+								  IN bool a_caseSensitive = CaseSensitive_DefaultVar) noexcept			\
 		{																								\
 			return Compare(a_stringVar, a_templateVar, a_caseSensitive);								\
 		}																								\
 																										\
 		inline static int Compare(IN const CharType* CharTypePointer_LeftVar,							\
 								  IN TemplateType Template_RightVar,									\
-								  IN bool IgnoreCaseVar = CaseSensitive_DefaultVar) asd_NoThrow			\
+								  IN bool IgnoreCaseVar = CaseSensitive_DefaultVar) noexcept			\
 
 
 
 		// 대입연산자(=)를 정의하면서 생성자까지 한번에 정의하는 매크로.
 #define asd_String_Define_AssignmentOperator_Substitute(ArgType, ArgVar)								\
-		BasicString(IN ArgType ArgVar) asd_NoThrow														\
+		BasicString(IN ArgType ArgVar) noexcept															\
 		{																								\
 			*this = ArgVar;																				\
 		}																								\
 																										\
-		inline ThisType& operator = (IN ArgType ArgVar) asd_NoThrow										\
+		inline ThisType& operator = (IN ArgType ArgVar) noexcept										\
 
 
 
 		// += 연산자를 정의하면서 << 와 + 연산자를 한번에 정의하는 매크로.
 #define asd_String_Define_AssignmentOperator_Append(ArgType, ArgVar)									\
-		inline ThisType operator + (IN ArgType ArgVar) const asd_NoThrow								\
+		inline ThisType operator + (IN ArgType ArgVar) const noexcept									\
 		{																								\
 			ThisType ret;																				\
 			ret << *this << ArgVar;																		\
 			return ret;																					\
 		}																								\
 																										\
-		inline ThisType& operator << (IN ArgType ArgVar) asd_NoThrow									\
+		inline ThisType& operator << (IN ArgType ArgVar) noexcept										\
 		{																								\
 			return *this += ArgVar;																		\
 		}																								\
 																										\
-		inline ThisType& operator += (IN ArgType ArgVar) asd_NoThrow									\
+		inline ThisType& operator += (IN ArgType ArgVar) noexcept										\
 
 
 
@@ -507,7 +507,7 @@ namespace asd
 		//     return 0  :  left == right
 		inline static int Compare(IN const CharType* a_left,
 								  IN const CharType* a_right,
-								  IN bool a_caseSensitive = CaseSensitive_Default) asd_NoThrow
+								  IN bool a_caseSensitive = CaseSensitive_Default) noexcept
 		{
 			return asd::strcmp(a_left,
 							   a_right,
@@ -528,7 +528,7 @@ namespace asd
 		//   ambiguous error를 피하기 위한 오버로딩.
 		inline static int Compare(IN const CharType* a_left,
 								  IN const ThisType& a_right,
-								  IN bool a_caseSensitive = CaseSensitive_Default) asd_NoThrow
+								  IN bool a_caseSensitive = CaseSensitive_Default) noexcept
 		{
 			return Compare(a_left,
 						   a_right.GetData(),
@@ -661,37 +661,37 @@ namespace asd
 		typedef CharType value_type;
 		typedef size_t size_type;
 		
-		inline const value_type* data() const asd_NoThrow
+		inline const value_type* data() const noexcept
 		{
 			return GetData();
 		}
 
-		inline value_type* data() asd_NoThrow
+		inline value_type* data() noexcept
 		{
 			return GetData();
 		}
 
-		inline const value_type* c_str() const asd_NoThrow
+		inline const value_type* c_str() const noexcept
 		{
 			return GetData();
 		}
 
-		inline value_type* c_str() asd_NoThrow
+		inline value_type* c_str() noexcept
 		{
 			return GetData();
 		}
 
-		inline size_type size() const asd_NoThrow
+		inline size_type size() const noexcept
 		{
 			return GetLength();
 		}
 
-		inline size_type length() const asd_NoThrow
+		inline size_type length() const noexcept
 		{
 			return GetLength();
 		}
 
-		inline void resize(IN size_type a_count) asd_NoThrow
+		inline void resize(IN size_type a_count) noexcept
 		{
 			Resize(a_count, true);
 			assert(data()[size()] == '\0');
@@ -699,7 +699,7 @@ namespace asd
 		}
 
 		inline void resize(IN size_type a_count,
-						   IN value_type a_fill) asd_NoThrow
+						   IN value_type a_fill) noexcept
 		{
 			const auto OldLen = size();
 			resize(a_count);
@@ -712,18 +712,18 @@ namespace asd
 		}
 
 		inline ThisType& append(IN const CharType* a_str,
-								IN size_type a_len) asd_NoThrow
+								IN size_type a_len) noexcept
 		{
 			Append(a_str, a_len);
 			return *this;
 		}
 
-		inline ThisType& append(IN const ThisType& a_str) asd_NoThrow
+		inline ThisType& append(IN const ThisType& a_str) noexcept
 		{
 			return append(a_str, a_str.size());
 		}
 
-		inline ThisType& append(IN const CharType* a_str) asd_NoThrow
+		inline ThisType& append(IN const CharType* a_str) noexcept
 		{
 			return append(a_str, asd::strlen(a_str));
 		}

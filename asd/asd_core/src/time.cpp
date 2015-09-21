@@ -231,7 +231,7 @@ namespace asd
 
 
 
-	Time::Time() asd_NoThrow
+	Time::Time() noexcept
 	{
 	}
 
@@ -243,7 +243,7 @@ namespace asd
 			   IN int a_minute /*= 0*/,
 			   IN int a_second /*= 0*/,
 			   IN int a_millisecond /*= 0*/)
-		asd_Throws(Exception)
+		noexcept(false)
 	{
 		Init(a_year, a_month, a_day, a_hour, a_minute, a_second, a_millisecond);
 	}
@@ -256,7 +256,7 @@ namespace asd
 					IN int a_minute /*= 0*/,
 					IN int a_second /*= 0*/,
 					IN int a_millisecond /*= 0*/)
-		asd_Throws(Exception)
+		noexcept(false)
 	{
 		CheckParam_Year(a_year);
 		CheckParam_Month(a_month);
@@ -266,8 +266,16 @@ namespace asd
 		CheckParam_Second(a_second);
 		CheckParam_Millisecond(a_millisecond);
 
-		m_data[0] = (a_year << Offset_Year) | (a_month << Offset_Month) | a_day;
-		m_data[1] = (a_hour << Offset_Hour) | (a_minute << Offset_Minute) | (a_second << Offset_Second) | a_millisecond;
+		m_data[0]
+			= (a_year << Offset_Year)
+			| (a_month << Offset_Month)
+			| a_day;
+
+		m_data[1]
+			= (a_hour << Offset_Hour)
+			| (a_minute << Offset_Minute)
+			| (a_second << Offset_Second)
+			| a_millisecond;
 
 		assert(Year() == a_year);
 		assert(Month() == a_month);
@@ -279,7 +287,7 @@ namespace asd
 	}
 
 
-	int Time::Year() const asd_NoThrow
+	int Time::Year() const noexcept
 	{
 		const int y = m_data[0] >> Offset_Year;
 		return y;
@@ -287,7 +295,7 @@ namespace asd
 
 
 	void Time::Year(IN int a_year)
-		asd_Throws(Exception)
+		noexcept(false)
 	{
 		CheckParam_Year(a_year);
 		asd_CheckCorruption(Month, Day, Hour, Minute, Second, Millisecond);
@@ -298,7 +306,7 @@ namespace asd
 	}
 
 
-	int Time::Month() const asd_NoThrow
+	int Time::Month() const noexcept
 	{
 		const int m = (m_data[0] & Mask_Month) >> Offset_Month;
 		assert(m >= 0);
@@ -308,7 +316,7 @@ namespace asd
 
 
 	void Time::Month(IN int a_month)
-		asd_Throws(Exception)
+		noexcept(false)
 	{
 		CheckParam_Month(a_month);
 		asd_CheckCorruption(Year, Day, Hour, Minute, Second, Millisecond);
@@ -319,7 +327,7 @@ namespace asd
 	}
 
 
-	int Time::Day() const asd_NoThrow
+	int Time::Day() const noexcept
 	{
 		const int d = m_data[0] & Mask_Day;
 		assert(d >= 0);
@@ -329,7 +337,7 @@ namespace asd
 
 
 	void Time::Day(IN int a_day)
-		asd_Throws(Exception)
+		noexcept(false)
 	{
 		CheckParam_Day(a_day);
 		asd_CheckCorruption(Year, Month, Hour, Minute, Second, Millisecond);
@@ -340,7 +348,7 @@ namespace asd
 	}
 
 
-	int Time::Hour() const asd_NoThrow
+	int Time::Hour() const noexcept
 	{
 		const int h = m_data[1] >> Offset_Hour;
 		assert(h >= 0);
@@ -350,7 +358,7 @@ namespace asd
 
 
 	void Time::Hour(IN int a_hour)
-		asd_Throws(Exception)
+		noexcept(false)
 	{
 		CheckParam_Hour(a_hour);
 		asd_CheckCorruption(Year, Month, Day, Minute, Second, Millisecond);
@@ -361,7 +369,7 @@ namespace asd
 	}
 
 
-	int Time::Minute() const asd_NoThrow
+	int Time::Minute() const noexcept
 	{
 		const int m = (m_data[1] & Mask_Minute) >> Offset_Minute;
 		assert(m >= 0);
@@ -371,7 +379,7 @@ namespace asd
 
 
 	void Time::Minute(IN int a_minute)
-		asd_Throws(Exception)
+		noexcept(false)
 	{
 		CheckParam_Minute(a_minute);
 		asd_CheckCorruption(Year, Month, Day, Hour, Second, Millisecond);
@@ -382,7 +390,7 @@ namespace asd
 	}
 
 
-	int Time::Second() const asd_NoThrow
+	int Time::Second() const noexcept
 	{
 		const int s = (m_data[1] & Mask_Second) >> Offset_Second;
 		assert(s >= 0);
@@ -392,7 +400,7 @@ namespace asd
 
 
 	void Time::Second(IN int a_second)
-		asd_Throws(Exception)
+		noexcept(false)
 	{
 		CheckParam_Second(a_second);
 		asd_CheckCorruption(Year, Month, Day, Hour, Minute, Millisecond);
@@ -403,7 +411,7 @@ namespace asd
 	}
 
 
-	int Time::Millisecond() const asd_NoThrow
+	int Time::Millisecond() const noexcept
 	{
 		const int ms = m_data[1] & Mask_Millisecond;
 		assert(ms >= 0);
@@ -413,7 +421,7 @@ namespace asd
 
 
 	void Time::Millisecond(IN int a_millisecond)
-		asd_Throws(Exception)
+		noexcept(false)
 	{
 		CheckParam_Millisecond(a_millisecond);
 		asd_CheckCorruption(Year, Month, Day, Hour, Minute, Second);
@@ -424,13 +432,13 @@ namespace asd
 	}
 
 
-	DayOfTheWeek Time::DayOfTheWeek() const asd_NoThrow
+	DayOfTheWeek Time::DayOfTheWeek() const noexcept
 	{
 		return GetDayOfTheWeek(GetDayCount(Year(), Month(), Day()));
 	}
 
 
-	MString Time::ToString(const char* a_format /*= nullptr*/) const asd_NoThrow
+	MString Time::ToString(const char* a_format /*= nullptr*/) const noexcept
 	{
 		MString ret;
 		if (a_format == nullptr) {
@@ -468,7 +476,7 @@ namespace asd
 
 
 	int Time::Compare(IN const Time& a_left,
-					  IN const Time& a_right) asd_NoThrow
+					  IN const Time& a_right) noexcept
 	{
 		if (a_left.m_data[0] < a_right.m_data[0])
 			return -1;
@@ -486,29 +494,29 @@ namespace asd
 
 #define asd_Define_ConvertFunction_From(Type, ParamName)	\
 	Time::Time(IN const Type& a_src)						\
-		asd_Throws(Exception)								\
+		noexcept(false)										\
 	{														\
 		From(a_src);										\
 	}														\
 															\
 	Time& Time::operator = (IN const Type& a_src)			\
-		asd_Throws(Exception)								\
+		noexcept(false)										\
 	{														\
 		return From(a_src);									\
 	}														\
 															\
 	Time& Time::From(IN const Type& ParamName)				\
-		asd_Throws(Exception)								\
+		noexcept(false)										\
 
 
 #define asd_Define_ConvertFunction_To(Type, ParamName)		\
-	Time::operator Type() const asd_NoThrow					\
+	Time::operator Type() const noexcept					\
 	{														\
 		Type r;												\
 		return To(r);										\
 	}														\
 															\
-	Type& Time::To(OUT Type& a_dst) const asd_NoThrow		\
+	Type& Time::To(OUT Type& a_dst) const noexcept			\
 
 
 	asd_Define_ConvertFunction_From(IN tm, a_src)

@@ -70,19 +70,6 @@
 
 
 
-// Exception 사용 가능 여부
-#ifdef asd_Can_not_use_Exception
-#	define asd_NoThrow
-#	define asd_Throws(...)
-#
-#else
-#	define asd_NoThrow noexcept
-#	define asd_Throws(...) throw(__VA_ARGS__)
-#
-#endif
-
-
-
 // 디버그모드 여부
 #if !defined(NDEBUG) && (defined(DEBUG) || defined(_DEBUG))
 #	define asd_Debug 1
@@ -114,32 +101,32 @@
 
 // CompareFunction를 사용해서 비교연산자들을 정의하는 매크로
 #define asd_Define_CompareOperator(CompareFunction, Type)					\
-	inline bool operator == (IN const Type& a_rval) const asd_NoThrow		\
+	inline bool operator == (IN const Type& a_rval) const noexcept			\
 	{																		\
 		return CompareFunction(*this, a_rval) == 0;							\
 	}																		\
 																			\
-	inline bool operator != (IN const Type& a_rval) const asd_NoThrow		\
+	inline bool operator != (IN const Type& a_rval) const noexcept			\
 	{																		\
 		return CompareFunction(*this, a_rval) != 0;							\
 	}																		\
 																			\
-	inline bool operator < (IN const Type& a_rval) const asd_NoThrow		\
+	inline bool operator < (IN const Type& a_rval) const noexcept			\
 	{																		\
 		return CompareFunction(*this, a_rval) < 0;							\
 	}																		\
 																			\
-	inline bool operator <= (IN const Type& a_rval) const asd_NoThrow		\
+	inline bool operator <= (IN const Type& a_rval) const noexcept			\
 	{																		\
 		return CompareFunction(*this, a_rval) <= 0;							\
 	}																		\
 																			\
-	inline bool operator > (IN const Type& a_rval) const asd_NoThrow		\
+	inline bool operator > (IN const Type& a_rval) const noexcept			\
 	{																		\
 		return CompareFunction(*this, a_rval) > 0;							\
 	}																		\
 																			\
-	inline bool operator >= (IN const Type& a_rval) const asd_NoThrow		\
+	inline bool operator >= (IN const Type& a_rval) const noexcept			\
 	{																		\
 		return CompareFunction(*this, a_rval) >= 0;							\
 	}																		\

@@ -30,48 +30,48 @@ namespace asd
 	public:
 		virtual ~IpAddress();
 
-		IpAddress(IN Family a_addrFamily = IPv4) asd_NoThrow;
+		IpAddress(IN Family a_addrFamily = IPv4) noexcept;
 
 		IpAddress(IN const char* a_domain,
-				  IN uint16_t a_port = 0) asd_Throws(asd::Exception);
+				  IN uint16_t a_port = 0) noexcept(false);
 
-		IpAddress(IN const IpAddress& a_cp) asd_NoThrow;
+		IpAddress(IN const IpAddress& a_cp) noexcept;
 
-		IpAddress(MOVE IpAddress&& a_rval) asd_NoThrow;
+		IpAddress(MOVE IpAddress&& a_rval) noexcept;
 
-		IpAddress(IN const sockaddr_in& a_native_ipv4) asd_NoThrow;
+		IpAddress(IN const sockaddr_in& a_native_ipv4) noexcept;
 
-		IpAddress(IN const sockaddr_in6& a_native_ipv6) asd_NoThrow;
+		IpAddress(IN const sockaddr_in6& a_native_ipv6) noexcept;
 
-		IpAddress& operator = (IN const IpAddress& a_cp) asd_NoThrow;
+		IpAddress& operator = (IN const IpAddress& a_cp) noexcept;
 
-		IpAddress& operator = (MOVE IpAddress&& a_rval) asd_NoThrow;
+		IpAddress& operator = (MOVE IpAddress&& a_rval) noexcept;
 
-		IpAddress& operator = (IN const sockaddr_in& a_native_ipv4) asd_NoThrow;
+		IpAddress& operator = (IN const sockaddr_in& a_native_ipv4) noexcept;
 
-		IpAddress& operator = (IN const sockaddr_in6& a_native_ipv6) asd_NoThrow;
+		IpAddress& operator = (IN const sockaddr_in6& a_native_ipv6) noexcept;
 
-		operator const sockaddr* () const asd_NoThrow;
+		operator const sockaddr* () const noexcept;
 
-		int GetAddrLen() const asd_NoThrow;
+		int GetAddrLen() const noexcept;
 
-		Family GetAddressFamily() const asd_NoThrow;
+		Family GetAddressFamily() const noexcept;
 
-		void* GetIp(OUT int* a_len = nullptr) const asd_NoThrow;
+		void* GetIp(OUT int* a_len = nullptr) const noexcept;
 
-		uint16_t GetPort() const asd_NoThrow;
+		uint16_t GetPort() const noexcept;
 
-		MString ToString() const asd_NoThrow;
+		MString ToString() const noexcept;
 
 		static int Compare(IN const IpAddress& a_left,
-						   IN const IpAddress& a_right) asd_NoThrow;
+						   IN const IpAddress& a_right) noexcept;
 
 		asd_Define_CompareOperator(Compare, IpAddress);
 
 		// STL의 해시 기반 컨테이너에서 사용할 Functor
 		struct Hash
 		{
-			size_t operator() (IN const IpAddress& a_addr) const asd_NoThrow;
+			size_t operator() (IN const IpAddress& a_addr) const noexcept;
 		};
 	};
 }

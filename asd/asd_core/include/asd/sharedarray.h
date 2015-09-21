@@ -15,7 +15,7 @@ namespace asd
 		typedef SharedArray<ElemType> ThisType;
 
 	private:
-		inline static void* GetStartPtr(IN ElemType* a_ptr) asd_NoThrow
+		inline static void* GetStartPtr(IN ElemType* a_ptr) noexcept
 		{
 			uint8_t* p = (uint8_t*)a_ptr;
 			return p - sizeof(size_t);
@@ -23,7 +23,7 @@ namespace asd
 
 		struct DeleteFunctor
 		{
-			inline void operator()(IN ElemType* a_ptr) asd_NoThrow
+			inline void operator()(IN ElemType* a_ptr) noexcept
 			{
 				uint8_t* p = (uint8_t*)GetStartPtr(a_ptr);
 				delete[] p;
@@ -32,7 +32,7 @@ namespace asd
 
 
 	public:
-		inline size_t GetCount() const asd_NoThrow
+		inline size_t GetCount() const noexcept
 		{
 			auto ptr = BaseType::get();
 			if (ptr == nullptr)
@@ -46,7 +46,7 @@ namespace asd
 
 		// 버퍼를 a_newCount 개수로 초기화한다.
 		inline void Resize(IN size_t a_newCount,
-						   IN bool a_preserveOldData = false) asd_NoThrow
+						   IN bool a_preserveOldData = false) noexcept
 		{
 			if (a_newCount == 0) {
 				BaseType::reset();
@@ -85,7 +85,7 @@ namespace asd
 		}
 
 
-		inline ElemType& operator [] (IN size_t a_index) const asd_NoThrow
+		inline ElemType& operator [] (IN size_t a_index) const noexcept
 		{
 			assert(BaseType::get() != nullptr);
 			assert(a_index < GetCount());
@@ -95,7 +95,7 @@ namespace asd
 
 		template <typename IterableLinearContainer>
 		static int Compare(IN const ThisType& a_left,
-						   IN const IterableLinearContainer& a_right) asd_NoThrow
+						   IN const IterableLinearContainer& a_right) noexcept
 		{
 			auto sz1 = a_left.size();
 			auto sz2 = a_right.size();
