@@ -80,7 +80,8 @@ namespace asd
 		}
 
 
-		~MutexData()
+		~MutexData() 
+			noexcept(false)
 		{
 #if defined (asd_Platform_Windows)
 			assert(m_mtx.RecursionCount == 0);
@@ -99,43 +100,32 @@ namespace asd
 
 
 
-	Mutex::Mutex() 
-		noexcept(false) 
+	Mutex::Mutex()
 	{
-		m_data = new MutexData;
+		m_data.reset(new MutexData);
 	}
 
 
 
 	Mutex::Mutex(MOVE Mutex&& a_rval)
-		noexcept(false)
 	{
 		(*this) = std::move(a_rval);
 	}
 
 
 
-	Mutex& Mutex::operator = (MOVE Mutex&& a_rval) 
-		noexcept(false)
+	Mutex& Mutex::operator = (MOVE Mutex&& a_rval)
 	{
-		if (m_data != nullptr)
-			delete m_data;
-
-		m_data = a_rval.m_data;
-		a_rval.m_data = nullptr;
-
+		m_data.swap(a_rval.m_data);
 		return *this;
 	}
 
 
 
-	Mutex::~Mutex() 
-		noexcept
+	Mutex::~Mutex() noexcept
 	{
 		asd_Destructor_Start
-			if (m_data == nullptr)
-				return; // move된 경우
-			delete m_data;
+			m_data.release();
 		asd_Destructor_End
 	}
 
@@ -211,7 +201,6 @@ namespace asd
 
 
 	SpinMutex::SpinMutex()
-		noexcept(false)
 	{
 		if (Get_HW_Concurrency() <= 1)
 			m_mtx = new Mutex;
@@ -221,8 +210,7 @@ namespace asd
 
 
 
-	SpinMutex::~SpinMutex()
-		noexcept
+	SpinMutex::~SpinMutex() noexcept
 	{
 		if (m_mtx != nullptr)
 			delete m_mtx;

@@ -14,25 +14,18 @@ namespace asd
 	public:
 		const static uint32_t Infinite = 0xFFFFFFFF;
 
-		Semaphore(IN uint32_t a_initCount = 0)
-			noexcept(false);
+		Semaphore(IN uint32_t a_initCount = 0);
 
-		Semaphore(MOVE Semaphore&& a_rval)
-			noexcept(false);
+		Semaphore(MOVE Semaphore&& a_rval);
 
-		Semaphore& operator = (MOVE Semaphore&& a_rval)
-			noexcept(false);
+		Semaphore& operator = (MOVE Semaphore&& a_rval);
 
-		~Semaphore()
-			noexcept;
+		~Semaphore() noexcept;
 
-		uint32_t GetCount() const 
-			noexcept(false);
+		uint32_t GetCount() const;
 
-		bool Wait(IN uint32_t a_timeoutMs = Infinite) 
-			noexcept(false);
+		bool Wait(IN uint32_t a_timeoutMs = Infinite);
 
-		void Post(IN uint32_t a_count = 1) 
-			noexcept(false);
+		void Post(IN uint32_t a_count = 1);
 	};
 }

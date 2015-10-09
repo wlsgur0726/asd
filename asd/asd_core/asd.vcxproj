@@ -193,7 +193,7 @@
     <ClInclude Include="include\asd\string.h" />
     <ClInclude Include="include\asd\tempbuffer.h" />
     <ClInclude Include="include\asd\threadpool.h" />
-    <ClInclude Include="include\asd\time.h" />
+    <ClInclude Include="include\asd\datetime.h" />
     <ClInclude Include="include\asd\util.h" />
     <ClInclude Include="src\stdafx.h" />
   </ItemGroup>
@@ -207,7 +207,7 @@
     <ClCompile Include="src\socket.cpp" />
     <ClCompile Include="src\string.cpp" />
     <ClCompile Include="src\threadpool.cpp" />
-    <ClCompile Include="src\time.cpp" />
+    <ClCompile Include="src\datetime.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\libiconv-1.14\windows\msvc2015\libiconv.vcxproj">

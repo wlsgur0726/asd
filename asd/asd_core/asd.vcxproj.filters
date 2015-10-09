@@ -60,7 +60,7 @@
     <ClInclude Include="include\asd\sharedarray.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\asd\time.h">
+    <ClInclude Include="include\asd\datetime.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -92,7 +92,7 @@
     <ClCompile Include="src\odbcwrap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\time.cpp">
+    <ClCompile Include="src\datetime.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

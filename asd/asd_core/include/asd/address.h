@@ -33,7 +33,7 @@ namespace asd
 		IpAddress(IN Family a_addrFamily = IPv4) noexcept;
 
 		IpAddress(IN const char* a_domain,
-				  IN uint16_t a_port = 0) noexcept(false);
+				  IN uint16_t a_port = 0);
 
 		IpAddress(IN const IpAddress& a_cp) noexcept;
 

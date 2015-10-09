@@ -21,8 +21,7 @@ namespace asd
 #endif
 
 
-		SemaphoreData(IN uint32_t a_initCount) 
-			noexcept(false)
+		SemaphoreData(IN uint32_t a_initCount)
 		{
 #if defined(asd_Platform_Windows)
 			m_handle = CreateSemaphore(NULL,
@@ -70,7 +69,6 @@ namespace asd
 
 
 	Semaphore::Semaphore(IN uint32_t a_initCount /*= 0*/)
-		noexcept(noexcept(SemaphoreData(a_initCount)))
 	{
 		m_data.reset(new SemaphoreData(a_initCount));
 	}
@@ -78,7 +76,6 @@ namespace asd
 
 
 	Semaphore::Semaphore(MOVE Semaphore&& a_rval)
-		noexcept(noexcept(m_data->~SemaphoreData()))
 	{
 		(*this) = std::move(a_rval);
 	}
@@ -86,22 +83,15 @@ namespace asd
 
 
 	Semaphore& Semaphore::operator = (MOVE Semaphore&& a_rval)
-		noexcept(noexcept(m_data->~SemaphoreData()))
 	{
 		m_data.swap(a_rval.m_data);
-		a_rval.m_data = nullptr;
-
 		return *this;
 	}
 	
 	
 
-	Semaphore::~Semaphore()
-		noexcept
+	Semaphore::~Semaphore() noexcept
 	{
-		if (m_data == nullptr)
-			return; // move된 경우
-
 		asd_Destructor_Start
 			assert(GetCount() >= 0);
 			m_data.release();
@@ -111,7 +101,6 @@ namespace asd
 
 
 	uint32_t Semaphore::GetCount() const
-		noexcept(false)
 	{
 		assert(m_data != nullptr);
 
@@ -132,7 +121,6 @@ namespace asd
 
 
 	bool Semaphore::Wait(IN uint32_t a_timeoutMs /*= Infinite*/)
-		noexcept(false)
 	{
 		assert(m_data != nullptr);
 
@@ -202,7 +190,6 @@ namespace asd
 
 
 	void Semaphore::Post(IN uint32_t a_count /*= 1*/)
-		noexcept(false)
 	{
 		assert(m_data != nullptr);
 		if (a_count == 0)

@@ -325,7 +325,6 @@ namespace asd
 
 
 	void DBConnection::Open(IN const char* a_constr)
-		noexcept(false)
 	{
 		m_handle = DBConnectionHandle_ptr(new DBConnectionHandle);
 		m_handle->Open(a_constr);
@@ -333,28 +332,24 @@ namespace asd
 
 
 	void DBConnection::BeginTran()
-		noexcept(false)
 	{
 		m_handle->SetAutoCommit(false);
 	}
 
 
 	void DBConnection::CommitTran()
-		noexcept(false)
 	{
 		m_handle->EndTran(true);
 	}
 
 
 	void DBConnection::RollbackTran()
-		noexcept(false)
 	{
 		m_handle->EndTran(false);
 	}
 
 
 	void DBConnection::Close()
-		noexcept(false)
 	{
 		if (m_handle != nullptr) {
 			m_handle->CloseConnectoin();
@@ -721,14 +716,12 @@ namespace asd
 
 
 	DBStatement::DBStatement(REF DBConnection& a_conHandle)
-		noexcept(false)
 	{
 		Init(a_conHandle);
 	}
 
 
 	void DBStatement::Init(REF DBConnection& a_conHandle)
-		noexcept(false)
 	{
 		m_handle = DBStatementHandle_ptr(new DBStatementHandle);
 		m_handle->Init(a_conHandle.m_handle);
@@ -736,7 +729,6 @@ namespace asd
 
 
 	void DBStatement::Prepare(IN const char* a_query)
-		noexcept(false)
 	{
 		assert(m_handle != nullptr);
 		m_handle->Prepare(a_query);
@@ -744,7 +736,6 @@ namespace asd
 
 
 	int64_t DBStatement::Execute(IN FetchCallback a_callback)
-		noexcept(false)
 	{
 		assert(m_handle != nullptr);
 		return m_handle->Execute(nullptr, a_callback);
@@ -753,7 +744,6 @@ namespace asd
 
 	int64_t DBStatement::Execute(IN const char* a_query,
 								 IN FetchCallback a_callback)
-		noexcept(false)
 	{
 		assert(m_handle != nullptr);
 		return m_handle->Execute(a_query, a_callback);
@@ -761,7 +751,6 @@ namespace asd
 
 
 	void DBStatement::ClearParam()
-		noexcept(false)
 	{
 		assert(m_handle != nullptr);
 		m_handle->ClearParam();
@@ -769,7 +758,6 @@ namespace asd
 
 
 	MString DBStatement::GetColumnName(IN uint16_t a_columnIndex)
-		noexcept(false)
 	{
 		assert(m_handle != nullptr);
 		return m_handle->GetColumnName(a_columnIndex);
@@ -784,7 +772,6 @@ namespace asd
 
 
 	void DBStatement::Close()
-		noexcept(false)
 	{
 		if (m_handle != nullptr)
 			m_handle->CloseStatement();
@@ -812,7 +799,6 @@ namespace asd
 	};
 
 	DBStatement::Caster& DBStatement::GetData(IN uint16_t a_columnIndex)
-		noexcept(false)
 	{
 		thread_local Caster_GetData t_caster;
 		t_caster.m_handle = m_handle.get();
@@ -822,7 +808,6 @@ namespace asd
 	}
 
 	DBStatement::Caster& DBStatement::GetData(IN const char* a_columnName)
-		noexcept(false)
 	{
 		return GetData(m_handle->GetColumnIndex(a_columnName));
 	}
@@ -838,7 +823,6 @@ namespace asd
 	};
 
 	DBStatement::Caster& DBStatement::GetParam(IN uint16_t a_paramNumber)
-		noexcept(false)
 	{
 		thread_local Caster_GetParam t_caster;
 		t_caster.m_handle = m_handle.get();
@@ -931,7 +915,6 @@ namespace asd
 
 #define asd_Define_Caster_GetData_Ptr(Type, PtrClass)										\
 	DBStatement::Caster::operator PtrClass<Type>()											\
-		noexcept(false)																		\
 	{																						\
 		/* unused function, avoid build error */											\
 		assert(false);																		\
@@ -939,7 +922,6 @@ namespace asd
 	}																						\
 																							\
 	Caster_GetData::operator PtrClass<Type>()												\
-		noexcept(false)																		\
 	{																						\
 		PtrClass<Type> ret;																	\
 		Type temp;																			\
@@ -950,7 +932,6 @@ namespace asd
 
 #define asd_Define_Caster_GetData(Type)														\
 	DBStatement::Caster::operator Type()													\
-		noexcept(false)																		\
 	{																						\
 		/* unused function, avoid build error */											\
 		assert(false);																		\
@@ -958,7 +939,6 @@ namespace asd
 	}																						\
 																							\
 	DBStatement::Caster::operator Type*()													\
-		noexcept(false)																		\
 	{																						\
 		/* unused function, avoid build error */											\
 		assert(false);																		\
@@ -966,7 +946,6 @@ namespace asd
 	}																						\
 																							\
 	Caster_GetData::operator Type()															\
-		noexcept(false)																		\
 	{																						\
 		Type ret;																			\
 		if (GetData_Internal<Type>(m_handle, m_index, ret) == nullptr)						\
@@ -975,7 +954,6 @@ namespace asd
 	}																						\
 																							\
 	Caster_GetData::operator Type*()														\
-		noexcept(false)																		\
 	{																						\
 		thread_local Type t_temp;															\
 		t_temp = Type();																	\
@@ -991,7 +969,6 @@ namespace asd
 	template <>																				\
 	ReturnType* DBStatement::GetData<ReturnType>(IN const char* a_columnName,				\
 												 OUT ReturnType& a_return)					\
-		noexcept(false)																		\
 	{																						\
 		auto index = m_handle->GetColumnIndex(a_columnName);								\
 		return GetData_Internal<ReturnType>(m_handle.get(),									\
@@ -1003,7 +980,6 @@ namespace asd
 	template <>																				\
 	ReturnType* DBStatement::GetData<ReturnType>(IN uint16_t a_enum,						\
 												 OUT ReturnType& a_return)					\
-		noexcept(false)																		\
 	{																						\
 		return GetData_Internal<ReturnType>(m_handle.get(),									\
 											a_enum,											\
@@ -1039,7 +1015,6 @@ namespace asd
 
 #define asd_Define_Caster_GetParam_Ptr(Type, PtrClass)										\
 	Caster_GetParam::operator PtrClass<Type>()												\
-		noexcept(false)																		\
 	{																						\
 		PtrClass<Type> ret;																	\
 		Type temp;																			\
@@ -1050,7 +1025,6 @@ namespace asd
 
 #define asd_Define_GetParam(Type)															\
 	Caster_GetParam::operator Type()														\
-		noexcept(false)																		\
 	{																						\
 		Type ret;																			\
 		if (GetParam_Internal<Type>(m_handle, m_index, ret) == nullptr)						\
@@ -1059,7 +1033,6 @@ namespace asd
 	}																						\
 																							\
 	Caster_GetParam::operator Type*()														\
-		noexcept(false)																		\
 	{																						\
 		thread_local Type t_temp;															\
 		return GetParam_Internal<Type>(m_handle, m_index, t_temp);							\
@@ -1071,14 +1044,12 @@ namespace asd
 	template<>																				\
 	Type* DBStatement::GetParam<Type>(IN uint16_t a_paramNumber,							\
 									  OUT Type& a_return)									\
-		noexcept(false)																		\
 	{																						\
 		return GetParam_Internal<Type>(m_handle.get(), a_paramNumber, a_return);			\
 	}																						\
 																							\
 	template <>																				\
 	bool DBStatement::IsNullParam<Type>(IN uint16_t a_columnIndex)							\
-		noexcept(false)																		\
 	{																						\
 		void* buf;																			\
 		SQLLEN ind;																			\
@@ -1090,7 +1061,6 @@ namespace asd
 																							\
 	template <>																				\
 	bool DBStatement::IsNullParam<Type>(IN Type* a_boundPtr)								\
-		noexcept(false)																		\
 	{																						\
 		void* buf;																			\
 		SQLLEN ind;																			\
@@ -1663,7 +1633,6 @@ namespace asd
 									   IN SQLType a_columnType,											\
 									   IN uint32_t a_columnSize,										\
 									   IN uint16_t a_columnScale)										\
-		noexcept(false)																					\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_INPUT, false>((Type*)&a_value,							\
 															   false,									\
@@ -1678,7 +1647,6 @@ namespace asd
 												 IN SQLType a_columnType,								\
 												 IN uint32_t a_columnSize,								\
 												 IN uint16_t a_columnScale)								\
-		noexcept(false)																					\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_INPUT, false>(nullptr,									\
 															   true,									\
@@ -1698,7 +1666,6 @@ namespace asd
 										IN SQLType a_columnType,										\
 										IN uint32_t a_columnSize,										\
 										IN uint16_t a_columnScale)										\
-		noexcept(false)																					\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_INPUT, true>(a_value,									\
 															  a_value == nullptr,						\
@@ -1718,7 +1685,6 @@ namespace asd
 										IN SQLType a_columnType,										\
 										IN uint32_t a_columnSize,										\
 										IN uint16_t a_columnScale)										\
-		noexcept(false)																					\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_OUTPUT, false>(nullptr,								\
 																false,									\
@@ -1733,7 +1699,6 @@ namespace asd
 												  IN SQLType a_columnType,								\
 												  IN uint32_t a_columnSize,								\
 												  IN uint16_t a_columnScale)							\
-		noexcept(false)																					\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_OUTPUT, false>(nullptr,								\
 																true,									\
@@ -1753,7 +1718,6 @@ namespace asd
 										 IN SQLType a_columnType,										\
 										 IN uint32_t a_columnSize,										\
 										 IN uint16_t a_columnScale)										\
-		noexcept(false)																					\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_OUTPUT, true>(a_varptr,								\
 															   a_varptr == nullptr,						\
@@ -1774,7 +1738,6 @@ namespace asd
 										  IN SQLType a_columnType,										\
 										  IN uint32_t a_columnSize,										\
 										  IN uint16_t a_columnScale)									\
-		noexcept(false)																					\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_INPUT_OUTPUT, false>((Type*)&a_value,					\
 																	  false,							\
@@ -1789,7 +1752,6 @@ namespace asd
 													IN SQLType a_columnType,							\
 													IN uint32_t a_columnSize,							\
 													IN uint16_t a_columnScale)							\
-		noexcept(false)																					\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_INPUT_OUTPUT, false>(nullptr,							\
 																	  true,								\
@@ -1810,7 +1772,6 @@ namespace asd
 										   IN SQLType a_columnType,										\
 										   IN uint32_t a_columnSize,									\
 										   IN uint16_t a_columnScale)									\
-		noexcept(false)																					\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_INPUT_OUTPUT, true>(&a_var,							\
 																	 a_nullInput,						\
@@ -1897,18 +1858,36 @@ namespace asd
 			a_proxy.fraction	= 0;
 		}
 		else {
-			// 요일정보를 채우기 위해 Time Class를 사용
-			Time(a_proxy).To(a_src);
+			// 요일정보를 채우기 위해 asd::DateTime를 사용
+			DateTime(a_proxy).To(a_src);
 		}
 	}
 	asd_Define_BindParam_ProxyCase(tm, SQL_TIMESTAMP_STRUCT);
 
-	asd_Define_ConvertData_ProxyCase(Time, a_src, SQL_TIMESTAMP_STRUCT, a_proxy, a_direction)
+	asd_Define_ConvertData_ProxyCase(Date, a_src, SQL_DATE_STRUCT, a_proxy, a_direction)
 	{
 		if (Is_Left_To_Right(a_direction))
 			a_src.To(a_proxy);
 		else
 			a_src.From(a_proxy);
 	}
-	asd_Define_BindParam_ProxyCase(Time, SQL_TIMESTAMP_STRUCT);
+	asd_Define_BindParam_ProxyCase(Date, SQL_DATE_STRUCT);
+
+	asd_Define_ConvertData_ProxyCase(Time, a_src, SQL_TIME_STRUCT, a_proxy, a_direction)
+	{
+		if (Is_Left_To_Right(a_direction))
+			a_src.To(a_proxy);
+		else
+			a_src.From(a_proxy);
+	}
+	asd_Define_BindParam_ProxyCase(Time, SQL_TIME_STRUCT);
+
+	asd_Define_ConvertData_ProxyCase(DateTime, a_src, SQL_TIMESTAMP_STRUCT, a_proxy, a_direction)
+	{
+		if (Is_Left_To_Right(a_direction))
+			a_src.To(a_proxy);
+		else
+			a_src.From(a_proxy);
+	}
+	asd_Define_BindParam_ProxyCase(DateTime, SQL_TIMESTAMP_STRUCT);
 }

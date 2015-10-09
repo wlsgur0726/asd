@@ -28,21 +28,17 @@ namespace asd
 	struct MutexData;
 	class Mutex final
 	{
-		MutexData* m_data = nullptr;
+		std::unique_ptr<MutexData> m_data;
 		Mutex(const Mutex&) = delete;
 
 	public:
-		Mutex() 
-			noexcept(false);
+		Mutex();
 
-		Mutex(MOVE Mutex&& a_rval)
-			noexcept(false);
+		Mutex(MOVE Mutex&& a_rval);
 
-		Mutex& operator = (MOVE Mutex&& a_rval)
-			noexcept(false);
+		Mutex& operator = (MOVE Mutex&& a_rval);
 
-		~Mutex()
-			noexcept;
+		~Mutex() noexcept;
 
 		asd_DeclareMutexInterface;
 	};
@@ -55,11 +51,9 @@ namespace asd
 		Mutex* m_mtx = nullptr;
 
 	public:
-		SpinMutex()
-			noexcept(false);
+		SpinMutex();
 
-		~SpinMutex()
-			noexcept;
+		~SpinMutex() noexcept;
 
 		asd_DeclareMutexInterface;
 	};

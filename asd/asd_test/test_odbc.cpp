@@ -301,12 +301,12 @@ namespace asdtest_odbc
 #define UseStdType 1
 #if UseStdType
 	typedef std::string StringType;
-	typedef tm TimeType;
+	typedef tm DateTimeType;
 	typedef std::vector<uint8_t> BlobType;
 
 #else
 	typedef asd::MString StringType;
-	typedef asd::Time TimeType;
+	typedef asd::DateTime DateTimeType;
 	typedef asd::SharedArray<uint8_t> BlobType;
 
 #endif
@@ -327,9 +327,9 @@ namespace asdtest_odbc
 
 
 	template<>
-	asd::MString ToStr<TimeType>(TimeType& p)
+	asd::MString ToStr<DateTimeType>(DateTimeType& p)
 	{
-		return asd::Time(p).ToString();
+		return asd::DateTime(p).ToString();
 	}
 
 
@@ -372,14 +372,14 @@ namespace asdtest_odbc
 	}
 
 
-	TimeType TestData_Time(int pk)
+	DateTimeType TestData_Time(int pk)
 	{
-		return asd::Time(2000 + pk,
-						 pk % 12 + 1,
-						 pk % 30 + 1,
-						 (pk+12) % 24,
-						 pk % 60,
-						 pk % 60);
+		return asd::DateTime(2000 + pk,
+							 pk % 12 + 1,
+							 pk % 30 + 1,
+							 (pk+12) % 24,
+							 pk % 60,
+							 pk % 60);
 	}
 
 
@@ -557,11 +557,11 @@ namespace asdtest_odbc
 
 			// 1. Insert - 생쿼리
 			{
-				int			cInt		= ++pk;
-				StringType	cVarchar	= TestData_String(cInt);
-				asd::Time	cTimestamp	= TestData_Time(cInt);
-				double		cDouble		= TestData_double(cInt);
-				bool		cBit		= TestData_bool(cInt);
+				int				cInt		= ++pk;
+				StringType		cVarchar	= TestData_String(cInt);
+				asd::DateTime	cTimestamp	= TestData_Time(cInt);
+				double			cDouble		= TestData_double(cInt);
+				bool			cBit		= TestData_bool(cInt);
 
 				asd::MString cBit_str;
 				if (TestTarget == MSSQL)
@@ -592,11 +592,11 @@ namespace asdtest_odbc
 			// 2. Insert - SetParam 방식
 			{
 				// 2-1. 입력할 변수 초기화
-				int			cInt		= ++pk;
-				StringType	cVarchar	= TestData_String(cInt);
-				TimeType	cTimestamp	= TestData_Time(cInt);
-				double		cDouble		= TestData_double(cInt);
-				bool		cBit		= TestData_bool(cInt);
+				int				cInt		= ++pk;
+				StringType		cVarchar	= TestData_String(cInt);
+				DateTimeType	cTimestamp	= TestData_Time(cInt);
+				double			cDouble		= TestData_double(cInt);
+				bool			cBit		= TestData_bool(cInt);
 
 				// 2-2. SetParam.
 				//      Prepare가 아니라서 파라메터 정보 조회가 불가능하므로
@@ -631,7 +631,7 @@ namespace asdtest_odbc
 			{
 				int cInt;
 				asd::MString cVarchar;
-				TimeType cTimestamp;
+				DateTimeType cTimestamp;
 				double cDouble;
 				bool cBit;
 
@@ -674,11 +674,11 @@ namespace asdtest_odbc
 			// 4. Insert - Prepare + SetParam 방식
 			{
 				// 4-1. 입력할 변수 초기화
-				int			cInt		= ++pk;
-				StringType	cVarchar	= TestData_String(cInt);
-				TimeType	cTimestamp	= TestData_Time(cInt);
-				double		cDouble		= TestData_double(cInt);
-				bool		cBit		= TestData_bool(cInt);
+				int				cInt		= ++pk;
+				StringType		cVarchar	= TestData_String(cInt);
+				DateTimeType	cTimestamp	= TestData_Time(cInt);
+				double			cDouble		= TestData_double(cInt);
+				bool			cBit		= TestData_bool(cInt);
 
 				// 4-2. Prepare
 				stmt.Prepare(asd::MString() <<
@@ -727,7 +727,7 @@ namespace asdtest_odbc
 
 				int cInt;
 				asd::MString cVarchar;
-				asd::Time cTimestamp;
+				asd::DateTime cTimestamp;
 				double cDouble;
 				bool cBit;
 
@@ -786,17 +786,17 @@ namespace asdtest_odbc
 									EXPECT_EQ(TestData_String(pk), *val);
 								}
 								else if (Equal(colName, "cDate")) {
-									TimeType* val = stmt.GetData(colName);
+									DateTimeType* val = stmt.GetData(colName);
 									colValue = ToStr(val);
 									EXPECT_EQ(val, nullptr);
 								}
 								else if (Equal(colName, "cTime")) {
-									TimeType* val = stmt.GetData(colName);
+									DateTimeType* val = stmt.GetData(colName);
 									colValue = ToStr(val);
 									EXPECT_EQ(val, nullptr);
 								}
 								else if (Equal(colName, "cTimestamp")) {
-									TimeType* val = stmt.GetData(colName);
+									DateTimeType* val = stmt.GetData(colName);
 									colValue = ToStr(val);
 									EXPECT_NE(val, nullptr);
 									EXPECT_EQ(TestData_Time(pk), *val);
@@ -1013,17 +1013,17 @@ namespace asdtest_odbc
 									EXPECT_EQ(TestData_String(pk), *val);
 								}
 								else if (Equal(colName, "cDate")) {
-									TimeType* val = stmt.GetData(colName);
+									DateTimeType* val = stmt.GetData(colName);
 									colValue = ToStr(val);
 									EXPECT_EQ(val, nullptr);
 								}
 								else if (Equal(colName, "cTime")) {
-									TimeType* val = stmt.GetData(colName);
+									DateTimeType* val = stmt.GetData(colName);
 									colValue = ToStr(val);
 									EXPECT_EQ(val, nullptr);
 								}
 								else if (Equal(colName, "cTimestamp")) {
-									TimeType* val = stmt.GetData(colName);
+									DateTimeType* val = stmt.GetData(colName);
 									colValue = ToStr(val);
 									EXPECT_NE(val, nullptr);
 									EXPECT_EQ(TestData_Time(pk), *val);
@@ -1114,17 +1114,17 @@ namespace asdtest_odbc
 									EXPECT_EQ(TestData_String(pk), *val);
 								}
 								else if (Equal(colName, "cDate")) {
-									TimeType* val = stmt.GetData(colName);
+									DateTimeType* val = stmt.GetData(colName);
 									colValue = ToStr(val);
 									EXPECT_EQ(val, nullptr);
 								}
 								else if (Equal(colName, "cTime")) {
-									TimeType* val = stmt.GetData(colName);
+									DateTimeType* val = stmt.GetData(colName);
 									colValue = ToStr(val);
 									EXPECT_EQ(val, nullptr);
 								}
 								else if (Equal(colName, "cTimestamp")) {
-									TimeType* val = stmt.GetData(colName);
+									DateTimeType* val = stmt.GetData(colName);
 									colValue = ToStr(val);
 									EXPECT_NE(val, nullptr);
 									EXPECT_EQ(TestData_Time(pk), *val);
@@ -1171,9 +1171,9 @@ namespace asdtest_odbc
 
 		TestBegin(Test_Transaction, con, stmt)
 		{
-			int loopCount;
 			bool check;
-			asd::MString selectQuery = asd::MString() << "SELECT cInt, cVarchar FROM " << TableName << " WHERE cInt = 100";
+			asd::MString selectQuery = asd::MString()
+				<< "SELECT cInt, cVarchar FROM " << TableName << " WHERE cInt = 100";
 
 			auto Reconnect =[&]()
 			{
@@ -1337,7 +1337,7 @@ namespace asdtest_odbc
 				const int pk = 200;
 				const auto InsertString = TestData_String(pk);
 				const auto InsertTime = TestData_Time(pk);
-				const asd::Time InsertTime2 = InsertTime;
+				const asd::DateTime InsertTime2 = InsertTime;
 
 				int i = 0;
 				stmt.SetInParam(++i, pk);
@@ -1345,8 +1345,8 @@ namespace asdtest_odbc
 				stmt.SetInParam(++i, InsertTime);
 				stmt.SetOutParam<int>(++i);
 				stmt.SetOutParam<StringType>(++i);
-				stmt.SetOutParam<TimeType>(++i);
-				stmt.SetOutParam<TimeType>(++i);
+				stmt.SetOutParam<DateTimeType>(++i);
+				stmt.SetOutParam<DateTimeType>(++i);
 				stmt.SetOutParam<bool>(++i);
 
 				// 3. Execute
@@ -1354,11 +1354,11 @@ namespace asdtest_odbc
 
 
 				// 4. 결과 확인
-				std::unique_ptr<int> pInt_out = stmt.GetParam(4);
-				std::unique_ptr<StringType> pVarchar_out = stmt.GetParam(5);
-				std::unique_ptr<TimeType> pDate_out = stmt.GetParam(6);
-				std::unique_ptr<TimeType> pTime_out = stmt.GetParam(7);
-				std::unique_ptr<bool> pResult = stmt.GetParam(8);
+				std::unique_ptr<int>			pInt_out		= stmt.GetParam(4);
+				std::unique_ptr<StringType>		pVarchar_out	= stmt.GetParam(5);
+				std::unique_ptr<DateTimeType>	pDate_out		= stmt.GetParam(6);
+				std::unique_ptr<DateTimeType>	pTime_out		= stmt.GetParam(7);
+				std::unique_ptr<bool>			pResult			= stmt.GetParam(8);
 
 				COUT << "pInt_out      :  " << ToStr(pInt_out.get()) << '\n';
 				COUT << "pVarchar_out  :  " << ToStr(pVarchar_out.get()) << '\n';
@@ -1376,12 +1376,12 @@ namespace asdtest_odbc
 				EXPECT_EQ(*pVarchar_out, InsertString);
 				EXPECT_EQ(*pResult, true);
 
-				asd::Time date = *pDate_out;
+				asd::DateTime date = *pDate_out;
 				EXPECT_EQ(date.Year(), InsertTime2.Year());
 				EXPECT_EQ(date.Month(), InsertTime2.Month());
 				EXPECT_EQ(date.Day(), InsertTime2.Day());
 
-				asd::Time time = *pTime_out;
+				asd::DateTime time = *pTime_out;
 				EXPECT_EQ(time.Hour(), InsertTime2.Hour());
 				EXPECT_EQ(time.Minute(), InsertTime2.Minute());
 				EXPECT_EQ(time.Second(), InsertTime2.Second());
@@ -1394,14 +1394,14 @@ namespace asdtest_odbc
 				stmt.Prepare(query);
 				
 				// 2. BindParam
-				int			pInt;
-				StringType	pVarchar;
-				TimeType	pTimestamp;
-				int			pInt_out;
-				StringType	pVarchar_out;
-				TimeType	pDate_out;
-				TimeType	pTime_out;
-				bool		pResult;
+				int				pInt;
+				StringType		pVarchar;
+				DateTimeType	pTimestamp;
+				int				pInt_out;
+				StringType		pVarchar_out;
+				DateTimeType	pDate_out;
+				DateTimeType	pTime_out;
+				bool			pResult;
 
 				int i = 0;
 				stmt.BindInParam(++i, &pInt);
@@ -1409,15 +1409,15 @@ namespace asdtest_odbc
 				stmt.BindInParam(++i, &pTimestamp);
 				stmt.BindOutParam<int>(++i, &pInt_out);
 				stmt.BindOutParam<StringType>(++i, &pVarchar_out);
-				stmt.BindOutParam<TimeType>(++i, &pDate_out);
-				stmt.BindOutParam<TimeType>(++i, &pTime_out);
+				stmt.BindOutParam<DateTimeType>(++i, &pDate_out);
+				stmt.BindOutParam<DateTimeType>(++i, &pTime_out);
 				stmt.BindOutParam<bool>(++i, &pResult);
 
 				// 3. Set InputValue
 				const int pk = 201;
 				const auto InsertString = TestData_String(pk);
 				const auto InsertTime = TestData_Time(pk);
-				const asd::Time InsertTime2 = InsertTime;
+				const asd::DateTime InsertTime2 = InsertTime;
 				pInt		= pk;
 				pVarchar	= InsertString;
 				pTimestamp	= InsertTime;
@@ -1445,12 +1445,12 @@ namespace asdtest_odbc
 				EXPECT_EQ(pVarchar_out, InsertString);
 				EXPECT_EQ(pResult, true);
 
-				asd::Time date = pDate_out;
+				asd::DateTime date = pDate_out;
 				EXPECT_EQ(date.Year(), InsertTime2.Year());
 				EXPECT_EQ(date.Month(), InsertTime2.Month());
 				EXPECT_EQ(date.Day(), InsertTime2.Day());
 
-				asd::Time time = pTime_out;
+				asd::DateTime time = pTime_out;
 				EXPECT_EQ(time.Hour(), InsertTime2.Hour());
 				EXPECT_EQ(time.Minute(), InsertTime2.Minute());
 				EXPECT_EQ(time.Second(), InsertTime2.Second());
@@ -1493,17 +1493,17 @@ namespace asdtest_odbc
 				stmt.SetInParam(++i, pk);
 				stmt.SetInOutParam(++i, UpdateBigInt);
 				stmt.SetInOutParam(++i, UpdateString);
-				stmt.SetInOutParam_NullInput<TimeType>(++i); // null 입력
+				stmt.SetInOutParam_NullInput<DateTimeType>(++i); // null 입력
 				stmt.SetOutParam<bool>(++i);
 
 				// 3. Execute
 				Execute(stmt);
 
 				// 4. 결과 확인
-				std::unique_ptr<int64_t> pBigInt = stmt.GetParam(2);
-				std::unique_ptr<StringType> pVarchar = stmt.GetParam(3);
-				std::unique_ptr<TimeType> pTimestamp = stmt.GetParam(4);
-				std::unique_ptr<bool> pResult = stmt.GetParam(5);
+				std::unique_ptr<int64_t>		pBigInt		= stmt.GetParam(2);
+				std::unique_ptr<StringType>		pVarchar	= stmt.GetParam(3);
+				std::unique_ptr<DateTimeType>	pTimestamp	= stmt.GetParam(4);
+				std::unique_ptr<bool>			pResult		= stmt.GetParam(5);
 
 				COUT << "pBigInt     :  " << ToStr(pBigInt.get()) << '\n';
 				COUT << "pVarchar    :  " << ToStr(pVarchar.get()) << '\n';
@@ -1529,11 +1529,11 @@ namespace asdtest_odbc
 				stmt.Prepare(query);
 
 				// 2. BindParam
-				int			pInt;
-				int64_t		pBigInt;
-				StringType	pVarchar;
-				TimeType	pTimestamp;
-				bool		pResult;
+				int				pInt;
+				int64_t			pBigInt;
+				StringType		pVarchar;
+				DateTimeType	pTimestamp;
+				bool			pResult;
 
 				int i = 0;
 				stmt.BindInParam(++i, &pInt);
@@ -1552,7 +1552,7 @@ namespace asdtest_odbc
 				pInt		= pk;
 				pBigInt		= UpdateBigInt;
 				pVarchar	= UpdateString;
-				pTimestamp;
+				memset(&pTimestamp, 0, sizeof(pTimestamp));
 
 				// 4. Execute
 				Execute(stmt);
@@ -1604,7 +1604,7 @@ namespace asdtest_odbc
 				++loop;
 				COUT << "Result:" << Result << ", Record:" << Record << '\n';
 				const int cInt = stmt.GetData("cInt");
-				const asd::Time cmp = TestData_Time(cInt);
+				const asd::DateTime cmp = TestData_Time(cInt);
 
 				uint16_t colCount = stmt.GetColumnCount();
 				for (uint16_t i=1; i<=colCount; ++i) {
@@ -1636,37 +1636,37 @@ namespace asdtest_odbc
 						}
 					}
 					else if (Equal(colName, "cDate")) {
-						TimeType* val = stmt.GetData(colName);
+						DateTimeType* val = stmt.GetData(colName);
 						colValue = ToStr(val);
 						if (Result == 1)
 							EXPECT_EQ(val, nullptr);
 						else if (Result == 2) {
 							EXPECT_NE(val, nullptr);
-							const asd::Time t = *val;
+							const asd::DateTime t = *val;
 							EXPECT_EQ(cmp.Year(), t.Year());
 							EXPECT_EQ(cmp.Month(), t.Month());
 							EXPECT_EQ(cmp.Day(), t.Day());
 						}
 					}
 					else if (Equal(colName, "cTime")) {
-						TimeType* val = stmt.GetData(colName);
+						DateTimeType* val = stmt.GetData(colName);
 						colValue = ToStr(val);
 						if (Result == 1)
 							EXPECT_EQ(val, nullptr);
 						else if (Result == 2) {
 							EXPECT_NE(val, nullptr);
-							const asd::Time t = *val;
+							const asd::DateTime t = *val;
 							EXPECT_EQ(cmp.Hour(), t.Hour());
 							EXPECT_EQ(cmp.Minute(), t.Minute());
 							EXPECT_EQ(cmp.Second(), t.Second());
 						}
 					}
 					else if (Equal(colName, "cTimestamp")) {
-						TimeType* val = stmt.GetData(colName);
+						DateTimeType* val = stmt.GetData(colName);
 						colValue = ToStr(val);
 						if (Result == 1) {
 							EXPECT_NE(val, nullptr);
-							const asd::Time t = *val;
+							const asd::DateTime t = *val;
 							EXPECT_EQ(cmp, t);
 						}
 						else if (Result == 2)

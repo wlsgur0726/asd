@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "asd/asdbase.h"
-#include "asd/time.h"
+#include "asd/datetime.h"
 #include <functional>
 #include <vector>
 
@@ -68,23 +68,17 @@ namespace asd
 		DBConnectionHandle_ptr m_handle;
 
 	public:
-		void Open(IN const char* a_constr)
-			noexcept(false);
+		void Open(IN const char* a_constr);
 
-		void BeginTran()
-			noexcept(false);
+		void BeginTran();
 
-		void CommitTran()
-			noexcept(false);
+		void CommitTran();
 
-		void RollbackTran()
-			noexcept(false);
+		void RollbackTran();
 
-		void Close()
-			noexcept(false);
+		void Close();
 
-		virtual ~DBConnection()
-			noexcept;
+		virtual ~DBConnection() noexcept;
 	};
 
 
@@ -96,25 +90,17 @@ namespace asd
 		DBStatementHandle_ptr m_handle;
 
 	public:
-		DBStatement()
-			noexcept;
+		DBStatement() noexcept;
 
 
-
-		DBStatement(REF DBConnection& a_conHandle)
-			noexcept(false);
+		DBStatement(REF DBConnection& a_conHandle);
 
 
-
-		void Init(REF DBConnection& a_conHandle)
-			noexcept(false);
-
+		void Init(REF DBConnection& a_conHandle);
 
 
 		// 쿼리를 준비시킨다.
-		void Prepare(IN const char* a_query)
-			noexcept(false);
-
+		void Prepare(IN const char* a_query);
 
 
 		// Prameter 관련 함수들 설명
@@ -138,16 +124,14 @@ namespace asd
 						IN const T& a_value,
 						IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 						IN uint32_t a_columnSize = 0,
-						IN uint16_t a_columnScale = 0)
-			noexcept(false);
+						IN uint16_t a_columnScale = 0);
 
 		// null값을 입력한다.
 		template <typename T>
 		void SetInParam_NullInput(IN uint16_t a_paramNumber,
 								  IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 								  IN uint32_t a_columnSize = 0,
-								  IN uint16_t a_columnScale = 0)
-			noexcept(false);
+								  IN uint16_t a_columnScale = 0);
 
 
 		// 입력인자 바인딩
@@ -156,8 +140,7 @@ namespace asd
 						 REF T* a_value,
 						 IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 						 IN uint32_t a_columnSize = 0,
-						 IN uint16_t a_columnScale = 0)
-			noexcept(false);
+						 IN uint16_t a_columnScale = 0);
 
 
 
@@ -166,16 +149,14 @@ namespace asd
 		void SetOutParam(IN uint16_t a_paramNumber,
 						 IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 						 IN uint32_t a_columnSize = 0,
-						 IN uint16_t a_columnScale = 0)
-			noexcept(false);
+						 IN uint16_t a_columnScale = 0);
 
 		// 출력인자를 무시한다.
 		template <typename T>
 		void SetOutParam_NullInput(IN uint16_t a_paramNumber,
 								   IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 								   IN uint32_t a_columnSize = 0,
-								   IN uint16_t a_columnScale = 0)
-			noexcept(false);
+								   IN uint16_t a_columnScale = 0);
 
 
 		// 출력인자 바인딩
@@ -185,8 +166,7 @@ namespace asd
 						  REF T* a_varptr,
 						  IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 						  IN uint32_t a_columnSize = 0,
-						  IN uint16_t a_columnScale = 0)
-			noexcept(false);
+						  IN uint16_t a_columnScale = 0);
 
 
 
@@ -196,16 +176,14 @@ namespace asd
 						   IN const T& a_value,
 						   IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 						   IN uint32_t a_columnSize = 0,
-						   IN uint16_t a_columnScale = 0)
-			noexcept(false);
+						   IN uint16_t a_columnScale = 0);
 
 		// null값을 입력한다.
 		template <typename T>
 		void SetInOutParam_NullInput(IN uint16_t a_paramNumber,
 									 IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 									 IN uint32_t a_columnSize = 0,
-									 IN uint16_t a_columnScale = 0)
-			noexcept(false);
+									 IN uint16_t a_columnScale = 0);
 
 
 		// 입출력인자 바인딩
@@ -217,8 +195,7 @@ namespace asd
 							IN bool a_nullInput,
 							IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
 							IN uint32_t a_columnSize = 0,
-							IN uint16_t a_columnScale = 0)
-			noexcept(false);
+							IN uint16_t a_columnScale = 0);
 
 
 
@@ -228,36 +205,28 @@ namespace asd
 								   IN int a_recordNumber)> FetchCallback;
 		
 		// Prepare된 쿼리를 실행하고 Fetch한다.
-		int64_t Execute(IN FetchCallback a_callback)
-			noexcept(false);
+		int64_t Execute(IN FetchCallback a_callback);
 
 		// a_query로 입력받은 쿼리를 바로 실행하고 Fetch한다.
 		int64_t Execute(IN const char* a_query,
-						IN FetchCallback a_callback)
-			noexcept(false);
+						IN FetchCallback a_callback);
 
 
 
 		// 셋팅 혹은 바인딩된 파라메터를 모두 제거
-		void ClearParam()
-			noexcept(false);
-
+		void ClearParam();
 
 
 		// 핸들을 닫는다.
-		void Close()
-			noexcept(false);
+		void Close();
 
 
-		virtual ~DBStatement()
-			noexcept;
-
+		virtual ~DBStatement() noexcept;
 
 
 		// 결과 조회.
 		// FetchCallback 내에서, 혹은 Execute()리턴 후 사용한다.
-		MString GetColumnName(IN uint16_t a_columnIndex)
-			noexcept(false);
+		MString GetColumnName(IN uint16_t a_columnIndex);
 
 
 		uint16_t GetColumnCount() const noexcept;
@@ -265,46 +234,37 @@ namespace asd
 
 		template <typename T>
 		T* GetData(IN const char* a_columnName,
-				   OUT T& a_return)
-			noexcept(false);
+				   OUT T& a_return);
 
 
 		template <typename T>
 		T* GetData(IN uint16_t a_columnIndex,
-				   OUT T& a_return)
-			noexcept(false);
+				   OUT T& a_return);
 
 
 		template <typename T>
 		T* GetParam(IN uint16_t a_paramNumber,
-					OUT T& a_return)
-			noexcept(false);
+					OUT T& a_return);
 
 
 		template <typename T>
-		bool IsNullParam(IN uint16_t a_columnIndex)
-			noexcept(false);
+		bool IsNullParam(IN uint16_t a_columnIndex);
 
 
 		template <typename T>
-		bool IsNullParam(IN T* a_boundPtr)
-			noexcept(false);
+		bool IsNullParam(IN T* a_boundPtr);
 
 
 		struct Caster
 		{
 #define asd_DBStatement_Declare_CastOperator(Type)							\
-			virtual operator Type()						/* (1) */			\
-				noexcept(false);											\
+			virtual operator Type();					/* (1) */			\
 																			\
-			virtual operator Type*()					/* (2) */			\
-				noexcept(false);											\
+			virtual operator Type*();					/* (2) */			\
 																			\
-			virtual operator std::shared_ptr<Type>()	/* (3) */			\
-				noexcept(false);											\
+			virtual operator std::shared_ptr<Type>();	/* (3) */			\
 																			\
-			virtual operator std::unique_ptr<Type>()	/* (4) */			\
-				noexcept(false);											\
+			virtual operator std::unique_ptr<Type>();	/* (4) */			\
 
 			// (1) : 사본을 복사하여 리턴한다. 
 			//       해당 파라메터가 만약 null값인 경우 NullDataException이 발생한다.
@@ -335,22 +295,21 @@ namespace asd
 			asd_DBStatement_Declare_CastOperator(SharedArray<uint8_t>);		/* BLOB     */	\
 			asd_DBStatement_Declare_CastOperator(std::vector<uint8_t>);		/* BLOB     */	\
 			asd_DBStatement_Declare_CastOperator(tm);						/* DATETIME */	\
-			asd_DBStatement_Declare_CastOperator(Time);						/* DATETIME */	\
+			asd_DBStatement_Declare_CastOperator(Date);						/* DATE     */	\
+			asd_DBStatement_Declare_CastOperator(Time);						/* TIME     */	\
+			asd_DBStatement_Declare_CastOperator(DateTime);					/* DATETIME */	\
 
 			asd_DBStatement_Declare_CastOperatorList;
 		};
 
 
-		Caster& GetData(IN uint16_t a_columnIndex)
-			noexcept(false);
+		Caster& GetData(IN uint16_t a_columnIndex);
 
 
-		Caster& GetData(IN const char* a_columnName)
-			noexcept(false);
+		Caster& GetData(IN const char* a_columnName);
 
 
-		Caster& GetParam(IN uint16_t a_paramNumber)
-			noexcept(false);
+		Caster& GetParam(IN uint16_t a_paramNumber);
 	};
 
 }

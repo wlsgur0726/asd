@@ -77,7 +77,7 @@ namespace asd
 
 
 	IpAddress::IpAddress(IN const char* a_domain,
-						 IN uint16_t a_port /*= 0*/) noexcept(false)
+						 IN uint16_t a_port /*= 0*/)
 	{
 		AddrInfos ais(a_domain);
 		if (ais.m_error != 0) {
