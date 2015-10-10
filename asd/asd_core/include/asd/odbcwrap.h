@@ -23,7 +23,9 @@ namespace asd
 	{
 	public:
 		DBDiagInfoList m_diagInfoList;
-		DBException(IN const DBDiagInfoList& a_diagInfoList) noexcept;
+		DBException(IN const DBDiagInfoList& a_diagInfoList,
+					IN const char* a_lastFileName,
+					IN int a_lastFileLine) noexcept;
 	};
 
 

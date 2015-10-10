@@ -1,8 +1,12 @@
 ﻿#include "stdafx.h"
 #include "asd/odbcwrap.h"
+#include "asd/util.h"
 #include <sql.h>
 #include <sqlext.h>
 #include <unordered_map>
+
+
+#define asd_CheckError(...) CheckError(__FILE__, __LINE__, __VA_ARGS__)
 
 namespace asd
 {
@@ -16,9 +20,11 @@ namespace asd
 
 
 
-	DBException::DBException(IN const DBDiagInfoList& a_diagInfoList) noexcept
+	DBException::DBException(IN const DBDiagInfoList& a_diagInfoList,
+							 IN const char* a_lastFileName,
+							 IN int a_lastFileLine) noexcept
 	{
-		m_what = "DBException";
+		m_what.Format("DBException(%s:%d)", a_lastFileName, a_lastFileLine);
 		int index = 1;
 		for (auto& diagInfo : a_diagInfoList) {
 			m_diagInfoList.push_back(diagInfo);
@@ -136,7 +142,7 @@ namespace asd
 			SQLRETURN r = SQLAllocHandle(a_handleType,
 										 inputHandle,
 										 &m_handle);
-			CheckError(r);
+			asd_CheckError(r);
 
 			// 환경핸들인 경우 환경설정
 			if (a_handleType == SQL_HANDLE_ENV) {
@@ -144,7 +150,7 @@ namespace asd
 								  SQL_ATTR_ODBC_VERSION,
 								  (SQLPOINTER)SQL_OV_ODBC3,
 								  SQL_IS_INTEGER);
-				CheckError(r);
+				asd_CheckError(r);
 			}
 
 			// 마무리
@@ -164,7 +170,9 @@ namespace asd
 			return false;
 		};
 
-		void CheckError(IN SQLRETURN a_retval,
+		void CheckError(IN const char* a_lastFileName,
+						IN int a_lastFileLine,
+						IN SQLRETURN a_retval,
 						IN ErrProc a_errproc = IgnoreWarning)
 		{
 			if (a_retval != SQL_SUCCESS) {
@@ -178,7 +186,7 @@ namespace asd
 					}
 				}
 				if (m_diagInfoList.size() > 0)
-					throw DBException(m_diagInfoList);
+					throw DBException(m_diagInfoList, a_lastFileName, a_lastFileLine);
 			}
 		}
 
@@ -222,7 +230,7 @@ namespace asd
 		void Close()
 		{
 			if (m_handle != SQL_NULL_HANDLE) {
-				CheckError(SQLFreeHandle(m_handleType, m_handle));
+				asd_CheckError(SQLFreeHandle(m_handleType, m_handle));
 				m_handle = SQL_NULL_HANDLE;
 				m_handleType = 0;
 				m_diagInfoList.clear();
@@ -275,7 +283,7 @@ namespace asd
 										   0,
 										   &t,
 										   SQL_DRIVER_NOPROMPT);
-			CheckError(r);
+			asd_CheckError(r);
 			m_connected = true;
 		}
 
@@ -286,16 +294,16 @@ namespace asd
 											SQL_ATTR_AUTOCOMMIT,
 											(SQLPOINTER)(a_auto ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF),
 											SQL_IS_INTEGER);
-			CheckError(r);
+			asd_CheckError(r);
 			m_autoCommit = a_auto;
 		}
 
 
 		void EndTran(IN bool a_commit)
 		{
-			CheckError(SQLEndTran(m_handleType,
-								  m_handle,
-								  a_commit ? SQL_COMMIT : SQL_ROLLBACK));
+			asd_CheckError(SQLEndTran(m_handleType,
+									  m_handle,
+									  a_commit ? SQL_COMMIT : SQL_ROLLBACK));
 			SetAutoCommit(true);
 		}
 
@@ -306,7 +314,7 @@ namespace asd
 				EndTran(false);
 
 			if (m_connected) {
-				CheckError(SQLDisconnect(m_handle));
+				asd_CheckError(SQLDisconnect(m_handle));
 				m_connected = false;
 			}
 			Close();
@@ -399,10 +407,10 @@ namespace asd
 		std::vector<MString> m_columnNameList;
 
 		// 컬럼명:인덱스 맵
-		std::unordered_map<MString, 
-						   SQLSMALLINT,
-						   MString::Hash_IgnoreCase,
-						   MString::EqualTo_CaseInsensitive> m_columnIndexMap;
+		std::unordered_map<MString,
+			SQLSMALLINT,
+			MString::Hash_IgnoreCase,
+			MString::EqualTo_CaseInsensitive> m_columnIndexMap;
 
 		// Prepare문 또는 Stored Procedure의 Parameter
 		std::unordered_map<SQLUSMALLINT, Parameter_ptr> m_paramMap_byParamNum;
@@ -423,9 +431,9 @@ namespace asd
 		{
 			m_paramMap_byParamNum.clear();
 			m_paramMap_byBoundPtr.clear();
-			CheckError(SQLPrepare(m_handle, 
-								  (SQLCHAR*)a_query,
-								  SQL_NTS));
+			asd_CheckError(SQLPrepare(m_handle,
+									  (SQLCHAR*)a_query,
+									  SQL_NTS));
 		}
 
 
@@ -435,12 +443,12 @@ namespace asd
 						  OUT SQLSMALLINT* a_scale,
 						  OUT SQLSMALLINT* a_nullable)
 		{
-			CheckError(SQLDescribeParam(m_handle,
-										a_paramNumber,
-										a_columnType,
-										a_columnSize,
-										a_scale,
-										a_nullable));
+			asd_CheckError(SQLDescribeParam(m_handle,
+											a_paramNumber,
+											a_columnType,
+											a_columnSize,
+											a_scale,
+											a_nullable));
 
 			if (a_columnSize != nullptr) {
 				assert(a_columnType != nullptr);
@@ -481,16 +489,16 @@ namespace asd
 										  buffer,
 										  indicator);
 
-				CheckError(SQLBindParameter(m_handle,
-											param.first,
-											direction,
-											appType,
-											dbType,
-											bufferSize,
-											columnsScale,
-											buffer,
-											bufferSize,
-											indicator));
+				asd_CheckError(SQLBindParameter(m_handle,
+												param.first,
+												direction,
+												appType,
+												dbType,
+												bufferSize,
+												columnsScale,
+												buffer,
+												bufferSize,
+												indicator));
 			}
 		}
 
@@ -512,18 +520,18 @@ namespace asd
 			// 1. BindParameter, Execute
 			if (a_query == nullptr) {
 				BindParameter();
-				CheckError(SQLExecute(m_handle));
+				asd_CheckError(SQLExecute(m_handle));
 			}
 			else {
 				if (m_paramMap_byParamNum.size()>0 && GetMarkerCount(a_query)>0)
 					BindParameter();
-				CheckError(SQLExecDirect(m_handle,
-										 (SQLCHAR*)a_query,
-										 SQL_NTS));
+				asd_CheckError(SQLExecDirect(m_handle,
+											 (SQLCHAR*)a_query,
+											 SQL_NTS));
 			}
 
 			SQLLEN rows;
-			CheckError(SQLRowCount(m_handle, &rows));
+			asd_CheckError(SQLRowCount(m_handle, &rows));
 
 			// 2. Fetch Loop
 			int result = 1;
@@ -532,7 +540,7 @@ namespace asd
 				{
 					// 2-1-1. 컬럼의 개수를 구한다.
 					SQLSMALLINT colCount = -1;
-					CheckError(SQLNumResultCols(m_handle, &colCount));
+					asd_CheckError(SQLNumResultCols(m_handle, &colCount));
 					assert(colCount >= 0);
 
 					// 2-1-2. 컬럼명 목록을 초기화한다.
@@ -556,8 +564,8 @@ namespace asd
 						break; // 현재 Result에서 모든 Record를 Fetch했음.
 
 					bool invalid = false;
-					CheckError(r, [&](IN SQLRETURN a_ret,
-									  IN const DBDiagInfo& a_err)
+					asd_CheckError(r, [&](IN SQLRETURN a_ret,
+										  IN const DBDiagInfo& a_err)
 					{
 						if (a_ret == SQL_SUCCESS_WITH_INFO)
 							return true;
@@ -594,7 +602,7 @@ namespace asd
 			if (r == SQL_NO_DATA)
 				return false;
 
-			CheckError(r);
+			asd_CheckError(r);
 			return true;
 		}
 
@@ -608,13 +616,13 @@ namespace asd
 			if (ret.GetLength() == 0) {
 				SQLCHAR buf[SQL_MAX_MESSAGE_LENGTH];
 				SQLSMALLINT retlen;
-				CheckError(SQLColAttribute(m_handle,
-										   a_colIndex,
-										   SQL_DESC_NAME,
-										   (SQLPOINTER)buf,
-										   sizeof(buf),
-										   &retlen,
-										   nullptr));
+				asd_CheckError(SQLColAttribute(m_handle,
+											   a_colIndex,
+											   SQL_DESC_NAME,
+											   (SQLPOINTER)buf,
+											   sizeof(buf),
+											   &retlen,
+											   nullptr));
 				ret.Append((const char*)buf, retlen);
 			}
 			return ret;
@@ -636,12 +644,12 @@ namespace asd
 					   IN SQLLEN a_bufLen)
 		{
 			SQLLEN indicator = 0;
-			CheckError(SQLGetData(m_handle,
-								  a_colIndex,
-								  a_returnType,
-								  a_buf,
-								  a_bufLen,
-								  &indicator));
+			asd_CheckError(SQLGetData(m_handle,
+									  a_colIndex,
+									  a_returnType,
+									  a_buf,
+									  a_bufLen,
+									  &indicator));
 			return indicator;
 		}
 
@@ -672,7 +680,7 @@ namespace asd
 
 		void ClearParam()
 		{
-			CheckError(SQLFreeStmt(m_handle, SQL_RESET_PARAMS));
+			asd_CheckError(SQLFreeStmt(m_handle, SQL_RESET_PARAMS));
 			m_paramMap_byParamNum.clear();
 			m_paramMap_byBoundPtr.clear();
 		}
@@ -680,10 +688,15 @@ namespace asd
 
 		void CloseStatement()
 		{
+			FinallyWork fin([&]()
+			{
+				Close();
+			});
+
 			if (m_conHandle != nullptr) {
-				CheckError(SQLCloseCursor(m_handle),
-						   [](IN SQLRETURN a_ret,
-							  IN const DBDiagInfo& a_err)
+				asd_CheckError(SQLCloseCursor(m_handle),
+							   [](IN SQLRETURN a_ret,
+								  IN const DBDiagInfo& a_err)
 				{
 					if (a_ret == SQL_SUCCESS_WITH_INFO)
 						return true;
@@ -696,7 +709,6 @@ namespace asd
 				ClearParam();
 				m_conHandle = DBConnectionHandle_ptr();
 			}
-			Close();
 		}
 
 
@@ -1362,17 +1374,17 @@ namespace asd
 
 
 
-	template <typename Binary, 
-			  SQLSMALLINT SQL_C_Type, 
+	template <typename Binary,
+			  SQLSMALLINT SQL_C_Type,
 			  SQLSMALLINT Param_Direction,
 			  bool Bind,
 			  bool IsStringType,
 			  bool IsSharedPtr>
 	struct Parameter_Binary : public Parameter_Template<Binary,
-														SQL_C_Type,
-														Param_Direction,
-														Bind,
-														(int)IsStringType>
+		SQL_C_Type,
+		Param_Direction,
+		Bind,
+		(int)IsStringType>
 	{
 		typedef
 			Parameter_Template<Binary, SQL_C_Type, Param_Direction, Bind, (int)IsStringType>
@@ -1474,7 +1486,7 @@ namespace asd
 				assert(Param_Direction == SQL_PARAM_OUTPUT);
 				return;
 			}
-			
+
 			assert(m_indicator >= 0);
 			assert((size_t)m_indicator <= m_bindingTarget->size());
 			m_bindingTarget->resize(ToCharCount(m_indicator));
@@ -1537,9 +1549,9 @@ namespace asd
 								 OUT SQLLEN*& a_indicator) override
 		{
 			assert(m_proxyParam != nullptr);
-			
-			const bool NeedCopy 
-				=  Bind 
+
+			const bool NeedCopy
+				=  Bind
 				&& Param_Direction != SQL_PARAM_OUTPUT
 				&& m_nullInput == false
 				&& m_bindingTarget != nullptr;
