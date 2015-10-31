@@ -574,6 +574,7 @@ namespace asd
 
 						if (0 == asd::strcmp("24000", a_err.m_state, false)) {
 							// 커서가 열리지 않은 경우
+							assert(invalid == false);
 							invalid = true;
 							return true;
 						}
