@@ -159,6 +159,7 @@ namespace asd
 		}
 
 
+		// 에러처리 루틴. 리턴값 : true=처리완료, false=미처리
 		typedef std::function<bool(IN SQLRETURN,
 								   IN const DBDiagInfo&)> ErrProc;
 
@@ -170,6 +171,7 @@ namespace asd
 			return false;
 		};
 
+		// 에러 여부를 검사 및 처리하고 미처리된 에러가 남은 경우 exception을 발생시킨다.
 		void CheckError(IN const char* a_lastFileName,
 						IN int a_lastFileLine,
 						IN SQLRETURN a_retval,
@@ -564,10 +566,10 @@ namespace asd
 						break; // 현재 Result에서 모든 Record를 Fetch했음.
 
 					bool invalid = false;
-					asd_CheckError(r, [&](IN SQLRETURN a_ret,
-										  IN const DBDiagInfo& a_err)
+					asd_CheckError(r, [&invalid](IN SQLRETURN a_ret,
+												 IN const DBDiagInfo& a_err)
 					{
-						if (a_ret == SQL_SUCCESS_WITH_INFO)
+						if (OdbcHandle::IgnoreWarning(a_ret, a_err))
 							return true;
 
 						if (0 == asd::strcmp("24000", a_err.m_state, false)) {
@@ -698,7 +700,7 @@ namespace asd
 							   [](IN SQLRETURN a_ret,
 								  IN const DBDiagInfo& a_err)
 				{
-					if (a_ret == SQL_SUCCESS_WITH_INFO)
+					if (OdbcHandle::IgnoreWarning(a_ret, a_err))
 						return true;
 
 					// 커서가 열리지 않았는데 닫으려는 경우
