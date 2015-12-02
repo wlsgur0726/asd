@@ -410,9 +410,9 @@ namespace asd
 
 		// 컬럼명:인덱스 맵
 		std::unordered_map<MString,
-			SQLSMALLINT,
-			MString::Hash_IgnoreCase,
-			MString::EqualTo_CaseInsensitive> m_columnIndexMap;
+						   SQLSMALLINT,
+						   MString::Hash_CaseInsensitive,
+						   MString::EqualTo_CaseInsensitive> m_columnIndexMap;
 
 		// Prepare문 또는 Stored Procedure의 Parameter
 		std::unordered_map<SQLUSMALLINT, Parameter_ptr> m_paramMap_byParamNum;
@@ -1384,13 +1384,17 @@ namespace asd
 			  bool IsStringType,
 			  bool IsSharedPtr>
 	struct Parameter_Binary : public Parameter_Template<Binary,
-		SQL_C_Type,
-		Param_Direction,
-		Bind,
-		(int)IsStringType>
+														SQL_C_Type,
+														Param_Direction,
+														Bind,
+														(int)IsStringType>
 	{
 		typedef
-			Parameter_Template<Binary, SQL_C_Type, Param_Direction, Bind, (int)IsStringType>
+			Parameter_Template<Binary,
+							   SQL_C_Type,
+							   Param_Direction,
+							   Bind,
+							   (int)IsStringType>
 			BaseType;
 
 		typedef
@@ -1553,11 +1557,10 @@ namespace asd
 		{
 			assert(m_proxyParam != nullptr);
 
-			const bool NeedCopy
-				=  Bind
-				&& Param_Direction != SQL_PARAM_OUTPUT
-				&& m_nullInput == false
-				&& m_bindingTarget != nullptr;
+			const bool NeedCopy = Bind
+							   && Param_Direction != SQL_PARAM_OUTPUT
+							   && m_nullInput == false
+							   && m_bindingTarget != nullptr;
 
 			if (NeedCopy) {
 				// Execute 시점 복사

@@ -214,7 +214,7 @@ namespace asd
 		typedef asd::SharedArray<CharType>			BaseType;
 		typedef std::basic_string<CharType>			SupportType_StdString;
 		typedef hash_String<CharType, true>			Hash_CaseSensitive;
-		typedef hash_String<CharType, false>		Hash_IgnoreCase;
+		typedef hash_String<CharType, false>		Hash_CaseInsensitive;
 		typedef equal_to_String<CharType, true>		EqualTo_CaseSensitive;
 		typedef equal_to_String<CharType, false>	EqualTo_CaseInsensitive;
 
