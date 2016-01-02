@@ -495,7 +495,7 @@ namespace asdtest_odbc
 				return;
 
 			try {
-				Execute(stmt, asd::MString() << "DROP DATABASE " << DBName);
+				Execute(stmt, asd::MString() << "DROP DATABASE IF EXISTS " << DBName);
 			}
 			catch (std::exception& e) {
 				printf("%s\n", e.what());
