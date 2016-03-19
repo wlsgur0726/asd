@@ -35,7 +35,7 @@ namespace asd
 	// 각 플랫폼 별로 상이한 부분들을 랩핑
 #if defined(asd_Platform_Windows)
 
-	#define asd_RaiseSocketException(e) asd_RaiseException("WSAGetLastError:0x%x", e);
+	#define asd_RaiseSocketException(e) asd_RaiseException("WSAGetLastError:%#x", e);
 
 	#define asd_SetNonblockFlag(SockObj, true_or_false) (SockObj).m_nonblock = true_or_false
 
@@ -76,7 +76,7 @@ namespace asd
 
 #else
 
-	#define asd_RaiseSocketException(e) asd_RaiseException("errno:0x%x", e);
+	#define asd_RaiseSocketException(e) asd_RaiseException("errno:%#x", e);
 
 	#define asd_SetNonblockFlag(SockObj, true_or_false)
 

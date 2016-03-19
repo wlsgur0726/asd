@@ -81,7 +81,7 @@ namespace asd
 	{
 		AddrInfos ais(a_domain);
 		if (ais.m_error != 0) {
-			asd_RaiseException("fail getaddrinfo(), error:0x%x", ais.m_error);
+			asd_RaiseException("fail getaddrinfo(), error:%#x", ais.m_error);
 		}
 
 		addrinfo* ai = ais.Get();

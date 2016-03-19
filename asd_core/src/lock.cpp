@@ -13,10 +13,9 @@
 
 namespace asd
 {
-	thread_local std::thread::id t_tid;
-
 	const std::thread::id& GetCurrentThreadID() noexcept
 	{
+		thread_local std::thread::id t_tid;
 		if (t_tid == std::thread::id())
 			t_tid = std::this_thread::get_id();
 
@@ -25,9 +24,9 @@ namespace asd
 	}
 
 
-	thread_local uint32_t t_HW_Concurrency = 0xFFFFFFFF;
 	const uint32_t& Get_HW_Concurrency() noexcept
 	{
+		thread_local uint32_t t_HW_Concurrency = 0xFFFFFFFF;
 		if (t_HW_Concurrency == 0xFFFFFFFF) {
 			t_HW_Concurrency = std::thread::hardware_concurrency();
 		}
@@ -66,15 +65,15 @@ namespace asd
 			pthread_mutexattr_t attr;
 			if (pthread_mutexattr_init(&attr) != 0) {
 				auto e = errno;
-				asd_RaiseException("fail pthread_mutexattr_init(), errno:0x%x", e);
+				asd_RaiseException("fail pthread_mutexattr_init(), errno:%#x", e);
 			}
 			if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0) {
 				auto e = errno;
-				asd_RaiseException("fail pthread_mutexattr_settype(), errno:0x%x", e);
+				asd_RaiseException("fail pthread_mutexattr_settype(), errno:%#x", e);
 			}
 			if (pthread_mutex_init(&m_mtx, &attr) != 0) {
 				auto e = errno;
-				asd_RaiseException("fail pthread_mutex_init(), errno:0x%x", e);
+				asd_RaiseException("fail pthread_mutex_init(), errno:%#x", e);
 			}
 #endif
 		}
@@ -92,7 +91,7 @@ namespace asd
 			assert(m_ownerThread == std::thread::id());
 			if (pthread_mutex_destroy(&m_mtx) != 0) {
 				auto e = errno;
-				asd_RaiseException("fail pthread_mutex_destroy(), errno:0x%x", e);
+				asd_RaiseException("fail pthread_mutex_destroy(), errno:%#x", e);
 			}
 #endif
 		}
@@ -137,15 +136,17 @@ namespace asd
 		
 #if defined (asd_Platform_Windows)
 		EnterCriticalSection(&m_data->m_mtx);
+
 #else
 		if (pthread_mutex_lock(&m_data->m_mtx) != 0) {
 			auto e = errno;
-			asd_RaiseException("fail pthread_mutex_lock(), errno:0x%x", e);
+			asd_RaiseException("fail pthread_mutex_lock(), errno:%#x", e);
 		}
 		
 		if (++m_data->m_recursionCount == 1)
 			m_data->m_ownerThread = GetCurrentThreadID();
 		assert(m_data->m_ownerThread == GetCurrentThreadID());
+
 #endif
 	}
 
@@ -157,11 +158,12 @@ namespace asd
 
 #if defined (asd_Platform_Windows)
 		return TryEnterCriticalSection(&m_data->m_mtx) != 0;
+
 #else
 		if (pthread_mutex_trylock(&m_data->m_mtx) != 0) {
 			auto e = errno;
 			if ( e != EBUSY ) {
-				asd_RaiseException("fail pthread_mutex_trylock(), errno:0x%x", e);
+				asd_RaiseException("fail pthread_mutex_trylock(), errno:%#x", e);
 			}
 			return false;
 		}
@@ -170,6 +172,7 @@ namespace asd
 			m_data->m_ownerThread = GetCurrentThreadID();
 		assert(m_data->m_ownerThread == GetCurrentThreadID());
 		return true;
+
 #endif
 	}
 
@@ -181,7 +184,9 @@ namespace asd
 
 #if defined (asd_Platform_Windows)
 		LeaveCriticalSection(&m_data->m_mtx);
+
 #else
+		assert(m_data->m_ownerThread == GetCurrentThreadID());
 		if (--m_data->m_recursionCount == 0)
 			m_data->m_ownerThread = std::thread::id();
 
@@ -192,9 +197,9 @@ namespace asd
 			if (++m_data->m_recursionCount == 1)
 				m_data->m_ownerThread = GetCurrentThreadID();
 
-			asd_RaiseException("fail pthread_mutex_unlock(), errno:0x%x", e);
+			asd_RaiseException("fail pthread_mutex_unlock(), errno:%#x", e);
 		}
-		
+
 #endif
 	}
 

@@ -134,7 +134,7 @@ namespace asd
 			assert(a_obj != nullptr);
 
 			MtxCtl lock(m_lock, true);
-			if (m_limitCount > 0 && m_pool.size()>=m_limitCount) {
+			if (m_limitCount>0 && m_pool.size()>=m_limitCount) {
 				lock.unlock();
 				::operator delete(a_obj);
 				return false;
