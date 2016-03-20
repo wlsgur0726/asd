@@ -45,17 +45,6 @@ namespace asd
 
 	typedef char* SockBufType;
 
-	int Socket::ToNativeCode(Type a_type) asd_noexcept
-	{
-		switch (a_type) {
-			case Socket::TCP:
-				return SOCK_STREAM;
-			case Socket::UDP:
-				return SOCK_DGRAM;
-		}
-		assert(false);
-	}
-
 	inline Socket::Error GetErrorNumber() {
 		return WSAGetLastError();
 	}
@@ -106,6 +95,20 @@ namespace asd
 	}
 
 #endif
+
+
+
+	int Socket::ToNativeCode(Type a_type) asd_noexcept
+	{
+		switch (a_type) {
+			case Socket::TCP:
+				return SOCK_STREAM;
+			case Socket::UDP:
+				return SOCK_DGRAM;
+		}
+		assert(false);
+		return -1;
+	}
 
 
 

@@ -23,6 +23,7 @@ namespace asd
 				return AF_INET6;
 		}
 		assert(false);
+		return -1;
 	}
 
 	struct AddrInfos
