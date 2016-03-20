@@ -838,7 +838,8 @@ namespace asd
 
 	void
 	EasySocket::Recv(OUT Buffer& a_buffer,
-					 IN int a_flags /*= 0*/)
+					 IN int a_flags /*= 0*/,
+					 IN int a_recvComplete /*= -1*/)
 	{
 		assert(m_socket != nullptr);
 
@@ -857,7 +858,7 @@ namespace asd
 				a_buffer.push_back(m_recvBuffer[i]);
 			}
 
-		} while (r.m_bytes < BufferSize);
+		} while (0 <= a_recvComplete && r.m_bytes < a_recvComplete);
 	}
 
 

@@ -254,7 +254,8 @@ namespace asd
 					IN int a_flags = 0);
 
 		void Recv(OUT Buffer& a_buffer,
-				  IN int a_flags = 0);
+				  IN int a_flags = 0,
+				  IN int a_recvComplete = -1);
 
 		void RecvFrom(OUT Buffer& a_buffer,
 					  OUT IpAddress& a_src,
