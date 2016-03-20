@@ -90,7 +90,7 @@ namespace asd
 	
 	
 
-	Semaphore::~Semaphore() noexcept
+	Semaphore::~Semaphore() asd_noexcept
 	{
 		asd_Destructor_Start
 			assert(GetCount() >= 0);

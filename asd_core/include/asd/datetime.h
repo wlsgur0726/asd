@@ -18,15 +18,15 @@ namespace asd
 	};
 
 
-	tm* localtime(IN const time_t* a_time) noexcept;
-	inline tm* localtime() noexcept
+	tm* localtime(IN const time_t* a_time) asd_noexcept;
+	inline tm* localtime() asd_noexcept
 	{
 		time_t t = time(nullptr);
 		return asd::localtime(&t);
 	}
 
-	tm* gmtime(IN const time_t* a_time) noexcept;
-	inline tm* gmtime() noexcept
+	tm* gmtime(IN const time_t* a_time) asd_noexcept;
+	inline tm* gmtime() asd_noexcept
 	{
 		time_t t = time(nullptr);
 		return asd::gmtime(&t);
@@ -40,9 +40,9 @@ namespace asd
 															\
 		Class& operator = (IN const Type& a_src);			\
 															\
-		Type& To(OUT Type& a_dst) const noexcept;			\
+		Type& To(OUT Type& a_dst) const asd_noexcept;		\
 															\
-		operator Type() const noexcept;						\
+		operator Type() const asd_noexcept;					\
 
 
 	class Date
@@ -63,22 +63,22 @@ namespace asd
 				   IN int a_month = 1,
 				   IN int a_day = 1);
 
-		int Year() const noexcept;
+		int Year() const asd_noexcept;
 		Date& Year(IN int a_year);
 
-		int Month() const noexcept;
+		int Month() const asd_noexcept;
 		Date& Month(IN int a_month);
 
-		int Day() const noexcept;
+		int Day() const asd_noexcept;
 		Date& Day(IN int a_day);
 
-		DayOfTheWeek DayOfTheWeek() const noexcept;
+		DayOfTheWeek DayOfTheWeek() const asd_noexcept;
 
-		MString ToString(const char* a_format = "%Y-%m-%d") const noexcept;
+		MString ToString(const char* a_format = "%Y-%m-%d") const asd_noexcept;
 
 		// 비교
 		static int Compare(IN const Date& a_left,
-						   IN const Date& a_right) noexcept;
+						   IN const Date& a_right) asd_noexcept;
 		asd_Define_CompareOperator(Compare, Date);
 
 		// 다른 타입 지원
@@ -110,23 +110,23 @@ namespace asd
 				   IN int a_second = 0,
 				   IN int a_millisecond = 0);
 
-		int Hour() const noexcept;
+		int Hour() const asd_noexcept;
 		Time& Hour(IN int a_hour);
 
-		int Minute() const noexcept;
+		int Minute() const asd_noexcept;
 		Time& Minute(IN int a_minute);
 
-		int Second() const noexcept;
+		int Second() const asd_noexcept;
 		Time& Second(IN int a_second);
 
-		int Millisecond() const noexcept;
+		int Millisecond() const asd_noexcept;
 		Time& Millisecond(IN int a_millisecond);
 
-		MString ToString(const char* a_format = "%H:%M:%S") const noexcept;
+		MString ToString(const char* a_format = "%H:%M:%S") const asd_noexcept;
 
 		// 비교
 		static int Compare(IN const Time& a_left,
-						   IN const Time& a_right) noexcept;
+						   IN const Time& a_right) asd_noexcept;
 		asd_Define_CompareOperator(Compare, Time);
 
 		// 다른 타입 지원
@@ -162,35 +162,35 @@ namespace asd
 					   IN int a_second = 0,
 					   IN int a_millisecond = 0);
 
-		int Year() const noexcept;
+		int Year() const asd_noexcept;
 		DateTime& Year(IN int a_year);
 
-		int Month() const noexcept;
+		int Month() const asd_noexcept;
 		DateTime& Month(IN int a_month);
 
-		int Day() const noexcept;
+		int Day() const asd_noexcept;
 		DateTime& Day(IN int a_day);
 
-		int Hour() const noexcept;
+		int Hour() const asd_noexcept;
 		DateTime& Hour(IN int a_hour);
 
-		int Minute() const noexcept;
+		int Minute() const asd_noexcept;
 		DateTime& Minute(IN int a_minute);
 
-		int Second() const noexcept;
+		int Second() const asd_noexcept;
 		DateTime& Second(IN int a_second);
 
-		int Millisecond() const noexcept;
+		int Millisecond() const asd_noexcept;
 		DateTime& Millisecond(IN int a_millisecond);
 
-		DayOfTheWeek DayOfTheWeek() const noexcept;
+		DayOfTheWeek DayOfTheWeek() const asd_noexcept;
 
-		MString ToString(const char* a_format = "%Y-%m-%d %H:%M:%S") const noexcept;
+		MString ToString(const char* a_format = "%Y-%m-%d %H:%M:%S") const asd_noexcept;
 
 
 		// 비교
 		static int Compare(IN const DateTime& a_left,
-						   IN const DateTime& a_right) noexcept;
+						   IN const DateTime& a_right) asd_noexcept;
 		asd_Define_CompareOperator(Compare, DateTime);
 
 

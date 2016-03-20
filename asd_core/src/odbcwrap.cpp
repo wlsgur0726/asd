@@ -10,7 +10,7 @@
 
 namespace asd
 {
-	MString DBDiagInfo::ToString() const noexcept
+	MString DBDiagInfo::ToString() const asd_noexcept
 	{
 		return MString("State=%s,NativeError=%d,Message=%s",
 					   m_state,
@@ -22,7 +22,7 @@ namespace asd
 
 	DBException::DBException(IN const DBDiagInfoList& a_diagInfoList,
 							 IN const char* a_lastFileName,
-							 IN int a_lastFileLine) noexcept
+							 IN int a_lastFileLine) asd_noexcept
 	{
 		m_what.Format("DBException(%s:%d)", a_lastFileName, a_lastFileLine);
 		int index = 1;
@@ -368,7 +368,7 @@ namespace asd
 	}
 
 
-	DBConnection::~DBConnection() noexcept
+	DBConnection::~DBConnection() asd_noexcept
 	{
 		asd_Destructor_Start
 			Close();
@@ -691,7 +691,7 @@ namespace asd
 
 		void CloseStatement()
 		{
-			FinallyWork fin([&]()
+			asd_RegisterFinallyTask([this]()
 			{
 				Close();
 			});
@@ -725,7 +725,7 @@ namespace asd
 
 
 
-	DBStatement::DBStatement() noexcept
+	DBStatement::DBStatement() asd_noexcept
 	{
 	}
 
@@ -779,7 +779,7 @@ namespace asd
 	}
 
 
-	uint16_t DBStatement::GetColumnCount() const noexcept
+	uint16_t DBStatement::GetColumnCount() const asd_noexcept
 	{
 		assert(m_handle != nullptr);
 		return m_handle->m_columnNameList.size();

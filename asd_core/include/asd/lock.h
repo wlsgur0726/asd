@@ -5,7 +5,7 @@
 
 namespace asd
 {
-	const std::thread::id& GetCurrentThreadID() noexcept;
+	const std::thread::id& GetCurrentThreadID() asd_noexcept;
 
 	// 템플릿에서 사용하기 위해
 	// std::mutex와 동일한 함수명 사용
@@ -38,7 +38,7 @@ namespace asd
 
 		Mutex& operator = (MOVE Mutex&& a_rval);
 
-		~Mutex() noexcept;
+		~Mutex() asd_noexcept;
 
 		asd_DeclareMutexInterface;
 	};
@@ -53,7 +53,7 @@ namespace asd
 	public:
 		SpinMutex();
 
-		~SpinMutex() noexcept;
+		~SpinMutex() asd_noexcept;
 
 		asd_DeclareMutexInterface;
 	};

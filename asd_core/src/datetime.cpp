@@ -3,7 +3,7 @@
 
 namespace asd
 {
-	tm* localtime(IN const time_t* a_time) noexcept
+	tm* localtime(IN const time_t* a_time) asd_noexcept
 	{
 		thread_local tm t_tm;
 #if asd_Platform_Windows
@@ -17,7 +17,7 @@ namespace asd
 	}
 
 
-	tm* gmtime(IN const time_t* a_time) noexcept
+	tm* gmtime(IN const time_t* a_time) asd_noexcept
 	{
 		thread_local tm t_tm;
 #if asd_Platform_Windows
@@ -257,14 +257,14 @@ namespace asd
 
 
 #define asd_Define_ConvertFunction_To(Class, Type, ParamName)		\
-	Class::operator Type() const noexcept							\
+	Class::operator Type() const asd_noexcept						\
 	{																\
 		Type r;														\
 		memset(&r, 0, sizeof(r));									\
 		return To(r);												\
 	}																\
 																	\
-	Type& Class::To(OUT Type& a_dst) const noexcept					\
+	Type& Class::To(OUT Type& a_dst) const asd_noexcept				\
 
 
 
@@ -287,7 +287,7 @@ namespace asd
 	}
 
 
-	int Date::Year() const noexcept
+	int Date::Year() const asd_noexcept
 	{
 		return m_year;
 	}
@@ -302,7 +302,7 @@ namespace asd
 	}
 
 
-	int Date::Month() const noexcept
+	int Date::Month() const asd_noexcept
 	{
 		return m_month;
 	}
@@ -317,7 +317,7 @@ namespace asd
 	}
 	
 
-	int Date::Day() const noexcept
+	int Date::Day() const asd_noexcept
 	{
 		return m_day;
 	}
@@ -332,13 +332,13 @@ namespace asd
 	}
 
 
-	DayOfTheWeek Date::DayOfTheWeek() const noexcept
+	DayOfTheWeek Date::DayOfTheWeek() const asd_noexcept
 	{
 		return GetDayOfTheWeek(Year(), Month(), Day());
 	}
 
 
-	MString Date::ToString(const char* a_format /*= "%Y-%m-%d"*/) const noexcept
+	MString Date::ToString(const char* a_format /*= "%Y-%m-%d"*/) const asd_noexcept
 	{
 		if (a_format == nullptr)
 			a_format = "%Y-%m-%d";
@@ -347,7 +347,7 @@ namespace asd
 
 
 	int Date::Compare(IN const Date& a_left,
-					  IN const Date& a_right) noexcept
+					  IN const Date& a_right) asd_noexcept
 	{
 		int cmp1;
 		int cmp2;
@@ -456,7 +456,7 @@ namespace asd
 	}
 
 
-	int Time::Hour() const noexcept
+	int Time::Hour() const asd_noexcept
 	{
 		return m_hour;
 	}
@@ -471,7 +471,7 @@ namespace asd
 	}
 
 
-	int Time::Minute() const noexcept
+	int Time::Minute() const asd_noexcept
 	{
 		return m_minute;
 	}
@@ -486,7 +486,7 @@ namespace asd
 	}
 
 
-	int Time::Second() const noexcept
+	int Time::Second() const asd_noexcept
 	{
 		return m_second;
 	}
@@ -501,7 +501,7 @@ namespace asd
 	}
 
 
-	int Time::Millisecond() const noexcept
+	int Time::Millisecond() const asd_noexcept
 	{
 		return m_millisecond;
 	}
@@ -516,7 +516,7 @@ namespace asd
 	}
 
 
-	MString Time::ToString(const char* a_format /*= "%H:%M:%S"*/) const noexcept
+	MString Time::ToString(const char* a_format /*= "%H:%M:%S"*/) const asd_noexcept
 	{
 		if (a_format == nullptr) {
 			return asd::ToString(a_format, *this);
@@ -529,7 +529,7 @@ namespace asd
 
 
 	int Time::Compare(IN const Time& a_left,
-					  IN const Time& a_right) noexcept
+					  IN const Time& a_right) asd_noexcept
 	{
 		int cmp1;
 		int cmp2;
@@ -649,7 +649,7 @@ namespace asd
 	}
 
 
-	int DateTime::Year() const noexcept
+	int DateTime::Year() const asd_noexcept
 	{
 		return m_date.Year();
 	}
@@ -662,7 +662,7 @@ namespace asd
 	}
 
 
-	int DateTime::Month() const noexcept
+	int DateTime::Month() const asd_noexcept
 	{
 		return m_date.Month();
 	}
@@ -675,7 +675,7 @@ namespace asd
 	}
 
 
-	int DateTime::Day() const noexcept
+	int DateTime::Day() const asd_noexcept
 	{
 		return m_date.Day();
 	}
@@ -688,7 +688,7 @@ namespace asd
 	}
 
 
-	int DateTime::Hour() const noexcept
+	int DateTime::Hour() const asd_noexcept
 	{
 		return m_time.Hour();
 	}
@@ -701,7 +701,7 @@ namespace asd
 	}
 
 
-	int DateTime::Minute() const noexcept
+	int DateTime::Minute() const asd_noexcept
 	{
 		return m_time.Minute();
 	}
@@ -714,7 +714,7 @@ namespace asd
 	}
 
 
-	int DateTime::Second() const noexcept
+	int DateTime::Second() const asd_noexcept
 	{
 		return m_time.Second();
 	}
@@ -727,7 +727,7 @@ namespace asd
 	}
 
 
-	int DateTime::Millisecond() const noexcept
+	int DateTime::Millisecond() const asd_noexcept
 	{
 		return m_time.Millisecond();
 	}
@@ -740,13 +740,13 @@ namespace asd
 	}
 
 
-	DayOfTheWeek DateTime::DayOfTheWeek() const noexcept
+	DayOfTheWeek DateTime::DayOfTheWeek() const asd_noexcept
 	{
 		return m_date.DayOfTheWeek();
 	}
 
 
-	MString DateTime::ToString(const char* a_format /*= "%Y-%m-%d %H:%M:%S"*/) const noexcept
+	MString DateTime::ToString(const char* a_format /*= "%Y-%m-%d %H:%M:%S"*/) const asd_noexcept
 	{
 		if (a_format == nullptr) {
 			return MString("%s %s",
@@ -758,7 +758,7 @@ namespace asd
 
 
 	int DateTime::Compare(IN const DateTime& a_left,
-						  IN const DateTime& a_right) noexcept
+						  IN const DateTime& a_right) asd_noexcept
 	{
 		int cmp = Date::Compare(a_left.m_date, a_right.m_date);
 		if (cmp != 0)

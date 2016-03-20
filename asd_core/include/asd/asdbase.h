@@ -99,34 +99,45 @@
 
 
 
+// asd_noexcept
+#if asd_Can_not_use_Exception
+#	define asd_noexcept
+#
+#else
+#	define asd_noexcept noexcept
+#
+#endif
+
+
+
 // CompareFunction를 사용해서 비교연산자들을 정의하는 매크로
 #define asd_Define_CompareOperator(CompareFunction, Type)					\
-	inline bool operator == (IN const Type& a_rval) const noexcept			\
+	inline bool operator == (IN const Type& a_rval) const asd_noexcept		\
 	{																		\
 		return CompareFunction(*this, a_rval) == 0;							\
 	}																		\
 																			\
-	inline bool operator != (IN const Type& a_rval) const noexcept			\
+	inline bool operator != (IN const Type& a_rval) const asd_noexcept		\
 	{																		\
 		return CompareFunction(*this, a_rval) != 0;							\
 	}																		\
 																			\
-	inline bool operator < (IN const Type& a_rval) const noexcept			\
+	inline bool operator < (IN const Type& a_rval) const asd_noexcept		\
 	{																		\
 		return CompareFunction(*this, a_rval) < 0;							\
 	}																		\
 																			\
-	inline bool operator <= (IN const Type& a_rval) const noexcept			\
+	inline bool operator <= (IN const Type& a_rval) const asd_noexcept		\
 	{																		\
 		return CompareFunction(*this, a_rval) <= 0;							\
 	}																		\
 																			\
-	inline bool operator > (IN const Type& a_rval) const noexcept			\
+	inline bool operator > (IN const Type& a_rval) const asd_noexcept		\
 	{																		\
 		return CompareFunction(*this, a_rval) > 0;							\
 	}																		\
 																			\
-	inline bool operator >= (IN const Type& a_rval) const noexcept			\
+	inline bool operator >= (IN const Type& a_rval) const asd_noexcept		\
 	{																		\
 		return CompareFunction(*this, a_rval) >= 0;							\
 	}																		\

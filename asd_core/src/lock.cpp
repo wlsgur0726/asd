@@ -13,7 +13,7 @@
 
 namespace asd
 {
-	const std::thread::id& GetCurrentThreadID() noexcept
+	const std::thread::id& GetCurrentThreadID() asd_noexcept
 	{
 		thread_local std::thread::id t_tid;
 		if (t_tid == std::thread::id())
@@ -24,7 +24,7 @@ namespace asd
 	}
 
 
-	const uint32_t& Get_HW_Concurrency() noexcept
+	const uint32_t& Get_HW_Concurrency() asd_noexcept
 	{
 		thread_local uint32_t t_HW_Concurrency = 0xFFFFFFFF;
 		if (t_HW_Concurrency == 0xFFFFFFFF) {
@@ -121,7 +121,7 @@ namespace asd
 
 
 
-	Mutex::~Mutex() noexcept
+	Mutex::~Mutex() asd_noexcept
 	{
 		asd_Destructor_Start
 			m_data.release();
@@ -215,7 +215,7 @@ namespace asd
 
 
 
-	SpinMutex::~SpinMutex() noexcept
+	SpinMutex::~SpinMutex() asd_noexcept
 	{
 		if (m_mtx != nullptr)
 			delete m_mtx;

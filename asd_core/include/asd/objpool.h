@@ -24,7 +24,7 @@ namespace asd
 
 
 
-		virtual ~ObjectPool() noexcept
+		virtual ~ObjectPool() asd_noexcept
 		{
 			Clear();
 		}
@@ -54,7 +54,7 @@ namespace asd
 
 
 		// 풀링되면 true, 풀이 꽉 차면 false 리턴
-		bool Release(MOVE Object*& a_obj) noexcept
+		bool Release(MOVE Object*& a_obj) asd_noexcept
 		{
 			if (a_obj == nullptr)
 				return true;
@@ -69,7 +69,7 @@ namespace asd
 
 
 
-		void Clear() noexcept
+		void Clear() asd_noexcept
 		{
 			const int BufSize = 1024;
 			Object* buf[BufSize];
@@ -92,7 +92,7 @@ namespace asd
 
 
 
-		void SetLimitCount(IN size_t a_limitCount) noexcept
+		void SetLimitCount(IN size_t a_limitCount) asd_noexcept
 		{
 			MtxCtl lock(m_lock, true);
 			m_limitCount = std::max(a_limitCount, (size_t)0);
@@ -115,7 +115,7 @@ namespace asd
 
 
 
-		size_t GetCount() const noexcept
+		size_t GetCount() const asd_noexcept
 		{
 			return m_pool.size();
 		}
@@ -129,7 +129,7 @@ namespace asd
 
 
 		// 풀링되면 true, 풀이 꽉 차면 false 리턴
-		inline bool Release_Internal(IN Object* a_obj) noexcept
+		inline bool Release_Internal(IN Object* a_obj) asd_noexcept
 		{
 			assert(a_obj != nullptr);
 

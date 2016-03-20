@@ -18,9 +18,9 @@ namespace asd
 				  IN const int a_line,
 				  IN const char* a_function,
 				  IN const char* a_comment = "",
-				  IN ...) noexcept;
+				  IN ...) asd_noexcept;
 
-		MString ToString() const noexcept;
+		MString ToString() const asd_noexcept;
 	};
 	typedef std::vector<DebugInfo> DebugTrace;
 
@@ -31,13 +31,13 @@ namespace asd
 	public:
 		MString m_what;
 
-		Exception() noexcept;
-		Exception(IN const char* a_what) noexcept;
-		Exception(IN const MString& a_what) noexcept;
-		Exception(IN const DebugInfo& a_dbginfo) noexcept;
-		virtual ~Exception() noexcept;
+		Exception() asd_noexcept;
+		Exception(IN const char* a_what) asd_noexcept;
+		Exception(IN const MString& a_what) asd_noexcept;
+		Exception(IN const DebugInfo& a_dbginfo) asd_noexcept;
+		virtual ~Exception() asd_noexcept;
 
-		virtual const char* what() const noexcept override;
+		virtual const char* what() const asd_noexcept override;
 	};
 
 
@@ -85,31 +85,46 @@ namespace asd
 #define asd_Destructor_Start try {
 #define asd_Destructor_End }														\
 	catch (asd::Exception& e) {														\
-		asd_PrintStdErr("asd::Exception! %s\n", e.what());							\
-		assert(false);																\
+		OnException(e, asd_MakeDebugInfo("asd::Exception! %s\n", e.what()));		\
+	}																				\
+	catch (std::bad_alloc& e) {														\
+		OnException(e, asd_MakeDebugInfo("std::bad_alloc! %s\n", e.what()));		\
 	}																				\
 	catch (std::exception& e) {														\
-		asd_PrintStdErr("std::exception! %s\n", e.what());							\
-		assert(false);																\
+		OnException(e, asd_MakeDebugInfo("std::exception! %s\n", e.what()));		\
 	}																				\
 	catch (const char* e) {															\
-		asd_PrintStdErr("const char* exception! %s\n", e);							\
-		assert(false);																\
+		OnException(e, asd_MakeDebugInfo("const char* exception! %s\n", e));		\
 	}																				\
 	catch (...) {																	\
-		asd_PrintStdErr("unknown exception!\n");									\
-		assert(false);																\
+		OnUnknownException(asd_MakeDebugInfo("unknown exception!"));				\
 	}																				\
+
+	// VS 매크로 디버깅이 불편해서 함수로 뺌
+	template <typename ExceptionType>
+	inline void OnException(const ExceptionType& e,
+							const DebugInfo& info) asd_noexcept
+	{
+		asd::fputs(info.ToString(), stderr);
+		assert(false);
+	}
+
+	inline void OnUnknownException(const DebugInfo& info) asd_noexcept
+	{
+		asd::fputs(info.ToString(), stderr);
+		assert(false);
+	}
 
 
 
 	// asd_RaiseException
-#ifdef asd_Can_not_use_Exception
-	#error asd_RaiseException 미구현
-	#define asd_RaiseException(MsgFormat, ...) \
+#if asd_Can_not_use_Exception
+	#define asd_RaiseException(MsgFormat, ...) {	\
+		asd_PrintStdErr(MsgFormat, __VA_ARGS__);	\
+		std::terminate();							\
+	}												\
 
 #else
-
 	#if defined(asd_Compiler_MSVC)
 		#define asd_RaiseException(MsgFormat, ...)									\
 			throw asd::Exception(asd_MakeDebugInfo(MsgFormat, __VA_ARGS__));		\

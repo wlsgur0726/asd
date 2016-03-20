@@ -14,7 +14,8 @@ namespace asd
 		typedef TempBuffer<T> ThisType;
 
 
-		TempBuffer(IN size_t a_count) noexcept {
+		TempBuffer(IN size_t a_count) asd_noexcept
+		{
 			assert(a_count > 0);
 			auto buf = std::get_temporary_buffer<Object>((ptrdiff_t)a_count);
 			m_arr = buf.first;
@@ -22,13 +23,13 @@ namespace asd
 		}
 
 
-		TempBuffer(MOVE ThisType&& a_rval) noexcept
+		TempBuffer(MOVE ThisType&& a_rval) asd_noexcept
 		{
 			*this = std::move(a_rval);
 		}
 
 
-		inline TempBuffer& operator = (MOVE ThisType&& a_rval) noexcept
+		inline TempBuffer& operator = (MOVE ThisType&& a_rval) asd_noexcept
 		{
 			this->~TempBuffer();
 			m_arr = a_rval.m_arr;
@@ -38,7 +39,7 @@ namespace asd
 		}
 
 
-		~TempBuffer() noexcept
+		~TempBuffer() asd_noexcept
 		{
 			if (m_arr != nullptr) {
 				std::return_temporary_buffer<Object>(m_arr);
@@ -49,21 +50,21 @@ namespace asd
 		}
 
 
-		inline operator void* () const noexcept
+		inline operator void* () const asd_noexcept
 		{
 			assert(m_arr != nullptr);
 			return m_arr;
 		}
 
 
-		inline operator Object* () const noexcept
+		inline operator Object* () const asd_noexcept
 		{
 			assert(m_arr != nullptr);
 			return m_arr;
 		}
 
 
-		inline size_t GetCount() const noexcept
+		inline size_t GetCount() const asd_noexcept
 		{
 			assert(m_count > 0);
 			return m_count;

@@ -20,7 +20,7 @@ namespace asd
 
 		Semaphore& operator = (MOVE Semaphore&& a_rval);
 
-		~Semaphore() noexcept;
+		~Semaphore() asd_noexcept;
 
 		uint32_t GetCount() const;
 

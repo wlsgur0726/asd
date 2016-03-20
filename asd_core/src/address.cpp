@@ -14,6 +14,17 @@
 
 namespace asd
 {
+	int IpAddress::ToNativeCode(Family a_family) asd_noexcept
+	{
+		switch (a_family) {
+			case IpAddress::IPv4:
+				return AF_INET;
+			case IpAddress::IPv6:
+				return AF_INET6;
+		}
+		assert(false);
+	}
+
 	struct AddrInfos
 	{
 		int m_error = 0;
@@ -69,7 +80,7 @@ namespace asd
 
 
 
-	IpAddress::IpAddress(IN Family a_addrFamily /*= IPv4*/) noexcept
+	IpAddress::IpAddress(IN Family a_addrFamily /*= IPv4*/) asd_noexcept
 	{
 		m_addrFamily = a_addrFamily;
 	}
@@ -113,14 +124,14 @@ namespace asd
 
 
 
-	IpAddress::IpAddress(IN const IpAddress& a_cp) noexcept
+	IpAddress::IpAddress(IN const IpAddress& a_cp) asd_noexcept
 	{
 		*this = a_cp;
 	}
 
 
 
-	IpAddress& IpAddress::operator = (IN const IpAddress& a_cp) noexcept
+	IpAddress& IpAddress::operator = (IN const IpAddress& a_cp) asd_noexcept
 	{
 		this->~IpAddress();
 		m_addrFamily = a_cp.m_addrFamily;
@@ -134,14 +145,14 @@ namespace asd
 
 
 
-	IpAddress::IpAddress(MOVE IpAddress&& a_rval) noexcept
+	IpAddress::IpAddress(MOVE IpAddress&& a_rval) asd_noexcept
 	{
 		*this = std::move(a_rval);
 	}
 
 
 
-	IpAddress& IpAddress::operator = (MOVE IpAddress&& a_rval) noexcept
+	IpAddress& IpAddress::operator = (MOVE IpAddress&& a_rval) asd_noexcept
 	{
 		this->~IpAddress();
 		m_addrFamily = a_rval.m_addrFamily;
@@ -155,12 +166,12 @@ namespace asd
 
 
 #define asd_IpAddress_Define_Init(NativeType, Family)									\
-	IpAddress::IpAddress(IN const NativeType& a_native) noexcept						\
+	IpAddress::IpAddress(IN const NativeType& a_native) asd_noexcept					\
 	{																					\
 		*this = a_native;																\
 	}																					\
 																						\
-	IpAddress& IpAddress::operator = (IN const NativeType& a_native) noexcept			\
+	IpAddress& IpAddress::operator = (IN const NativeType& a_native) asd_noexcept		\
 	{																					\
 		this->~IpAddress();																\
 		m_addrlen = sizeof(NativeType);													\
@@ -176,28 +187,28 @@ namespace asd
 
 
 
-	IpAddress::operator const sockaddr* () const noexcept
+	IpAddress::operator const sockaddr* () const asd_noexcept
 	{
 		return m_addr;
 	}
 
 
 
-	int IpAddress::GetAddrLen() const noexcept
+	int IpAddress::GetAddrLen() const asd_noexcept
 	{
 		return m_addrlen;
 	}
 
 
 
-	IpAddress::Family IpAddress::GetAddressFamily() const noexcept
+	IpAddress::Family IpAddress::GetAddressFamily() const asd_noexcept
 	{
 		return m_addrFamily;
 	}
 
 
 
-	void* IpAddress::GetIp(OUT int* a_len /*= nullptr*/) const noexcept
+	void* IpAddress::GetIp(OUT int* a_len /*= nullptr*/) const asd_noexcept
 	{
 		if (m_addr == nullptr)
 			return nullptr;
@@ -215,7 +226,7 @@ namespace asd
 			case IPv6: {
 				auto cast = (sockaddr_in6*)m_addr;
 				p = &cast->sin6_addr;
-				sz = 16; // izeof(cast->sin6_addr);
+				sz = 16; // sizeof(cast->sin6_addr);
 				break;
 			}
 			default:
@@ -231,7 +242,7 @@ namespace asd
 
 
 	
-	uint16_t IpAddress::GetPort() const noexcept
+	uint16_t IpAddress::GetPort() const asd_noexcept
 	{
 		if (m_addr == nullptr)
 			return 0;
@@ -254,7 +265,7 @@ namespace asd
 
 
 
-	MString IpAddress::ToString() const noexcept
+	MString IpAddress::ToString() const asd_noexcept
 	{
 		if (m_addr == nullptr)
 			return "";
@@ -263,7 +274,10 @@ namespace asd
 		char ip[BufSize];
 		ip[0] = '\0';
 		
-		inet_ntop(m_addrFamily, GetIp(), ip, BufSize);
+		inet_ntop(ToNativeCode(m_addrFamily),
+				  GetIp(),
+				  ip,
+				  BufSize);
 
 		return MString("%s:%u", ip, (uint32_t)GetPort());
 	}
@@ -271,7 +285,7 @@ namespace asd
 
 
 	int IpAddress::Compare(IN const IpAddress& a_left,
-						   IN const IpAddress& a_right) noexcept
+						   IN const IpAddress& a_right) asd_noexcept
 	{
 		if (a_left.m_addr == a_right.m_addr) {
 			assert(a_left.m_addrFamily == a_right.m_addrFamily);
@@ -318,7 +332,7 @@ namespace asd
 
 
 
-	size_t IpAddress::Hash::operator () (IN const IpAddress& a_addr) const noexcept
+	size_t IpAddress::Hash::operator () (IN const IpAddress& a_addr) const asd_noexcept
 	{
 		if (a_addr.m_addr == nullptr)
 			return 0;

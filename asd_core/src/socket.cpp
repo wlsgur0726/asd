@@ -45,6 +45,17 @@ namespace asd
 
 	typedef char* SockBufType;
 
+	int Socket::ToNativeCode(Type a_type) asd_noexcept
+	{
+		switch (a_type) {
+			case Socket::TCP:
+				return SOCK_STREAM;
+			case Socket::UDP:
+				return SOCK_DGRAM;
+		}
+		assert(false);
+	}
+
 	inline Socket::Error GetErrorNumber() {
 		return WSAGetLastError();
 	}
@@ -99,7 +110,7 @@ namespace asd
 
 
 	Socket::Socket(IN IpAddress::Family a_addressFamily /*= IpAddress::IPv4*/,
-				   IN Socket::Type a_socketType /*=TCP*/) noexcept
+				   IN Socket::Type a_socketType /*=TCP*/) asd_noexcept
 	{
 		m_addressFamily = a_addressFamily;
 		m_socketType = a_socketType;
@@ -108,7 +119,7 @@ namespace asd
 
 
 
-	Socket::Socket(MOVE Socket&& a_rval) noexcept
+	Socket::Socket(MOVE Socket&& a_rval) asd_noexcept
 	{
 		*this = std::move(a_rval);
 	}
@@ -116,7 +127,7 @@ namespace asd
 
 
 	Socket&
-	Socket::operator = (MOVE Socket&& a_rval) noexcept
+	Socket::operator = (MOVE Socket&& a_rval) asd_noexcept
 	{
 		std::swap(m_handle, a_rval.m_handle);
 		std::swap(m_addressFamily, a_rval.m_addressFamily);
@@ -127,7 +138,7 @@ namespace asd
 
 
 
-	Socket::~Socket() noexcept
+	Socket::~Socket() asd_noexcept
 	{
 		Close();
 	}
@@ -135,7 +146,7 @@ namespace asd
 
 
 	Socket::Handle
-	Socket::GetNativeHandle() const noexcept
+	Socket::GetNativeHandle() const asd_noexcept
 	{
 		return m_handle;
 	}
@@ -143,7 +154,7 @@ namespace asd
 
 
 	void
-	Socket::Close() noexcept
+	Socket::Close() asd_noexcept
 	{
 		if (m_handle == InvalidHandle)
 			return;
@@ -157,7 +168,7 @@ namespace asd
 	Socket::Error
 	Socket::Init(IN IpAddress::Family a_addressFamily,
 				 IN Socket::Type a_socketType,
-				 IN bool a_force) noexcept
+				 IN bool a_force) asd_noexcept
 	{
 		bool need_init =   m_handle == InvalidHandle
 						|| m_socketType != a_socketType
@@ -166,7 +177,9 @@ namespace asd
 		Error ret = 0;
 		if (need_init || a_force) {
 			Close();
-			m_handle = socket(a_addressFamily, a_socketType, 0);
+			m_handle = socket(IpAddress::ToNativeCode(a_addressFamily),
+							  Socket::ToNativeCode(a_socketType),
+							  0);
 			if (m_handle == InvalidHandle) {
 				ret = GetErrorNumber();
 			}
@@ -185,7 +198,7 @@ namespace asd
 	Socket::SetSockOpt(IN int a_level,
 					   IN int a_optname,
 					   IN const void* a_optval,
-					   IN uint32_t a_optlen) noexcept
+					   IN uint32_t a_optlen) asd_noexcept
 	{
 		assert(m_handle != InvalidHandle);
 		return setsockopt(m_handle,
@@ -201,7 +214,7 @@ namespace asd
 	Socket::GetSockOpt(IN int a_level,
 					   IN int a_optname,
 					   OUT void* a_optval,
-					   INOUT uint32_t& a_optlen) const noexcept
+					   INOUT uint32_t& a_optlen) const asd_noexcept
 	{
 		assert(m_handle != InvalidHandle);
 		return getsockopt(m_handle, 
@@ -214,7 +227,7 @@ namespace asd
 
 
 	Socket::Error
-	Socket::SetSockOpt_ReuseAddr(IN bool a_set) noexcept
+	Socket::SetSockOpt_ReuseAddr(IN bool a_set) asd_noexcept
 	{
 		int set = a_set;
 		return SetSockOpt(SOL_SOCKET,
@@ -226,7 +239,7 @@ namespace asd
 
 
 	Socket::Error
-	Socket::GetSockOpt_ReuseAddr(OUT bool& a_result) const noexcept
+	Socket::GetSockOpt_ReuseAddr(OUT bool& a_result) const asd_noexcept
 	{
 		int result;
 		uint32_t size = sizeof(result);
@@ -243,7 +256,7 @@ namespace asd
 
 
 	Socket::Error
-	Socket::SetSockOpt_UseNagle(IN bool a_set) noexcept
+	Socket::SetSockOpt_UseNagle(IN bool a_set) asd_noexcept
 	{
 		assert(m_socketType == Type::TCP);
 
@@ -257,7 +270,7 @@ namespace asd
 
 
 	Socket::Error
-	Socket::GetSockOpt_UseNagle(OUT bool& a_result) const noexcept
+	Socket::GetSockOpt_UseNagle(OUT bool& a_result) const asd_noexcept
 	{
 		assert(m_socketType == Type::TCP);
 
@@ -277,7 +290,7 @@ namespace asd
 
 	Socket::Error
 	Socket::SetSockOpt_Linger(IN bool a_use,
-							  IN uint16_t a_sec) noexcept
+							  IN uint16_t a_sec) asd_noexcept
 	{
 		linger val;
 		val.l_onoff = a_use;
@@ -292,7 +305,7 @@ namespace asd
 
 	Socket::Error
 	Socket::GetSockOpt_Linger(OUT bool& a_use,
-							  OUT uint16_t& a_sec) const noexcept
+							  OUT uint16_t& a_sec) const asd_noexcept
 	{
 		linger val;
 		uint32_t size = sizeof(val);
@@ -310,7 +323,7 @@ namespace asd
 
 
 	Socket::Error 
-	Socket::SetSockOpt_RecvBufSize(IN int a_byte) noexcept
+	Socket::SetSockOpt_RecvBufSize(IN int a_byte) asd_noexcept
 	{
 		return SetSockOpt(SOL_SOCKET,
 						  SO_RCVBUF,
@@ -321,7 +334,7 @@ namespace asd
 
 
 	Socket::Error 
-	Socket::GetSockOpt_RecvBufSize(OUT int& a_byte) const noexcept
+	Socket::GetSockOpt_RecvBufSize(OUT int& a_byte) const asd_noexcept
 	{
 		int result;
 		uint32_t size = sizeof(result);
@@ -338,7 +351,7 @@ namespace asd
 
 
 	Socket::Error 
-	Socket::SetSockOpt_SendBufSize(IN int a_byte) noexcept
+	Socket::SetSockOpt_SendBufSize(IN int a_byte) asd_noexcept
 	{
 		return SetSockOpt(SOL_SOCKET,
 						  SO_SNDBUF,
@@ -349,7 +362,7 @@ namespace asd
 
 
 	Socket::Error 
-	Socket::GetSockOpt_SendBufSize(OUT int& a_byte) const noexcept
+	Socket::GetSockOpt_SendBufSize(OUT int& a_byte) const asd_noexcept
 	{
 		int result;
 		uint32_t size = sizeof(result);
@@ -366,7 +379,7 @@ namespace asd
 
 
 	Socket::Error 
-	Socket::SetNonblock(IN bool a_nonblock) noexcept
+	Socket::SetNonblock(IN bool a_nonblock) asd_noexcept
 	{
 		assert(m_handle != InvalidHandle);
 
@@ -399,7 +412,7 @@ namespace asd
 
 
 	Socket::Error 
-	Socket::CheckNonblock(OUT bool& a_result) const noexcept
+	Socket::CheckNonblock(OUT bool& a_result) const asd_noexcept
 	{
 		assert(m_handle != InvalidHandle);
 
@@ -462,7 +475,7 @@ namespace asd
 
 
 	Socket::Error 
-	Socket::GetSockName(OUT IpAddress& a_addr) const noexcept
+	Socket::GetSockName(OUT IpAddress& a_addr) const asd_noexcept
 	{
 		asd_GetIpAddress_Case(getsockname,
 							  m_handle,
@@ -473,7 +486,7 @@ namespace asd
 
 
 	Socket::Error 
-	Socket::GetPeerName(OUT IpAddress& a_addr) const noexcept
+	Socket::GetPeerName(OUT IpAddress& a_addr) const asd_noexcept
 	{
 		asd_GetIpAddress_Case(getpeername,
 							  m_handle,
@@ -484,7 +497,7 @@ namespace asd
 
 
 	Socket::Error 
-	Socket::Bind(IN const IpAddress& a_addr)  noexcept
+	Socket::Bind(IN const IpAddress& a_addr)  asd_noexcept
 	{
 		Error ret = 0;
 		ret = Init(a_addr.GetAddressFamily(), m_socketType, false);
@@ -500,7 +513,7 @@ namespace asd
 
 
 	Socket::Error 
-	Socket::Listen(IN int a_backlog /*=1024*/) noexcept
+	Socket::Listen(IN int a_backlog /*=1024*/) asd_noexcept
 	{
 		assert(m_handle != InvalidHandle);
 
@@ -543,7 +556,7 @@ namespace asd
 
 	Socket::Error 
 	Socket::Accept(OUT Socket& a_newbe,
-				   OUT IpAddress& a_address) noexcept
+				   OUT IpAddress& a_address) asd_noexcept
 	{
 		assert(m_handle != InvalidHandle);
 
@@ -576,7 +589,7 @@ namespace asd
 
 
 	Socket::Error
-	Socket::Connect(IN const IpAddress& a_dest) noexcept
+	Socket::Connect(IN const IpAddress& a_dest) asd_noexcept
 	{
 		Error ret = 0;
 		ret = Init(a_dest.GetAddressFamily(), m_socketType, false);
@@ -594,7 +607,7 @@ namespace asd
 	Socket::IoResult
 	Socket::Send(IN const void* a_buffer,
 				 IN int a_bufferSize,
-				 IN int a_flags /*= 0*/) noexcept
+				 IN int a_flags /*= 0*/) asd_noexcept
 	{
 		assert(m_handle != InvalidHandle);
 
@@ -615,7 +628,7 @@ namespace asd
 	Socket::SendTo(IN const void* a_buffer,
 				   IN int a_bufferSize,
 				   IN const IpAddress& a_dest,
-				   IN int a_flags /*= 0*/) noexcept
+				   IN int a_flags /*= 0*/) asd_noexcept
 	{
 		IoResult ret;
 		ret.m_error = Init(m_addressFamily, m_socketType, false);
@@ -639,7 +652,7 @@ namespace asd
 	Socket::IoResult
 	Socket::Recv(OUT void* a_buffer,
 				 IN int a_bufferSize,
-				 IN int a_flags /*= 0*/) noexcept
+				 IN int a_flags /*= 0*/) asd_noexcept
 	{
 		assert(m_handle != InvalidHandle);
 
@@ -685,7 +698,7 @@ namespace asd
 	Socket::RecvFrom(OUT void* a_buffer,
 					 IN int a_bufferSize,
 					 OUT IpAddress& a_src,
-					 IN int a_flags /*= 0*/) noexcept
+					 IN int a_flags /*= 0*/) asd_noexcept
 	{
 		IoResult ret;
 		ret.m_error = Init(m_addressFamily, m_socketType, false);

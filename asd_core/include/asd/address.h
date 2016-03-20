@@ -4,10 +4,6 @@
 #include "asd/string.h"
 #include "asd/exception.h"
 
-#ifndef asd_Platform_Windows
-#	include <sys/socket.h>
-#endif
-
 struct sockaddr;
 struct sockaddr_in;
 struct sockaddr_in6;
@@ -18,9 +14,10 @@ namespace asd
 	{
 	public:
 		enum Family {
-			IPv4 = AF_INET,
-			IPv6 = AF_INET6,
+			IPv4,
+			IPv6,
 		};
+		static int ToNativeCode(Family a_family) asd_noexcept;
 
 	private:
 		Family m_addrFamily = IPv4;
@@ -30,48 +27,48 @@ namespace asd
 	public:
 		virtual ~IpAddress();
 
-		IpAddress(IN Family a_addrFamily = IPv4) noexcept;
+		IpAddress(IN Family a_addrFamily = IPv4) asd_noexcept;
 
 		IpAddress(IN const char* a_domain,
 				  IN uint16_t a_port = 0);
 
-		IpAddress(IN const IpAddress& a_cp) noexcept;
+		IpAddress(IN const IpAddress& a_cp) asd_noexcept;
 
-		IpAddress(MOVE IpAddress&& a_rval) noexcept;
+		IpAddress(MOVE IpAddress&& a_rval) asd_noexcept;
 
-		IpAddress(IN const sockaddr_in& a_native_ipv4) noexcept;
+		IpAddress(IN const sockaddr_in& a_native_ipv4) asd_noexcept;
 
-		IpAddress(IN const sockaddr_in6& a_native_ipv6) noexcept;
+		IpAddress(IN const sockaddr_in6& a_native_ipv6) asd_noexcept;
 
-		IpAddress& operator = (IN const IpAddress& a_cp) noexcept;
+		IpAddress& operator = (IN const IpAddress& a_cp) asd_noexcept;
 
-		IpAddress& operator = (MOVE IpAddress&& a_rval) noexcept;
+		IpAddress& operator = (MOVE IpAddress&& a_rval) asd_noexcept;
 
-		IpAddress& operator = (IN const sockaddr_in& a_native_ipv4) noexcept;
+		IpAddress& operator = (IN const sockaddr_in& a_native_ipv4) asd_noexcept;
 
-		IpAddress& operator = (IN const sockaddr_in6& a_native_ipv6) noexcept;
+		IpAddress& operator = (IN const sockaddr_in6& a_native_ipv6) asd_noexcept;
 
-		operator const sockaddr* () const noexcept;
+		operator const sockaddr* () const asd_noexcept;
 
-		int GetAddrLen() const noexcept;
+		int GetAddrLen() const asd_noexcept;
 
-		Family GetAddressFamily() const noexcept;
+		Family GetAddressFamily() const asd_noexcept;
 
-		void* GetIp(OUT int* a_len = nullptr) const noexcept;
+		void* GetIp(OUT int* a_len = nullptr) const asd_noexcept;
 
-		uint16_t GetPort() const noexcept;
+		uint16_t GetPort() const asd_noexcept;
 
-		MString ToString() const noexcept;
+		MString ToString() const asd_noexcept;
 
 		static int Compare(IN const IpAddress& a_left,
-						   IN const IpAddress& a_right) noexcept;
+						   IN const IpAddress& a_right) asd_noexcept;
 
 		asd_Define_CompareOperator(Compare, IpAddress);
 
 		// STL의 해시 기반 컨테이너에서 사용할 Functor
 		struct Hash
 		{
-			size_t operator() (IN const IpAddress& a_addr) const noexcept;
+			size_t operator() (IN const IpAddress& a_addr) const asd_noexcept;
 		};
 	};
 }
