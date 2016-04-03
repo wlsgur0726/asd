@@ -15,7 +15,6 @@ namespace asdtest_classutil
 
 	struct
 	{
-		std::unordered_map<void*, std::unordered_set<std::thread::id>> UsingThread;
 		std::unordered_map<void*, Counter> UseCounter;
 		std::mutex Mutex;
 		std::atomic<int> Seq;
@@ -25,7 +24,6 @@ namespace asdtest_classutil
 			Mutex.lock();
 			Seq = seq;
 			UseCounter.clear();
-			UsingThread.clear();
 			Mutex.unlock();
 		}
 
@@ -50,27 +48,14 @@ namespace asdtest_classutil
 		TestClass()
 		{
 			m_data = TestManager.Seq++;
-
 			TestManager.Mutex.lock();
 			TestManager.UseCounter[this].val++;
-			auto& set = TestManager.UsingThread[this];
-			assert(set.insert(std::this_thread::get_id()).second);
-			assert(set.size() == 1);
 			TestManager.Mutex.unlock();
 		}
 
 		int GetData() const 
 		{
 			return m_data;
-		}
-
-		~TestClass()
-		{
-			TestManager.Mutex.lock();
-			auto& set = TestManager.UsingThread[this];
-			assert(set.erase(std::this_thread::get_id()) == 1);
-			assert(set.size() == 0);
-			TestManager.Mutex.unlock();
 		}
 	};
 

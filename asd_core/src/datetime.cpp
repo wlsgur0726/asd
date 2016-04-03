@@ -38,16 +38,14 @@ namespace asd
 		int OffsetSec;
 		CurrentTimeZone()
 		{
-			const time_t t = 365 * 24 * 60 * 60;
+			static_assert(std::numeric_limits<time_t>::min() < 0, "time_t is unsigned type");
+			const time_t day = 24 * 60 * 60;
+			const time_t t = 365 * day;
 			const time_t local = mktime(asd::localtime(&t));
 			const time_t utc = mktime(asd::gmtime(&t));
-
-			static_assert(std::numeric_limits<time_t>::min() < 0, "time_t is unsigned type");
 			const time_t diff = local - utc;
 
-			const time_t Min = std::numeric_limits<int>::min();
-			const time_t Max = std::numeric_limits<int>::max();
-			assert(diff >= Min && diff <= Max);
+			assert(diff > -day && diff < day);
 			OffsetSec = (int)diff;
 		}
 	};
