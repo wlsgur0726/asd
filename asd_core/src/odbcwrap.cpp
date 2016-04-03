@@ -36,7 +36,7 @@ namespace asd
 
 	struct TypeTableInitializer
 	{
-		SQLSMALLINT m_enumToCode[SQLType::UNKNOWN_TYPE + 1];
+		SQLSMALLINT m_enumToCode[(short)SQLType::UNKNOWN_TYPE + 1];
 		std::unordered_map<SQLSMALLINT, SQLType> m_codeToEnum;
 
 		TypeTableInitializer()
@@ -46,7 +46,7 @@ namespace asd
 				const SQLSMALLINT TypeCode = SQL_ ## ENUM;						\
 				assert(m_codeToEnum.find(TypeCode) == m_codeToEnum.end());		\
 				m_codeToEnum[TypeCode] = SQLType::ENUM;							\
-				m_enumToCode[SQLType::ENUM] = TypeCode;							\
+				m_enumToCode[(short)SQLType::ENUM] = TypeCode;					\
 			}																	\
 
 			asd_InitTypeTable(CHAR);
@@ -71,7 +71,7 @@ namespace asd
 
 		inline SQLSMALLINT operator[] (IN SQLType a_enum) const
 		{
-			return m_enumToCode[a_enum];
+			return m_enumToCode[(short)a_enum];
 		}
 
 		inline SQLType operator[] (IN SQLSMALLINT a_code) const

@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "asd/iconvwrap.h"
+#include "asd/classutil.h"
 #include <cwchar>
 
 #if defined(asd_Platform_Windows)
@@ -41,25 +42,23 @@ namespace asd
 		}
 	};
 
-
-
 	// enum Encoding의 순서와 맞춰야 함.
 	// 프로세스 시작 시 초기화 후 오로지 조회 용도로만 사용.
-	const EncodingInfo g_encodingInfo[Encoding_Last] = {
-		//              Enum            MinSize   AvgSize   MaxSize    Name
-		EncodingInfo(Encoding_UTF8,       1,        2.5,      4,      "UTF-8"),
-		EncodingInfo(Encoding_UTF16LE,    2,        2,        4,      "UTF-16LE"),
-		EncodingInfo(Encoding_UTF16BE,    2,        2,        4,      "UTF-16BE"),
-		EncodingInfo(Encoding_UTF32LE,    4,        4,        4,      "UTF-32LE"),
-		EncodingInfo(Encoding_UTF32BE,    4,        4,        4,      "UTF-32BE"),
-		EncodingInfo(Encoding_CP949,      1,        1.5,      2,      "CP949")
+	const EncodingInfo g_encodingInfo[(int)Encoding::Last] = {
+		//              Enum             MinSize   AvgSize   MaxSize    Name
+		EncodingInfo(Encoding::UTF8,       1,        2.5,      4,      "UTF-8"),
+		EncodingInfo(Encoding::UTF16LE,    2,        2,        4,      "UTF-16LE"),
+		EncodingInfo(Encoding::UTF16BE,    2,        2,        4,      "UTF-16BE"),
+		EncodingInfo(Encoding::UTF32LE,    4,        4,        4,      "UTF-32LE"),
+		EncodingInfo(Encoding::UTF32BE,    4,        4,        4,      "UTF-32BE"),
+		EncodingInfo(Encoding::CP949,      1,        1.5,      2,      "CP949")
 	};
 
 
 
 	inline bool IsValidEncoding(IN Encoding a_enc) asd_noexcept
 	{
-		return a_enc >= 0 && a_enc < Encoding_Last;
+		return (int)a_enc >= 0 && a_enc < Encoding::Last;
 	}
 
 
@@ -70,7 +69,7 @@ namespace asd
 #ifdef asd_Debug
 		static bool g_checkedTable = false;
 		if (g_checkedTable == false) {
-			for (int i=0; i<Encoding_Last; ++i) {
+			for (int i=0; i<(int)Encoding::Last; ++i) {
 				assert(g_encodingInfo[i].m_encoding == (Encoding)i);
 			}
 			g_checkedTable = true;
@@ -87,40 +86,44 @@ namespace asd
 			assert(false);
 			return nullptr;
 		}
-		return g_encodingInfo[a_enc].m_encodingName;
+		return g_encodingInfo[(int)a_enc].m_encodingName;
 	}
 
 
 
 	// 각 컴파일러 별 문자열 리터럴의 기본 인코딩값을 조사하여 기입 할 것.
-#define asd_Define_DefaultEncoding(CharType, DefaultEncoding)	Encoding DefaultEncoding_ ## CharType = DefaultEncoding
+	struct DefaultEncoding : public Global<DefaultEncoding>
+	{
+#define asd_Define_DefaultEncoding(CharType, DefaultEncoding) \
+		Encoding m_ ## CharType = DefaultEncoding
 
 #if defined(asd_Compiler_MSVC)
-	asd_Define_DefaultEncoding(char,		Encoding_CP949);
-	asd_Define_DefaultEncoding(wchar_t,		Encoding_UTF16LE);
-	asd_Define_DefaultEncoding(char16_t,	Encoding_UTF16LE);
-	asd_Define_DefaultEncoding(char32_t,	Encoding_UTF32LE);
+		asd_Define_DefaultEncoding(char,		Encoding::CP949);
+		asd_Define_DefaultEncoding(wchar_t,		Encoding::UTF16LE);
+		asd_Define_DefaultEncoding(char16_t,	Encoding::UTF16LE);
+		asd_Define_DefaultEncoding(char32_t,	Encoding::UTF32LE);
 
 #elif defined(asd_Compiler_GCC)
-	asd_Define_DefaultEncoding(char,		Encoding_UTF8);
-	asd_Define_DefaultEncoding(wchar_t,		Encoding_UTF32LE);
-	asd_Define_DefaultEncoding(char16_t,	Encoding_UTF16LE);
-	asd_Define_DefaultEncoding(char32_t,	Encoding_UTF32LE);
+		asd_Define_DefaultEncoding(char,		Encoding::UTF8);
+		asd_Define_DefaultEncoding(wchar_t,		Encoding::UTF32LE);
+		asd_Define_DefaultEncoding(char16_t,	Encoding::UTF16LE);
+		asd_Define_DefaultEncoding(char32_t,	Encoding::UTF32LE);
 
 #else
-	#error This Compiler is not supported.
+		#error This compiler is not supported.
 
 #endif
+	};
 
 
 
-#define asd_Define_GetDefaultEncoding(CharType)						\
-	Encoding GetDefaultEncoding(IN const CharType*) asd_noexcept	\
-	{																\
-		Encoding ret = DefaultEncoding_ ## CharType;				\
-		assert(IsValidEncoding(ret));								\
-		return ret;													\
-	}																\
+#define asd_Define_GetDefaultEncoding(CharType)								\
+	Encoding GetDefaultEncoding(IN const CharType*) asd_noexcept			\
+	{																		\
+		Encoding ret = DefaultEncoding::GlobalInstance().m_ ## CharType;	\
+		assert(IsValidEncoding(ret));										\
+		return ret;															\
+	}																		\
 
 	asd_Define_GetDefaultEncoding(char)
 
@@ -132,13 +135,13 @@ namespace asd
 
 
 
-#define asd_Define_SetDefaultEncoding(CharType)						\
-	void SetDefaultEncoding(IN Encoding a_enc,						\
-							IN const CharType*) asd_noexcept		\
-	{																\
-		assert(IsValidEncoding(a_enc));								\
-		DefaultEncoding_ ## CharType = a_enc;						\
-	}																\
+#define asd_Define_SetDefaultEncoding(CharType)								\
+	void SetDefaultEncoding(IN Encoding a_enc,								\
+							IN const CharType*) asd_noexcept				\
+	{																		\
+		assert(IsValidEncoding(a_enc));										\
+		DefaultEncoding::GlobalInstance().m_ ## CharType = a_enc;			\
+	}																		\
 
 	asd_Define_SetDefaultEncoding(char)
 
@@ -152,7 +155,7 @@ namespace asd
 		if (IsValidEncoding(a_enc) == false)
 			return -1;
 
-		return g_encodingInfo[a_enc].m_minSize;
+		return g_encodingInfo[(int)a_enc].m_minSize;
 	}
 
 
@@ -163,7 +166,7 @@ namespace asd
 		if (IsValidEncoding(a_enc) == false)
 			return -1;
 
-		return g_encodingInfo[a_enc].m_avgSize;
+		return g_encodingInfo[(int)a_enc].m_avgSize;
 	}
 
 
@@ -174,7 +177,7 @@ namespace asd
 		if (IsValidEncoding(a_enc) == false)
 			return -1;
 
-		return g_encodingInfo[a_enc].m_maxSize;
+		return g_encodingInfo[(int)a_enc].m_maxSize;
 	}
 
 
@@ -251,8 +254,8 @@ namespace asd
 							  INOUT size_t& a_outSize_byte) const asd_noexcept
 	{
 		assert(m_icd != ICONV_InvalidDescriptor);
-		assert(m_before != Encoding_Last);
-		assert(m_after != Encoding_Last);
+		assert(m_before != Encoding::Last);
+		assert(m_after != Encoding::Last);
 
 		const char* inBuf = (const char*)a_inBuffer;
 		size_t inSiz = a_inBufSize_byte;
@@ -304,13 +307,13 @@ namespace asd
 
 
 
-	typedef std::unique_ptr<IconvWrap> IconvWrap_ptr;
-	thread_local IconvWrap_ptr t_converterTable[Encoding_Last][Encoding_Last];
-
 	const IconvWrap& GetConverter(IN Encoding a_srcEncoding,
 								  IN Encoding a_dstEncoding) asd_noexcept
 	{
-		IconvWrap_ptr& ic = t_converterTable[a_srcEncoding][a_dstEncoding];
+		typedef std::unique_ptr<IconvWrap> IconvWrap_ptr;
+		thread_local IconvWrap_ptr t_converterTable[(int)Encoding::Last][(int)Encoding::Last];
+
+		IconvWrap_ptr& ic = t_converterTable[(int)a_srcEncoding][(int)a_dstEncoding];
 		if (ic == nullptr) {
 			ic = IconvWrap_ptr(new IconvWrap);
 			bool initSuccess = (0 == ic->Init(a_srcEncoding, a_dstEncoding));

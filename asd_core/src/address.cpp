@@ -17,9 +17,9 @@ namespace asd
 	int IpAddress::ToNativeCode(Family a_family) asd_noexcept
 	{
 		switch (a_family) {
-			case IpAddress::IPv4:
+			case IpAddress::Family::IPv4:
 				return AF_INET;
-			case IpAddress::IPv6:
+			case IpAddress::Family::IPv6:
 				return AF_INET6;
 		}
 		assert(false);
@@ -75,7 +75,7 @@ namespace asd
 			delete[] p;
 			m_addr = nullptr;
 			m_addrlen = 0;
-			m_addrFamily = IPv4;
+			m_addrFamily = Family::IPv4;
 		}
 	}
 
@@ -182,9 +182,9 @@ namespace asd
 		return *this;																	\
 	}																					\
 
-	asd_IpAddress_Define_Init(sockaddr_in, IPv4);
+	asd_IpAddress_Define_Init(sockaddr_in, Family::IPv4);
 
-	asd_IpAddress_Define_Init(sockaddr_in6, IPv6);
+	asd_IpAddress_Define_Init(sockaddr_in6, Family::IPv6);
 
 
 
@@ -218,13 +218,13 @@ namespace asd
 		int sz = 0;
 
 		switch (m_addrFamily) {
-			case IPv4: {
+			case Family::IPv4: {
 				auto cast = (sockaddr_in*)m_addr;
 				p = &cast->sin_addr;
 				sz = 4; // sizeof(cast->sin_addr);
 				break;
 			}
-			case IPv6: {
+			case Family::IPv6: {
 				auto cast = (sockaddr_in6*)m_addr;
 				p = &cast->sin6_addr;
 				sz = 16; // sizeof(cast->sin6_addr);
@@ -249,11 +249,11 @@ namespace asd
 			return 0;
 
 		switch (m_addrFamily) {
-			case IPv4: {
+			case Family::IPv4: {
 				auto cast = (sockaddr_in*)m_addr;
 				return ntohs(cast->sin_port);
 			}
-			case IPv6: {
+			case Family::IPv6: {
 				auto cast = (sockaddr_in6*)m_addr;
 				return ntohs(cast->sin6_port);
 			}

@@ -13,21 +13,22 @@ namespace asd
 	class IpAddress
 	{
 	public:
-		enum Family {
+		enum class Family : uint8_t
+		{
 			IPv4,
 			IPv6,
 		};
 		static int ToNativeCode(Family a_family) asd_noexcept;
 
 	private:
-		Family m_addrFamily = IPv4;
+		Family m_addrFamily = Family::IPv4;
 		sockaddr* m_addr = nullptr;
 		int m_addrlen = 0;
 
 	public:
 		virtual ~IpAddress();
 
-		IpAddress(IN Family a_addrFamily = IPv4) asd_noexcept;
+		IpAddress(IN Family a_addrFamily = Family::IPv4) asd_noexcept;
 
 		IpAddress(IN const char* a_domain,
 				  IN uint16_t a_port = 0);

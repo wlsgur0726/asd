@@ -4,14 +4,15 @@
 
 namespace asd
 {
-	enum Encoding {
-		Encoding_UTF8 = 0,
-		Encoding_UTF16LE,
-		Encoding_UTF16BE,
-		Encoding_UTF32LE,
-		Encoding_UTF32BE,
-		Encoding_CP949,
-		Encoding_Last
+	enum class Encoding : int 
+	{
+		UTF8 = 0,
+		UTF16LE,
+		UTF16BE,
+		UTF32LE,
+		UTF32BE,
+		CP949,
+		Last
 	};
 
 
@@ -76,8 +77,8 @@ namespace asd
 	class IconvWrap final
 	{
 		void* m_icd;
-		Encoding m_before = Encoding_Last;
-		Encoding m_after = Encoding_Last;
+		Encoding m_before = Encoding::Last;
+		Encoding m_after = Encoding::Last;
 		float m_ratio = 2;
 		
 		IconvWrap(IN const IconvWrap&) = delete;
@@ -162,4 +163,18 @@ namespace asd
 #	define ConvToT ConvToM
 #
 #endif
+}
+
+
+
+namespace std
+{
+	template<>
+	struct hash<asd::Encoding>
+	{
+		inline size_t operator()(IN asd::Encoding a_enc) const
+		{
+			return hash<int>()((int)a_enc);
+		}
+	};
 }

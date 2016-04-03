@@ -38,7 +38,7 @@ namespace asd
 
 
 	// DB상의 타입
-	enum SQLType
+	enum class SQLType : short
 	{
 		CHAR = 0,
 		VARCHAR,

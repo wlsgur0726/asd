@@ -59,28 +59,28 @@ namespace asdtest_iconv
 		asd::puts(print);
 	}
 
-	
-	std::unordered_map<asd::Encoding, TestSource, std::hash<int>> g_TestStringMap;
+
+	std::unordered_map<asd::Encoding, TestSource> g_TestStringMap;
 	void Init()
 	{
 		g_TestStringMap.clear();
 
-		g_TestStringMap.emplace(asd::Encoding_CP949, 
+		g_TestStringMap.emplace(asd::Encoding::CP949, 
 								TestSource(TestStr_CP949, sizeof(TestStr_CP949)));
 
-		g_TestStringMap.emplace(asd::Encoding_UTF8, 
+		g_TestStringMap.emplace(asd::Encoding::UTF8, 
 								TestSource(TestStr_UTF8, sizeof(TestStr_UTF8)));
 
-		g_TestStringMap.emplace(asd::Encoding_UTF16LE, 
+		g_TestStringMap.emplace(asd::Encoding::UTF16LE, 
 								TestSource(TestStr_UTF16LE, sizeof(TestStr_UTF16LE)));
 
-		g_TestStringMap.emplace(asd::Encoding_UTF16BE,
+		g_TestStringMap.emplace(asd::Encoding::UTF16BE,
 								TestSource(TestStr_UTF16BE, sizeof(TestStr_UTF16BE)));
 
-		g_TestStringMap.emplace(asd::Encoding_UTF32LE, 
+		g_TestStringMap.emplace(asd::Encoding::UTF32LE, 
 								TestSource(TestStr_UTF32LE, sizeof(TestStr_UTF32LE)));
 
-		g_TestStringMap.emplace(asd::Encoding_UTF32BE,
+		g_TestStringMap.emplace(asd::Encoding::UTF32BE,
 								TestSource(TestStr_UTF32BE, sizeof(TestStr_UTF32BE)));
 	}
 
@@ -202,9 +202,9 @@ namespace asdtest_iconv
 		{
 			asd::Encoding defaultEnc_M = asd::GetDefaultEncoding<char>();
 			asd::Encoding defaultEnc_W = asd::GetDefaultEncoding<wchar_t>();
-			EXPECT_NE(defaultEnc_M, asd::Encoding_Last);
-			EXPECT_NE(defaultEnc_W, asd::Encoding_Last);
-			if (defaultEnc_M == asd::Encoding_Last || defaultEnc_W == asd::Encoding_Last)
+			EXPECT_NE(defaultEnc_M, asd::Encoding::Last);
+			EXPECT_NE(defaultEnc_W, asd::Encoding::Last);
+			if (defaultEnc_M == asd::Encoding::Last || defaultEnc_W == asd::Encoding::Last)
 				return false;
 
 			int srcUnitSize = asd::SizeOfCharUnit_Min(encodig_enum1);

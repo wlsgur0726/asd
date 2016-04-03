@@ -100,9 +100,9 @@ namespace asd
 	int Socket::ToNativeCode(Type a_type) asd_noexcept
 	{
 		switch (a_type) {
-			case Socket::TCP:
+			case Socket::Type::TCP:
 				return SOCK_STREAM;
-			case Socket::UDP:
+			case Socket::Type::UDP:
 				return SOCK_DGRAM;
 		}
 		assert(false);
@@ -111,8 +111,8 @@ namespace asd
 
 
 
-	Socket::Socket(IN IpAddress::Family a_addressFamily /*= IpAddress::IPv4*/,
-				   IN Socket::Type a_socketType /*=TCP*/) asd_noexcept
+	Socket::Socket(IN IpAddress::Family a_addressFamily /*= IpAddress::Family::IPv4*/,
+				   IN Socket::Type a_socketType /*=Type::TCP*/) asd_noexcept
 	{
 		m_addressFamily = a_addressFamily;
 		m_socketType = a_socketType;
@@ -451,14 +451,14 @@ namespace asd
 																							\
 		Socket::Error ret = 0;																\
 		switch (a_addrFam) {																\
-			case IpAddress::IPv4: {															\
+			case IpAddress::Family::IPv4: {															\
 				asd_GetIpAddress_Internal(getxxxxname,										\
 										  sockaddr_in,										\
 										  a_sock,											\
 										  a_addr);											\
 				break;																		\
 			}																				\
-			case IpAddress::IPv6: {															\
+			case IpAddress::Family::IPv6: {															\
 				asd_GetIpAddress_Internal(getxxxxname,										\
 										  sockaddr_in6,										\
 										  a_sock,											\
@@ -545,7 +545,7 @@ namespace asd
 		if (h == -1)
 			ret = GetErrorNumber();
 		else {
-			Socket newSock(a_addrFam, Socket::TCP);
+			Socket newSock(a_addrFam, Socket::Type::TCP);
 			a_newbe = std::move(newSock);
 			a_newSocket = h;
 			a_address = addr;
@@ -564,7 +564,7 @@ namespace asd
 
 		Error ret = 0;
 		switch (m_addressFamily) {
-			case IpAddress::IPv4: {
+			case IpAddress::Family::IPv4: {
 				ret = Accept_Internal<sockaddr_in>(m_handle,
 												   m_addressFamily,
 												   a_newbe,
@@ -572,7 +572,7 @@ namespace asd
 												   a_address);
 				break;
 			}
-			case IpAddress::IPv6: {
+			case IpAddress::Family::IPv6: {
 				ret = Accept_Internal<sockaddr_in6>(m_handle,
 													m_addressFamily,
 													a_newbe,
@@ -708,7 +708,7 @@ namespace asd
 			return ret;
 
 		switch (m_addressFamily) {
-			case asd::IpAddress::IPv4: {
+			case asd::IpAddress::Family::IPv4: {
 				RecvFrom_Internal<sockaddr_in>(ret,
 											   m_handle,
 											   a_buffer,
@@ -717,7 +717,7 @@ namespace asd
 											   a_flags);
 				break;
 			}
-			case asd::IpAddress::IPv6: {
+			case asd::IpAddress::Family::IPv6: {
 				RecvFrom_Internal<sockaddr_in6>(ret,
 												m_handle,
 												a_buffer,
@@ -736,7 +736,7 @@ namespace asd
 
 
 
-	EasySocket::EasySocket(IN IpAddress::Family a_addressFamily /*= IpAddress::IPv4*/,
+	EasySocket::EasySocket(IN IpAddress::Family a_addressFamily /*= IpAddress::Family::IPv4*/,
 						   IN Socket::Type a_socketType /*= Socket::Type::TCP*/)
 	{
 		m_socketType = a_socketType;

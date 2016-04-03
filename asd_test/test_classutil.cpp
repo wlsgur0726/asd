@@ -86,10 +86,13 @@ namespace asdtest_classutil
 		for (auto& t : threads)
 			t.join();
 
+		size_t useCount = 0;
 		auto& globalInstance = TestClass::GlobalInstance();
 		for (auto it : results) {
+			useCount += TestManager.PopUseCount(it.second);
 			EXPECT_EQ(&globalInstance, it.second);
 		}
+		EXPECT_EQ(useCount, 1);
 	}
 
 

@@ -26,7 +26,8 @@ namespace asd
 	public:
 		asd_PlatformTypeDef_Socket;
 
-		enum Type {
+		enum class Type : uint8_t
+		{
 			TCP,
 			UDP,
 		};
@@ -47,7 +48,7 @@ namespace asd
 	private:
 		Handle m_handle = InvalidHandle;
 
-		IpAddress::Family m_addressFamily = IpAddress::IPv4;
+		IpAddress::Family m_addressFamily = IpAddress::Family::IPv4;
 
 		Type m_socketType = Type::TCP;
 
@@ -60,8 +61,8 @@ namespace asd
 #endif
 
 	public:
-		Socket(IN IpAddress::Family a_addressFamily = IpAddress::IPv4,
-			   IN Socket::Type a_socketType = TCP) asd_noexcept;
+		Socket(IN IpAddress::Family a_addressFamily = IpAddress::Family::IPv4,
+			   IN Socket::Type a_socketType = Type::TCP) asd_noexcept;
 
 
 		Socket(MOVE Socket&& a_rval) asd_noexcept;
@@ -291,8 +292,8 @@ namespace asd
 		uint8_t m_recvBuffer[BufferSize];
 		uint8_t m_sendBuffer[BufferSize];
 
-		EasySocket(IN IpAddress::Family a_addressFamily = IpAddress::IPv4,
-				   IN Socket::Type a_socketType = Socket::TCP);
+		EasySocket(IN IpAddress::Family a_addressFamily = IpAddress::Family::IPv4,
+				   IN Socket::Type a_socketType = Socket::Type::TCP);
 
 		void Bind(IN const IpAddress& a_addr);
 
