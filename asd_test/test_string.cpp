@@ -70,8 +70,8 @@ namespace asdtest_string
 	{
 		// strlen
 		{
-			char*    teststr_m =  "0123456789";
-			wchar_t* teststr_w = L"0123456789";
+			const char*    teststr_m =  "0123456789";
+			const wchar_t* teststr_w = L"0123456789";
 
 			auto len_m = asd::strlen(teststr_m);
 			auto len_w = asd::strlen(teststr_w);

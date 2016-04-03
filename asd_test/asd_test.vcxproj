@@ -168,6 +168,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="test.cpp" />
+    <ClCompile Include="test_classutil.cpp" />
     <ClCompile Include="test_datetime.cpp" />
     <ClCompile Include="test_exception.cpp" />
     <ClCompile Include="test_iconv.cpp" />

@@ -71,7 +71,6 @@ namespace asd
 			WSACleanup();
 		}
 	};
-
 	WSAStartup_Auto g_wsa;
 
 #else

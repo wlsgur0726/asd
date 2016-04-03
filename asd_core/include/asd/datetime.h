@@ -2,11 +2,12 @@
 #include "asd/asdbase.h"
 #include "asd/exception.h"
 #include <ctime>
+#include <chrono>
 #include <sqltypes.h>
 
 namespace asd
 {
-	enum DayOfTheWeek
+	enum class DayOfTheWeek : int
 	{
 		Sunday = 0,
 		Monday,
@@ -31,6 +32,11 @@ namespace asd
 		time_t t = time(nullptr);
 		return asd::gmtime(&t);
 	}
+
+
+	int GetCurrentTimeZone_Sec();
+
+	int GetCurrentTimeZone_Hour();
 
 
 #define asd_DateTime_Declare_ConvertFunction(Class, Type)	\
@@ -83,6 +89,8 @@ namespace asd
 
 		// 다른 타입 지원
 		asd_DateTime_Declare_ConvertFunction(Date, tm);
+		asd_DateTime_Declare_ConvertFunction(Date, time_t);
+		asd_DateTime_Declare_ConvertFunction(Date, std::chrono::system_clock::time_point);
 		asd_DateTime_Declare_ConvertFunction(Date, SQL_DATE_STRUCT);
 		asd_DateTime_Declare_ConvertFunction(Date, SQL_TIMESTAMP_STRUCT);
 	};
@@ -131,6 +139,8 @@ namespace asd
 
 		// 다른 타입 지원
 		asd_DateTime_Declare_ConvertFunction(Time, tm);
+		asd_DateTime_Declare_ConvertFunction(Time, time_t);
+		asd_DateTime_Declare_ConvertFunction(Time, std::chrono::system_clock::time_point);
 		asd_DateTime_Declare_ConvertFunction(Time, SQL_TIME_STRUCT);
 		asd_DateTime_Declare_ConvertFunction(Time, SQL_TIMESTAMP_STRUCT);
 	};
@@ -196,6 +206,8 @@ namespace asd
 
 		// 다른 타입 지원
 		asd_DateTime_Declare_ConvertFunction(DateTime, tm);
+		asd_DateTime_Declare_ConvertFunction(DateTime, time_t);
+		asd_DateTime_Declare_ConvertFunction(DateTime, std::chrono::system_clock::time_point);
 		asd_DateTime_Declare_ConvertFunction(DateTime, SQL_DATE_STRUCT);
 		asd_DateTime_Declare_ConvertFunction(DateTime, SQL_TIME_STRUCT);
 		asd_DateTime_Declare_ConvertFunction(DateTime, SQL_TIMESTAMP_STRUCT);

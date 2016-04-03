@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "asd/datetime.h"
+#include "asd/classutil.h"
 
 namespace asd
 {
@@ -28,6 +29,37 @@ namespace asd
 #else
 		return gmtime_r(a_time, &t_tm);
 #endif
+	}
+
+
+
+	struct CurrentTimeZone : public ThreadLocal<CurrentTimeZone>
+	{
+		int OffsetSec;
+		CurrentTimeZone()
+		{
+			const time_t t = 365 * 24 * 60 * 60;
+			const time_t local = mktime(asd::localtime(&t));
+			const time_t utc = mktime(asd::gmtime(&t));
+
+			static_assert(std::numeric_limits<time_t>::min() < 0, "time_t is unsigned type");
+			const time_t diff = local - utc;
+
+			const time_t Min = std::numeric_limits<int>::min();
+			const time_t Max = std::numeric_limits<int>::max();
+			assert(diff >= Min && diff <= Max);
+			OffsetSec = (int)diff;
+		}
+	};
+
+	int GetCurrentTimeZone_Sec()
+	{
+		return CurrentTimeZone::ThreadLocalInstance().OffsetSec;
+	}
+
+	int GetCurrentTimeZone_Hour()
+	{
+		return GetCurrentTimeZone_Sec() / 60 / 60;
 	}
 
 
@@ -377,6 +409,20 @@ namespace asd
 	}
 
 
+	inline void Date_to_tm(IN const Date& a_src,
+						   OUT tm& a_dst)
+	{
+		const int y = a_src.Year();
+		const int m = a_src.Month();
+		const int d = a_src.Day();
+		a_dst.tm_year = y - 1900;
+		a_dst.tm_mon = m - 1;
+		a_dst.tm_mday = d;
+		a_dst.tm_wday = static_cast<int>(GetDayOfTheWeek(y, m, d));
+		a_dst.tm_yday = GetDayOffset(m, d, IsLeapYear(y));
+	}
+
+
 	asd_Define_ConvertFunction_From(Date, tm, a_src)
 	{
 		Init(a_src.tm_year + 1900,
@@ -387,14 +433,38 @@ namespace asd
 
 	asd_Define_ConvertFunction_To(Date, tm, a_dst)
 	{
-		const int y = Year();
-		const int m = Month();
-		const int d = Day();
-		a_dst.tm_year = y - 1900;
-		a_dst.tm_mon = m - 1;
-		a_dst.tm_mday = d;
-		a_dst.tm_wday = GetDayOfTheWeek(y, m, d);
-		a_dst.tm_yday = GetDayOffset(m, d, IsLeapYear(y));
+		std::memset(&a_dst, 0, sizeof(a_dst));
+		Date_to_tm(*this, a_dst);
+		return a_dst;
+	}
+
+
+	asd_Define_ConvertFunction_From(Date, time_t, a_src)
+	{
+		const tm* temp = asd::localtime(&a_src);
+		return From(*temp);;
+	}
+
+	asd_Define_ConvertFunction_To(Date, time_t, a_dst)
+	{
+		tm temp;
+		To(temp);
+		a_dst = mktime(&temp);
+		return a_dst;
+	}
+
+
+	asd_Define_ConvertFunction_From(Date, std::chrono::system_clock::time_point, a_src)
+	{
+		const time_t temp = std::chrono::system_clock::to_time_t(a_src);
+		return From(temp);;
+	}
+
+	asd_Define_ConvertFunction_To(Date, std::chrono::system_clock::time_point, a_dst)
+	{
+		time_t temp;
+		To(temp);
+		a_dst = std::chrono::system_clock::from_time_t(temp);
 		return a_dst;
 	}
 
@@ -566,6 +636,15 @@ namespace asd
 	}
 
 
+	inline void Time_to_tm(IN const Time& a_src,
+						   OUT tm& a_dst)
+	{
+		a_dst.tm_hour = a_src.Hour();
+		a_dst.tm_min = a_src.Minute();
+		a_dst.tm_sec = a_src.Second();
+	}
+
+
 	asd_Define_ConvertFunction_From(Time, tm, a_src)
 	{
 		Init(a_src.tm_hour,
@@ -576,9 +655,40 @@ namespace asd
 
 	asd_Define_ConvertFunction_To(Time, tm, a_dst)
 	{
-		a_dst.tm_hour = Hour();
-		a_dst.tm_min = Minute();
-		a_dst.tm_sec = Millisecond();
+		std::memset(&a_dst, 0, sizeof(a_dst));
+		Time_to_tm(*this, a_dst);
+		return a_dst;
+	}
+
+
+	asd_Define_ConvertFunction_From(Time, time_t, a_src)
+	{
+		const tm* temp = asd::localtime(&a_src);
+		return From(*temp);
+	}
+
+	asd_Define_ConvertFunction_To(Time, time_t, a_dst)
+	{
+		a_dst = 24 * 60 * 60
+			+ Hour() * 60 * 60
+			+ Minute() * 60
+			+ Second()
+			- GetCurrentTimeZone_Sec();
+		return a_dst;
+	}
+
+
+	asd_Define_ConvertFunction_From(Time, std::chrono::system_clock::time_point, a_src)
+	{
+		const time_t temp = std::chrono::system_clock::to_time_t(a_src);
+		return From(temp);;
+	}
+
+	asd_Define_ConvertFunction_To(Time, std::chrono::system_clock::time_point, a_dst)
+	{
+		time_t temp;
+		To(temp);
+		a_dst = std::chrono::system_clock::from_time_t(temp);
 		return a_dst;
 	}
 
@@ -777,8 +887,39 @@ namespace asd
 
 	asd_Define_ConvertFunction_To(DateTime, tm, a_dst)
 	{
-		m_date.To(a_dst);
-		m_time.To(a_dst);
+		std::memset(&a_dst, 0, sizeof(a_dst));
+		Date_to_tm(m_date, a_dst);
+		Time_to_tm(m_time, a_dst);
+		return a_dst;
+	}
+
+
+	asd_Define_ConvertFunction_From(DateTime, time_t, a_src)
+	{
+		const tm* temp = asd::localtime(&a_src);
+		return From(*temp);;
+	}
+
+	asd_Define_ConvertFunction_To(DateTime, time_t, a_dst)
+	{
+		tm temp;
+		To(temp);
+		a_dst = mktime(&temp);
+		return a_dst;
+	}
+
+
+	asd_Define_ConvertFunction_From(DateTime, std::chrono::system_clock::time_point, a_src)
+	{
+		const time_t temp = std::chrono::system_clock::to_time_t(a_src);
+		return From(temp);;
+	}
+
+	asd_Define_ConvertFunction_To(DateTime, std::chrono::system_clock::time_point, a_dst)
+	{
+		time_t temp;
+		To(temp);
+		a_dst = std::chrono::system_clock::from_time_t(temp);
 		return a_dst;
 	}
 

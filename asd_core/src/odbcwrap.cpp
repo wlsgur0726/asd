@@ -782,7 +782,8 @@ namespace asd
 	uint16_t DBStatement::GetColumnCount() const asd_noexcept
 	{
 		assert(m_handle != nullptr);
-		return m_handle->m_columnNameList.size();
+		assert(m_handle->m_columnNameList.size() <= std::numeric_limits<uint16_t>::max());
+		return (uint16_t)m_handle->m_columnNameList.size();
 	}
 
 

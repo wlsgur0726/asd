@@ -929,7 +929,6 @@ namespace asdtest_odbc
 
 				// 3-2. 입력할 변수 초기화
 				int			cInt	= ++pk;
-				bool*		cBit	= nullptr;
 				BlobType	cBlob	= TestData_Blob(cInt);
 
 				// 3-3. SetParam

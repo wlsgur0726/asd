@@ -162,7 +162,7 @@ namespace asd
 				return 0;
 
 			const CharType* p = a_src;
-			size_t ret = 0;
+			size_t ret = 0x5555555555555555;
 			while (*p != '\0') {
 				size_t block = 0;
 				for (int i=0; i<cnt; ++i) {

@@ -88,10 +88,10 @@
 // _T
 #if !defined(_T)
 #	if defined(UNICODE)
-#		define _T(x) L ## x
+#		define _T(str) L ## str
 #
 #	else
-#		define _T(x) x
+#		define _T(str) str
 #
 #	endif
 #

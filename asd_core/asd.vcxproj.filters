@@ -63,6 +63,9 @@
     <ClInclude Include="include\asd\datetime.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\asd\classutil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\socket.cpp">

@@ -190,6 +190,19 @@ namespace asd
 			 IN int a_bufferSize,
 			 IN int a_flags = 0) asd_noexcept;
 
+		template <typename SizeType>
+		inline IoResult
+		Send(IN const void* a_buffer,
+			 IN SizeType a_bufferSize,
+			 IN int a_flags = 0)
+		{
+			if (a_bufferSize > std::numeric_limits<int>::max())
+				asd_RaiseException("size overflow");
+			return Send(a_buffer,
+						(int)a_bufferSize,
+						a_flags);
+		}
+
 
 		IoResult
 		SendTo(IN const void* a_buffer,
@@ -197,11 +210,39 @@ namespace asd
 			   IN const IpAddress& a_dest,
 			   IN int a_flags = 0) asd_noexcept;
 
+		template <typename SizeType>
+		inline IoResult
+		SendTo(IN const void* a_buffer,
+			   IN SizeType a_bufferSize,
+			   IN const IpAddress& a_dest,
+			   IN int a_flags = 0)
+		{
+			if (a_bufferSize > std::numeric_limits<int>::max())
+				asd_RaiseException("size overflow");
+			return SendTo(a_buffer,
+						  (int)a_bufferSize,
+						  a_dest,
+						  a_flags);
+		}
+
 
 		IoResult
 		Recv(OUT void* a_buffer,
 			 IN int a_bufferSize,
 			 IN int a_flags = 0) asd_noexcept;
+
+		template <typename SizeType>
+		inline IoResult
+		Recv(OUT void* a_buffer,
+			 IN SizeType a_bufferSize,
+			 IN int a_flags = 0) 
+		{
+			if (a_bufferSize > std::numeric_limits<int>::max())
+				asd_RaiseException("size overflow");
+			return Recv(a_buffer,
+						(int)a_bufferSize,
+						a_flags);
+		}
 
 
 		IoResult
@@ -209,6 +250,22 @@ namespace asd
 				 IN int a_bufferSize,
 				 OUT IpAddress& a_src,
 				 IN int a_flags = 0) asd_noexcept;
+
+		template <typename SizeType>
+		inline IoResult
+		RecvFrom(OUT void* a_buffer,
+				 IN SizeType a_bufferSize,
+				 OUT IpAddress& a_src,
+				 IN int a_flags = 0) 
+		{
+			if (a_bufferSize > std::numeric_limits<int>::max())
+				asd_RaiseException("size overflow");
+			return RecvFrom(a_buffer,
+							(int)a_bufferSize,
+							a_src,
+							a_flags);
+		}
+
 
 
 	private:
