@@ -150,14 +150,18 @@ namespace asd
 	public:
 		typedef ObjectPool2<ObjectType>		ThisType;
 		typedef ObjectType					Object;
-		static const size_t Sign = sizeof(Object);
 
+		inline static const size_t* Sign()
+		{
+			static const size_t g_sign = sizeof(Object);
+			return &g_sign;
+		}
 
 
 	private:
 		struct Node final
 		{
-			const void*					m_sign = &Sign;
+			const void*					m_sign = ThisType::Sign();
 			const std::atomic<int>*		m_popContention = nullptr;
 			Node*						m_next = nullptr;
 			uint8_t						m_data[sizeof(Object)];
@@ -313,7 +317,7 @@ namespace asd
 
 		bool PushNode(IN Node* a_node)
 		{
-			if (a_node->m_sign != &Sign)
+			if (a_node->m_sign != Sign())
 				asd_RaiseException("invaild Node pointer");
 
 			a_node->SafeWait(&m_popContention);
