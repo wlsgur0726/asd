@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "asd/lock.h"
+#include "asd/threadutil.h"
 #include <thread>
 
 #if defined(asd_Platform_Windows)	
@@ -13,27 +14,6 @@
 
 namespace asd
 {
-	const std::thread::id& GetCurrentThreadID() asd_noexcept
-	{
-		thread_local std::thread::id t_tid;
-		if (t_tid == std::thread::id())
-			t_tid = std::this_thread::get_id();
-
-		assert(t_tid != std::thread::id());
-		return t_tid;
-	}
-
-
-	const uint32_t& Get_HW_Concurrency() asd_noexcept
-	{
-		thread_local uint32_t t_HW_Concurrency = 0xFFFFFFFF;
-		if (t_HW_Concurrency == 0xFFFFFFFF) {
-			t_HW_Concurrency = std::thread::hardware_concurrency();
-		}
-		return t_HW_Concurrency;
-	}
-
-
 	void NoLock::lock() {
 	}
 

@@ -279,27 +279,27 @@ namespace asd
 
 
 			// 지원 타입 목록
-#define asd_DBStatement_Declare_CastOperatorList											\
-			asd_DBStatement_Declare_CastOperator(int8_t);					/* TINYINT  */	\
-			asd_DBStatement_Declare_CastOperator(short);					/* SMALLINT */	\
-			asd_DBStatement_Declare_CastOperator(int);						/* INT      */	\
-			asd_DBStatement_Declare_CastOperator(int64_t);					/* BIGINT   */	\
-			asd_DBStatement_Declare_CastOperator(float);					/* FLOAT    */	\
-			asd_DBStatement_Declare_CastOperator(double);					/* DOUBLE   */	\
-			asd_DBStatement_Declare_CastOperator(bool);						/* BIT      */	\
-			asd_DBStatement_Declare_CastOperator(SQL_TIMESTAMP_STRUCT);		/* DATETIME */	\
-			asd_DBStatement_Declare_CastOperator(SQL_DATE_STRUCT);			/* DATE     */	\
-			asd_DBStatement_Declare_CastOperator(SQL_TIME_STRUCT);			/* TIME     */	\
-			asd_DBStatement_Declare_CastOperator(MString);					/* VARCHAR  */	\
-			asd_DBStatement_Declare_CastOperator(WString);					/* WVARCHAR */	\
-			asd_DBStatement_Declare_CastOperator(std::string);				/* VARCHAR  */	\
-			asd_DBStatement_Declare_CastOperator(std::wstring);				/* WVARCHAR */	\
-			asd_DBStatement_Declare_CastOperator(SharedArray<uint8_t>);		/* BLOB     */	\
-			asd_DBStatement_Declare_CastOperator(std::vector<uint8_t>);		/* BLOB     */	\
-			asd_DBStatement_Declare_CastOperator(tm);						/* DATETIME */	\
-			asd_DBStatement_Declare_CastOperator(Date);						/* DATE     */	\
-			asd_DBStatement_Declare_CastOperator(Time);						/* TIME     */	\
-			asd_DBStatement_Declare_CastOperator(DateTime);					/* DATETIME */	\
+#define asd_DBStatement_Declare_CastOperatorList												\
+			asd_DBStatement_Declare_CastOperator(int8_t);					/*  TINYINT   */	\
+			asd_DBStatement_Declare_CastOperator(short);					/*  SMALLINT  */	\
+			asd_DBStatement_Declare_CastOperator(int);						/*  INT       */	\
+			asd_DBStatement_Declare_CastOperator(int64_t);					/*  BIGINT    */	\
+			asd_DBStatement_Declare_CastOperator(float);					/*  FLOAT     */	\
+			asd_DBStatement_Declare_CastOperator(double);					/*  DOUBLE    */	\
+			asd_DBStatement_Declare_CastOperator(bool);						/*  BIT       */	\
+			asd_DBStatement_Declare_CastOperator(SQL_TIMESTAMP_STRUCT);		/*  DATETIME  */	\
+			asd_DBStatement_Declare_CastOperator(SQL_DATE_STRUCT);			/*  DATE      */	\
+			asd_DBStatement_Declare_CastOperator(SQL_TIME_STRUCT);			/*  TIME      */	\
+			asd_DBStatement_Declare_CastOperator(MString);					/*  VARCHAR   */	\
+			asd_DBStatement_Declare_CastOperator(WString);					/*  WVARCHAR  */	\
+			asd_DBStatement_Declare_CastOperator(std::string);				/*  VARCHAR   */	\
+			asd_DBStatement_Declare_CastOperator(std::wstring);				/*  WVARCHAR  */	\
+			asd_DBStatement_Declare_CastOperator(SharedArray<uint8_t>);		/*  BLOB      */	\
+			asd_DBStatement_Declare_CastOperator(std::vector<uint8_t>);		/*  BLOB      */	\
+			asd_DBStatement_Declare_CastOperator(tm);						/*  DATETIME  */	\
+			asd_DBStatement_Declare_CastOperator(Date);						/*  DATE      */	\
+			asd_DBStatement_Declare_CastOperator(Time);						/*  TIME      */	\
+			asd_DBStatement_Declare_CastOperator(DateTime);					/*  DATETIME  */	\
 
 			asd_DBStatement_Declare_CastOperatorList;
 		};

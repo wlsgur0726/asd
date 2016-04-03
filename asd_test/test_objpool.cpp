@@ -1,11 +1,14 @@
 ﻿#include "stdafx.h"
 #include "asd/objpool.h"
+#include "asd/util.h"
 #include <thread>
 #include <mutex>
 #include <atomic>
 #include <vector>
 #include <cstdlib>
 #include <ctime>
+#include <unordered_map>
+
 
 namespace asdtest_objpool
 {
@@ -16,7 +19,6 @@ namespace asdtest_objpool
 
 	void Init()
 	{
-		std::srand(std::time(nullptr));
 		g_objCount = 0;
 		g_conCount_default = 0;
 		g_desCount = 0;
@@ -134,11 +136,12 @@ namespace asdtest_objpool
 		{
 			std::thread threads[ThreadCount];
 			ObjPool objPool;
-			
+
 			volatile bool start = false;
 			for (auto& t : threads) {
 				t = std::thread([&]() 
 				{
+					asd::srand();
 					while (start == false);
 
 					for (int i=0; i<TestCount; ++i) {
@@ -169,7 +172,8 @@ namespace asdtest_objpool
 					}
 				});
 			}
-			
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			start = true;
 			for (auto& t : threads)
 				t.join();
@@ -182,23 +186,122 @@ namespace asdtest_objpool
 	}
 
 
+	template<typename ObjPoolShardSet, int ThreadCount>
+	void ShardSetTest()
+	{
+		std::thread threads[ThreadCount];
+		ObjPoolShardSet shardSet(ThreadCount);
+
+		// 해시 분포가 고른지 확인하기 위한 맵
+		struct Count
+		{ 
+			size_t Get		= 0;
+			size_t Release	= 0;
+		};
+		std::unordered_map<void*, Count> Counter;
+		std::mutex lock;
+
+		volatile bool start = false;
+		volatile bool run = true;
+		for (auto& t : threads) {
+			t = std::thread([&]()
+			{
+				std::unordered_map<void*, Count> t_Counter;
+				while (start == false);
+
+				do {
+					TestClass* objs[TestCount];
+
+					// 3-1. 풀에서부터 할당
+					for (int i=0; i<TestCount; ++i) {
+						t_Counter[&shardSet.GetShard()].Get++;
+						objs[i] = shardSet.Get();
+					}
+
+					// 3-2. 할당받았던 것들을 풀에 반납
+					for (int i=0; i<TestCount; ++i) {
+						t_Counter[&shardSet.GetShard(objs[i])].Release++;
+						shardSet.Release(objs[i]);
+					}
+				} while (run);
+
+				lock.lock();
+				for (auto it : t_Counter) {
+					Counter[it.first].Get += it.second.Get;
+					Counter[it.first].Release += it.second.Release;
+				}
+				lock.unlock();
+			});
+		}
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		start = true;
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+		run = false;
+		for (auto& t : threads)
+			t.join();
+
+		Count sum;
+		for (auto it : Counter) {
+			asd::MString print("  [%p]    ", it.first);
+			print << it.second.Get << "    " << it.second.Release;
+			printf("%s\n", print.c_str());
+			sum.Get += it.second.Get;
+			sum.Release += it.second.Release;
+		}
+		asd::MString print("  total  :  ");
+		print << sum.Get;
+		printf("%s\n", print.c_str());
+		EXPECT_EQ(g_objCount, 0);
+		EXPECT_EQ(sum.Get, sum.Release);
+	}
+
+
 	TEST(ObjectPool, Default)
 	{
-		TestObjPool<typename asd::ObjectPool<TestClass>, 1>();
+		typedef asd::ObjectPool<TestClass>	Pool;
+		TestObjPool<Pool, 1>();
 	}
 
 	TEST(ObjectPool, WithStdMutex)
 	{
-		TestObjPool<typename asd::ObjectPool<TestClass, std::mutex>, 4>();
-	}
-
-	TEST(ObjectPool, WithSpinMutex)
-	{
-		TestObjPool<typename asd::ObjectPool<TestClass, asd::SpinMutex>, 4>();
+		typedef asd::ObjectPool<TestClass, std::mutex>	Pool;
+		TestObjPool<Pool, 4>();
 	}
 
 	TEST(ObjectPool, WithAsdMutex)
 	{
-		TestObjPool<typename asd::ObjectPool<TestClass, asd::Mutex>, 4>();
+		typedef asd::ObjectPool<TestClass, asd::Mutex>	Pool;
+		TestObjPool<Pool, 4>();
+	}
+
+	TEST(ObjectPool, WithSpinMutex)
+	{
+		typedef asd::ObjectPool<TestClass, asd::SpinMutex>	Pool;
+		TestObjPool<Pool, 4>();
+	}
+
+	TEST(ObjectPool, LockFree)
+	{
+		typedef asd::ObjectPool2<TestClass>	Pool;
+		TestObjPool<Pool, 4>();
+	}
+
+	TEST(ObjectPool, ShardSet)
+	{
+		typedef asd::ObjectPool<TestClass>				Pool0;
+		typedef asd::ObjectPool<TestClass, asd::Mutex>	Pool1;
+		typedef asd::ObjectPool2<TestClass>				Pool2;
+
+		// compile error
+		//typedef asd::ObjectPoolShardSet<Pool0> ShardSet0;
+		//ShardSetTest<ShardSet0, 4>();
+
+		typedef asd::ObjectPoolShardSet<Pool1> ShardSet1;
+		ShardSetTest<ShardSet1, 4>();
+
+		typedef asd::ObjectPoolShardSet<Pool2> ShardSet2;
+		ShardSetTest<ShardSet2, 4>();
 	}
 }
+

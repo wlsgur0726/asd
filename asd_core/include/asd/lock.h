@@ -2,11 +2,10 @@
 #include "asd/asdbase.h"
 #include "asd/exception.h"
 #include <thread>
+#include <mutex>
 
 namespace asd
 {
-	const std::thread::id& GetCurrentThreadID() asd_noexcept;
-
 	// 템플릿에서 사용하기 위해
 	// std::mutex와 동일한 함수명 사용
 #define asd_DeclareMutexInterface	\

@@ -810,7 +810,6 @@ namespace asd
 	{
 		DBStatementHandle* m_handle;
 		uint16_t m_index;
-
 		asd_DBStatement_Declare_CastOperatorList;
 	};
 
@@ -834,7 +833,6 @@ namespace asd
 	{
 		DBStatementHandle* m_handle;
 		uint16_t m_index;
-
 		asd_DBStatement_Declare_CastOperatorList;
 	};
 
