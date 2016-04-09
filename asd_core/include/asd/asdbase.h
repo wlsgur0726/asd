@@ -11,6 +11,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <algorithm>
+#include <limits>
 
 
 #define asd_Version 2015010100

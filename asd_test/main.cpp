@@ -21,11 +21,11 @@
 */
 int main(int argc, char** argv)
 {
-#if 0
+#if 1
 	std::vector<char*> args;
 	args.push_back(argv[0]);
 
-	args.push_back("--gtest_filter=ClassUtil.*");
+	args.push_back("--gtest_filter=ThreadPool.*");
 
 	argc = args.size();
 	argv = args.data();

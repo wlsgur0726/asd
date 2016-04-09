@@ -68,7 +68,7 @@ namespace asd
 		const int m_recursionLimit;
 
 		MutexController(REF MutexType& a_mutex,
-						IN bool a_getLock,
+						IN bool a_getLock = true,
 						IN int a_recursionLimit = 1) 
 						: m_mutex(a_mutex)
 						, m_recursionLimit(a_recursionLimit)

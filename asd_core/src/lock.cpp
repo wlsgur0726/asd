@@ -103,9 +103,9 @@ namespace asd
 
 	Mutex::~Mutex() asd_noexcept
 	{
-		asd_Destructor_Start
-			m_data.release();
-		asd_Destructor_End
+		asd_Destructor_Start;
+		m_data.reset();
+		asd_Destructor_End;
 	}
 
 
