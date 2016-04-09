@@ -83,7 +83,8 @@ namespace asdtest_threadpool
 
 	TEST(ThreadPool, PerformanceTest_PushPop_ThreadPool)
 	{
-		PerformanceTest_PushPop<asd::ThreadPool>(asd::ThreadPool());
+		asd::ThreadPool tp;
+		PerformanceTest_PushPop<asd::ThreadPool>(tp);
 	}
 
 
