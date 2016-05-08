@@ -21,16 +21,16 @@
 */
 int main(int argc, char** argv)
 {
+	Test();
 #if 1
 	std::vector<char*> args;
 	args.push_back(argv[0]);
 
-	args.push_back("--gtest_filter=ThreadPool.*");
+	args.push_back("--gtest_filter=Serialize.*");
 
 	argc = args.size();
 	argv = args.data();
 #endif
-
 	::testing::InitGoogleTest(&argc, argv);
 	int r = RUN_ALL_TESTS();
 	return r;

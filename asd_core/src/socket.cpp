@@ -451,14 +451,14 @@ namespace asd
 																							\
 		Socket::Error ret = 0;																\
 		switch (a_addrFam) {																\
-			case IpAddress::Family::IPv4: {															\
+			case IpAddress::Family::IPv4: {													\
 				asd_GetIpAddress_Internal(getxxxxname,										\
 										  sockaddr_in,										\
 										  a_sock,											\
 										  a_addr);											\
 				break;																		\
 			}																				\
-			case IpAddress::Family::IPv6: {															\
+			case IpAddress::Family::IPv6: {													\
 				asd_GetIpAddress_Internal(getxxxxname,										\
 										  sockaddr_in6,										\
 										  a_sock,											\

@@ -25,6 +25,8 @@ namespace asd
 		ThreadPool&	Start();
 
 		// 작업을 기다리고 처리하는 함수
+		//   a_timeoutMs       :  작업이 없을 때 최대로 대기하는 시간 (밀리초)
+		//   a_procCountLimit  :  처리할 작업의 개수 제한. starvation 방지에 활용
 		size_t Poll(IN uint32_t a_timeoutMs = std::numeric_limits<uint32_t>::max(),
 					IN size_t a_procCountLimit = std::numeric_limits<size_t>::max());
 

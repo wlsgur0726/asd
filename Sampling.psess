@@ -67,47 +67,6 @@
       <ProjName>asd_test</ProjName>
     </ProjBinary>
   </Binaries>
-  <Reports>
-    <Report>
-      <Path>asd_test160408.vsp</Path>
-    </Report>
-    <Report>
-      <Path>asd_test160409.vsp</Path>
-    </Report>
-    <Report>
-      <Path>asd_test160409(1).vsp</Path>
-    </Report>
-    <Report>
-      <Path>asd_test160409(2).vsp</Path>
-    </Report>
-    <Report>
-      <Path>asd_test160409(3).vsp</Path>
-    </Report>
-    <Report>
-      <Path>asd_test160409(4).vsp</Path>
-    </Report>
-    <Report>
-      <Path>asd_test160409(5).vsp</Path>
-    </Report>
-    <Report>
-      <Path>asd_test160409(6).vsp</Path>
-    </Report>
-    <Report>
-      <Path>asd_test160409(7).vsp</Path>
-    </Report>
-    <Report>
-      <Path>asd_test160409(8).vsp</Path>
-    </Report>
-    <Report>
-      <Path>asd_test160409(9).vsp</Path>
-    </Report>
-    <Report>
-      <Path>asd_test160409(10).vsp</Path>
-    </Report>
-    <Report>
-      <Path>asd_test160410.vsp</Path>
-    </Report>
-  </Reports>
   <Launches>
     <ProjBinary>
       <Path>:PB:{9935ABB3-0104-4184-AA70-2A0A48D9C9CC}|asd_test\asd_test.vcxproj</Path>

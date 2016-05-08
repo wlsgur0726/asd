@@ -113,7 +113,8 @@ namespace asd
 				
 				// 타임아웃
 				auto it = std::find(m_data->waitingList.begin(), m_data->waitingList.end(), &t_event);
-				m_data->waitingList.erase(it);
+				if (it != m_data->waitingList.end())
+					m_data->waitingList.erase(it);
 				break;
 			}
 

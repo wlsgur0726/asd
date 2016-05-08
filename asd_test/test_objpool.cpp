@@ -81,21 +81,21 @@ namespace asdtest_objpool
 			std::vector<TestClass*> objs;
 
 			// 2-1. initCount로 풀링되어있는 개수만큼 
-			//      기본생성자로 Get을 하면서 풀에 남아있는 객체 수를 검사
+			//      기본생성자로 Alloc을 하면서 풀에 남아있는 객체 수를 검사
 			const int FirstGetCount = objPool.GetCount();
 			for (int i=1; i<=FirstGetCount; ++i) {
-				objs.push_back(objPool.Get());
+				objs.push_back(objPool.Alloc());
 				EXPECT_EQ(g_objCount, i);
 				EXPECT_EQ(g_conCount_default, i);
 				EXPECT_EQ(g_conCount_param, 0);
 				EXPECT_EQ(objPool.GetCount(), FirstGetCount - i);
 			}
 
-			// 2-2. 기존에 풀링되어있는 개수를 초과하여 Get,
+			// 2-2. 기존에 풀링되어있는 개수를 초과하여 Alloc,
 			//      더불어 생성하는 객체의 다른 생성자가 동작하는지 여부도 테스트
 			const int SecondGetCount = TestCount;
 			for (int i=1; i<=SecondGetCount; ++i) {
-				objs.push_back(objPool.Get(123, &objPool));
+				objs.push_back(objPool.Alloc(123, &objPool));
 				EXPECT_EQ(g_objCount, FirstGetCount + i);
 				EXPECT_EQ(g_conCount_default, FirstGetCount);
 				EXPECT_EQ(g_conCount_param, i);
@@ -110,11 +110,11 @@ namespace asdtest_objpool
 			ASSERT_EQ(g_conCount_param, SecondGetCount);
 
 
-			// 2-4. 모두 릴리즈. LimitCount보다 많이 풀링되어선 안된다.
+			// 2-4. 모두 반납. LimitCount보다 많이 풀링되어선 안된다.
 			ASSERT_GT(objs.size(), LimitCount);
 			const int ObjCount = g_objCount;
 			for (int i=1; i<=objs.size(); ++i) {
-				objPool.Release(objs[i-1]);
+				objPool.Free(objs[i-1]);
 				EXPECT_EQ(g_desCount, i);
 				EXPECT_EQ(g_objCount, ObjCount - i);
 
@@ -149,12 +149,12 @@ namespace asdtest_objpool
 
 						// 3-1. 풀에서부터 할당
 						for (int i=0; i<TestCount; ++i) {
-							objs[i] = objPool.Get();
+							objs[i] = objPool.Alloc();
 						}
 
 						// 3-2. 할당받았던 것들을 풀에 반납
 						for (int i=0; i<TestCount; ++i) {
-							objPool.Release(objs[i]);
+							objPool.Free(objs[i]);
 						}
 
 						// 3-3. 랜덤하게 Clear나 AddCount등을 호출하여 
@@ -195,8 +195,8 @@ namespace asdtest_objpool
 		// 해시 분포가 고른지 확인하기 위한 맵
 		struct Count
 		{ 
-			size_t Get		= 0;
-			size_t Release	= 0;
+			size_t Alloc	= 0;
+			size_t Free		= 0;
 		};
 		std::unordered_map<void*, Count> Counter;
 		std::mutex lock;
@@ -214,21 +214,21 @@ namespace asdtest_objpool
 
 					// 3-1. 풀에서부터 할당
 					for (int i=0; i<TestCount; ++i) {
-						t_Counter[&shardSet.GetShard()].Get++;
-						objs[i] = shardSet.Get();
+						t_Counter[&shardSet.GetShard()].Alloc++;
+						objs[i] = shardSet.Alloc();
 					}
 
 					// 3-2. 할당받았던 것들을 풀에 반납
 					for (int i=0; i<TestCount; ++i) {
-						t_Counter[&shardSet.GetShard(objs[i])].Release++;
-						shardSet.Release(objs[i]);
+						t_Counter[&shardSet.GetShard(objs[i])].Free++;
+						shardSet.Free(objs[i]);
 					}
 				} while (run);
 
 				lock.lock();
 				for (auto it : t_Counter) {
-					Counter[it.first].Get += it.second.Get;
-					Counter[it.first].Release += it.second.Release;
+					Counter[it.first].Alloc += it.second.Alloc;
+					Counter[it.first].Free += it.second.Free;
 				}
 				lock.unlock();
 			});
@@ -244,16 +244,16 @@ namespace asdtest_objpool
 		Count sum;
 		for (auto it : Counter) {
 			asd::MString print("  [%p]    ", it.first);
-			print << it.second.Get << "    " << it.second.Release;
+			print << it.second.Alloc << "    " << it.second.Free;
 			printf("%s\n", print.c_str());
-			sum.Get += it.second.Get;
-			sum.Release += it.second.Release;
+			sum.Alloc += it.second.Alloc;
+			sum.Free += it.second.Free;
 		}
 		asd::MString print("  total  :  ");
-		print << sum.Get;
+		print << sum.Alloc;
 		printf("%s\n", print.c_str());
 		EXPECT_EQ(g_objCount, 0);
-		EXPECT_EQ(sum.Get, sum.Release);
+		EXPECT_EQ(sum.Alloc, sum.Free);
 	}
 
 
@@ -265,19 +265,19 @@ namespace asdtest_objpool
 
 	TEST(ObjectPool, WithStdMutex)
 	{
-		typedef asd::ObjectPool<TestClass, std::mutex>	Pool;
+		typedef asd::ObjectPool<TestClass, false, std::mutex>	Pool;
 		TestObjPool<Pool, 4>();
 	}
 
 	TEST(ObjectPool, WithAsdMutex)
 	{
-		typedef asd::ObjectPool<TestClass, asd::Mutex>	Pool;
+		typedef asd::ObjectPool<TestClass, false, asd::Mutex>	Pool;
 		TestObjPool<Pool, 4>();
 	}
 
 	TEST(ObjectPool, WithSpinMutex)
 	{
-		typedef asd::ObjectPool<TestClass, asd::SpinMutex>	Pool;
+		typedef asd::ObjectPool<TestClass, false, asd::SpinMutex>	Pool;
 		TestObjPool<Pool, 4>();
 	}
 
@@ -289,9 +289,9 @@ namespace asdtest_objpool
 
 	TEST(ObjectPool, ShardSet)
 	{
-		typedef asd::ObjectPool<TestClass>				Pool0;
-		typedef asd::ObjectPool<TestClass, asd::Mutex>	Pool1;
-		typedef asd::ObjectPool2<TestClass>				Pool2;
+		typedef asd::ObjectPool<TestClass>						Pool0;
+		typedef asd::ObjectPool<TestClass, false, asd::Mutex>	Pool1;
+		typedef asd::ObjectPool2<TestClass>						Pool2;
 
 		// compile error
 		//typedef asd::ObjectPoolShardSet<Pool0> ShardSet0;
