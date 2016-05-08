@@ -373,67 +373,67 @@ namespace asd
 	template <typename PoolType>
 	struct IsThreadSafePool
 	{
-		static constexpr bool Value() { return false; }
+		static constexpr bool Value = false;
 	};
 
 	template<typename ObjectType>
 	struct IsThreadSafePool<ObjectPool2<ObjectType, true>>
 	{
-		static constexpr bool Value() { return true; }
+		static constexpr bool Value = true;
 	};
 
 	template<typename ObjectType>
 	struct IsThreadSafePool<ObjectPool2<ObjectType, false>>
 	{
-		static constexpr bool Value() { return true; }
+		static constexpr bool Value = true;
 	};
 
 	template<typename ObjectType>
 	struct IsThreadSafePool<ObjectPool<ObjectType, true, asd::Mutex>>
 	{
-		static constexpr bool Value() { return true; }
+		static constexpr bool Value = true;
 	};
 
 	template<typename ObjectType>
 	struct IsThreadSafePool<ObjectPool<ObjectType, false, asd::Mutex>>
 	{
-		static constexpr bool Value() { return true; }
+		static constexpr bool Value = true;
 	};
 
 	template<typename ObjectType>
 	struct IsThreadSafePool<ObjectPool<ObjectType, true, asd::SpinMutex>>
 	{
-		static constexpr bool Value() { return true; }
+		static constexpr bool Value = true;
 	};
 
 	template<typename ObjectType>
 	struct IsThreadSafePool<ObjectPool<ObjectType, false, asd::SpinMutex>>
 	{
-		static constexpr bool Value() { return true; }
+		static constexpr bool Value = true;
 	};
 
 	template<typename ObjectType>
 	struct IsThreadSafePool<ObjectPool<ObjectType, true, std::mutex>>
 	{
-		static constexpr bool Value() { return true; }
+		static constexpr bool Value = true;
 	};
 
 	template<typename ObjectType>
 	struct IsThreadSafePool<ObjectPool<ObjectType, false, std::mutex>>
 	{
-		static constexpr bool Value() { return true; }
+		static constexpr bool Value = true;
 	};
 
 	template<typename ObjectType>
 	struct IsThreadSafePool<ObjectPool<ObjectType, true, std::recursive_mutex>>
 	{
-		static constexpr bool Value() { return true; }
+		static constexpr bool Value = true;
 	};
 
 	template<typename ObjectType>
 	struct IsThreadSafePool<ObjectPool<ObjectType, false, std::recursive_mutex>>
 	{
-		static constexpr bool Value() { return true; }
+		static constexpr bool Value = true;
 	};
 
 
@@ -441,7 +441,7 @@ namespace asd
 	template <typename ObjectPoolType>
 	class ObjectPoolShardSet
 	{
-		static_assert(IsThreadSafePool<ObjectPoolType>::Value(), "thread unsafe pool");
+		static_assert(IsThreadSafePool<ObjectPoolType>::Value, "thread unsafe pool");
 
 
 	public:

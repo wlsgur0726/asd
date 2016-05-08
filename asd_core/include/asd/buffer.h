@@ -3,6 +3,8 @@
 #include "asd/classutil.h"
 #include "asd/sysutil.h"
 #include <array>
+#include <vector>
+#include <deque>
 
 #define asd_Support_FlatBuffers 1
 #if asd_Support_FlatBuffers
@@ -42,7 +44,7 @@ namespace asd
 		virtual uint8_t* GetBuffer() const asd_noexcept = 0;
 		virtual size_t Capacity() const asd_noexcept = 0;
 		virtual size_t GetSize() const asd_noexcept = 0;
-		virtual bool SetSize(IN size_t a_bytes) asd_noexcept = 0;
+		virtual void SetSize(IN size_t a_bytes) asd_noexcept = 0;
 
 		inline size_t GetReserve() const asd_noexcept
 		{
@@ -89,17 +91,125 @@ namespace asd
 			return m_size;
 		}
 
-		virtual bool SetSize(IN size_t a_bytes) asd_noexcept override
+		virtual void SetSize(IN size_t a_bytes) asd_noexcept override
 		{
-			if (a_bytes > Bytes) {
+			if (a_bytes > Bytes)
 				assert(false);
-				return false;
-			}
 			m_size = a_bytes;
-			return true;
 		}
 
 		size_t m_size = 0;
+	};
+
+
+
+	template <typename T>
+	struct IsDirectSerializableType
+	{
+		static constexpr bool Value = false;
+	};
+
+	template<>
+	struct IsDirectSerializableType<int8_t>
+	{
+		static constexpr bool Value = true;
+	};
+
+	template<>
+	struct IsDirectSerializableType<uint8_t>
+	{
+		static constexpr bool Value = true;
+	};
+
+	template<>
+	struct IsDirectSerializableType<int16_t>
+	{
+		static constexpr bool Value = true;
+	};
+
+	template<>
+	struct IsDirectSerializableType<uint16_t>
+	{
+		static constexpr bool Value = true;
+	};
+
+	template<>
+	struct IsDirectSerializableType<int32_t>
+	{
+		static constexpr bool Value = true;
+	};
+
+	template<>
+	struct IsDirectSerializableType<uint32_t>
+	{
+		static constexpr bool Value = true;
+	};
+
+	template<>
+	struct IsDirectSerializableType<int64_t>
+	{
+		static constexpr bool Value = true;
+	};
+
+	template<>
+	struct IsDirectSerializableType<uint64_t>
+	{
+		static constexpr bool Value = true;
+	};
+
+	template<>
+	struct IsDirectSerializableType<float>
+	{
+		static constexpr bool Value = true;
+	};
+
+	template<>
+	struct IsDirectSerializableType<double>
+	{
+		static constexpr bool Value = true;
+	};
+
+	template<>
+	struct IsDirectSerializableType<long double>
+	{
+		static constexpr bool Value = true;
+	};
+
+
+
+	template <
+		typename T,
+		typename... Args
+	> struct VectorBasedBuffer
+		: public BufferInterface
+		, public std::vector<T, Args...>
+	{
+		static_assert(IsDirectSerializableType<T>::Value, "invalid type");
+		typedef std::vector<T, Args...> BaseClass;
+		using BaseClass::BaseClass;
+
+		virtual uint8_t* GetBuffer() const asd_noexcept override
+		{
+			assert(size() > 0);
+			return reinterpret_cast<uint8_t*>(data());
+		}
+
+		virtual size_t Capacity() const asd_noexcept override
+		{
+			assert(size() > 0);
+			return GetSize();
+		}
+
+		virtual size_t GetSize() const asd_noexcept override
+		{
+			assert(size() > 0);
+			return size() * sizeof(T);
+		}
+
+		virtual void SetSize(IN size_t a_bytes) asd_noexcept override
+		{
+			assert(false); // not use
+		}
 	};
 
 
@@ -145,194 +255,13 @@ namespace asd
 			return m_bytes;
 		}
 
-		virtual bool SetSize(IN size_t a_bytes) asd_noexcept override
+		virtual void SetSize(IN size_t a_bytes) asd_noexcept override
 		{
-			assert(false);
-			return false;
+			assert(false); // not use
 		}
 	};
 
 #endif
-
-
-
-	typedef std::unique_ptr<BufferInterface> Buffer_ptr;
-	class BufferDeque final
-	{
-	public:
-		struct iterator_base
-		{
-			BufferDeque* m_owner = nullptr;
-			size_t m_index;
-
-			inline Buffer_ptr& operator*() asd_noexcept
-			{
-				assert(m_owner != nullptr);
-				return (*m_owner)[m_index];
-			}
-
-			inline bool operator!=(IN const iterator_base& a_cmp) asd_noexcept
-			{
-				assert(m_owner == a_cmp.m_owner);
-				return m_index != a_cmp.m_index;
-			}
-		};
-
-		struct iterator : public iterator_base
-		{
-			using iterator_base::operator*;
-			using iterator_base::operator!=;
-
-			inline iterator& operator++() asd_noexcept
-			{
-				assert(m_owner != nullptr);
-				++m_index;
-				return *this;
-			}
-
-			inline iterator& operator++(int) asd_noexcept
-			{
-				assert(m_owner != nullptr);
-				iterator ret(*this);
-				++m_index;
-				return ret;
-			}
-		};
-
-		struct reverse_iterator : public iterator_base
-		{
-			using iterator_base::operator*;
-			using iterator_base::operator!=;
-
-			inline reverse_iterator& operator++() asd_noexcept
-			{
-				assert(m_owner != nullptr);
-				--m_index;
-				return *this;
-			}
-
-			inline reverse_iterator& operator++(int) asd_noexcept
-			{
-				assert(m_owner != nullptr);
-				reverse_iterator ret(*this);
-				--m_index;
-				return ret;
-			}
-		};
-
-
-		inline void PushBack(MOVE Buffer_ptr&& a_new) asd_noexcept
-		{
-			m_back.push_back(std::move(a_new));
-		}
-
-		inline void PushBack(MOVE BufferDeque&& a_list) asd_noexcept
-		{
-			size_t i = m_back.size();
-			m_back.resize(i + a_list.Count());
-
-			for (auto it=a_list.m_front.rbegin(); it!=a_list.m_front.rend(); ++it)
-				m_back[i++] = std::move(*it);
-			for (auto it=a_list.m_back.begin(); it!=a_list.m_back.end(); ++it)
-				m_back[i++] = std::move(*it);
-		}
-
-		inline void PushFront(MOVE Buffer_ptr&& a_new) asd_noexcept
-		{
-			m_front.push_back(std::move(a_new));
-		}
-
-		inline size_t Count() const asd_noexcept
-		{
-			return m_front.size() + m_back.size();
-		}
-
-		inline const Buffer_ptr& at(IN const size_t a_index) const asd_noexcept
-		{
-			auto idx = a_index;
-			auto sz = m_front.size();
-			if (idx < sz)
-				return m_front[(sz-1) - idx];
-
-			idx -= sz;
-			sz = m_back.size();
-			if (a_index < sz)
-				return m_back[idx];
-
-			thread_local Buffer_ptr t_null;
-			t_null.reset(nullptr);
-			return t_null;
-		}
-
-		inline const Buffer_ptr& operator[](IN const size_t a_index) const asd_noexcept
-		{
-			return at(a_index);
-		}
-
-		inline Buffer_ptr& operator[](IN const size_t a_index) asd_noexcept
-		{
-			return const_cast<Buffer_ptr&>(at(a_index));
-		}
-
-		inline void Clear() asd_noexcept
-		{
-			m_front.clear();
-			m_back.clear();
-
-			// 일정량 이하의 capacity는 보존한다.
-			const size_t CapacityLimit = 512;
-			if (m_front.capacity() > CapacityLimit)
-				m_front.shrink_to_fit();
-			if (m_back.capacity() > CapacityLimit)
-				m_back.shrink_to_fit();
-		}
-
-		inline iterator begin() asd_noexcept
-		{
-			iterator ret;
-			ret.m_owner = this;
-			ret.m_index = 0;
-			return ret;
-		}
-
-		inline iterator end() asd_noexcept
-		{
-			iterator ret;
-			ret.m_owner = this;
-			ret.m_index = Count();
-			return ret;
-		}
-
-		inline reverse_iterator rbegin() asd_noexcept
-		{
-			reverse_iterator ret;
-			ret.m_owner = this;
-			ret.m_index = Count() - 1;
-			return ret;
-		}
-
-		inline reverse_iterator rend() asd_noexcept
-		{
-			reverse_iterator ret;
-			ret.m_owner = this;
-			ret.m_index = (size_t(0) - size_t(1));
-			return ret;
-		}
-
-	private:
-		std::vector<Buffer_ptr> m_front;
-		std::vector<Buffer_ptr> m_back;
-	};
-
-
-
-	class BufferList;
-	struct BufferListDeleter
-	{
-		void* m_srcPool;
-		void operator()(IN void* a_ptr) asd_noexcept;
-	};
-	typedef std::unique_ptr<BufferList, BufferListDeleter> BufferList_ptr;
 
 
 
@@ -342,6 +271,15 @@ namespace asd
 		Read,
 	};
 
+	struct BufferListDeleter
+	{
+		void* m_srcPool = nullptr;
+		void operator()(IN void* a_ptr) asd_noexcept;
+	};
+
+	class BufferList;
+	typedef std::unique_ptr<BufferList, BufferListDeleter> BufferList_ptr;
+	typedef std::unique_ptr<BufferInterface> Buffer_ptr;
 
 
 	class BufferList
@@ -352,7 +290,7 @@ namespace asd
 
 
 	private:
-		BufferDeque m_list;
+		std::deque<Buffer_ptr> m_list;
 		Offset m_readOffset;
 		size_t m_writeOffset;
 		size_t m_total_capacity;

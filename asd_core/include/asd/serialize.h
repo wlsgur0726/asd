@@ -69,6 +69,8 @@ namespace asd
 	> inline size_t Write_PrimitiveType(REF BufferList& a_buffer,
 										IN DataType a_data) asd_noexcept
 	{
+		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
+
 		if (EndianFree<BufferEndian, DataType>() == false)
 			a_data = Reverse(a_data);
 		return a_buffer.Write(&a_data, sizeof(DataType));
@@ -81,6 +83,8 @@ namespace asd
 	> inline size_t Read_PrimitiveType(REF BufferList& a_buffer,
 									   OUT DataType& a_data) asd_noexcept
 	{
+		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
+
 		size_t ret = a_buffer.Read(&a_data,
 								   sizeof(DataType));
 		if (ret > 0) {
@@ -100,6 +104,8 @@ namespace asd
 										 IN const DataType* a_data,
 										 IN const size_t a_count) asd_noexcept
 	{
+		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
+
 		const size_t TotalBytes = sizeof(DataType) * a_count;
 		if (EndianFree<BufferEndian, DataType>())
 			return a_buffer.Write(a_data, TotalBytes);
@@ -122,6 +128,8 @@ namespace asd
 										OUT DataType* a_data,
 										IN const size_t a_count) asd_noexcept
 	{
+		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
+
 		const size_t TotalBytes = sizeof(DataType) * a_count;
 		size_t ret = a_buffer.Read(a_data, TotalBytes);
 		if (ret > 0) {
@@ -143,6 +151,8 @@ namespace asd
 	> inline size_t Write_PrimitiveVector(REF BufferList& a_buffer,
 										  IN const std::vector<DataType, Args...>& a_data) asd_noexcept
 	{
+		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
+
 		const auto count = a_data.size();
 		if (InvalidCount(count))
 			return 0;
@@ -174,6 +184,8 @@ namespace asd
 	> inline size_t Read_PrimitiveVector(REF BufferList& a_buffer,
 										 OUT std::vector<DataType, Args...>& a_data) asd_noexcept
 	{
+		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
+
 		Transactional<BufferOperation::Read> tran(a_buffer);
 
 		DefaultCountType count;

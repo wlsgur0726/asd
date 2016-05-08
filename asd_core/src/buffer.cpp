@@ -32,8 +32,12 @@ namespace asd
 	{
 		auto ptr = reinterpret_cast<BufferList*>(a_ptr);
 		auto pool = reinterpret_cast<asd_BufferListPool*>(m_srcPool);
-		ptr->Clear();
-		pool->Free(ptr);
+		if (pool == nullptr) {
+			ptr->Clear();
+			pool->Free(ptr);
+		}
+		else
+			delete ptr;
 	}
 
 
@@ -65,13 +69,6 @@ namespace asd
 	}
 
 
-	static BufferList_ptr NewList() asd_noexcept
-	{
-		BufferList_ptr p;
-		return p;
-	}
-
-
 	BufferList::BufferList() asd_noexcept
 	{
 		Clear();
@@ -85,7 +82,14 @@ namespace asd
 
 	void BufferList::Clear() asd_noexcept
 	{
-		m_list.Clear();
+		const size_t CapacityLimit = 1024;
+		if (m_list.size() <= CapacityLimit)
+			m_list.resize(0);
+		else {
+			m_list.~deque();
+			new(&m_list) std::deque<Buffer_ptr>();
+		}
+
 		m_readOffset = Offset();
 		m_writeOffset = 0;
 		m_total_capacity = 0;
@@ -103,11 +107,11 @@ namespace asd
 	void BufferList::ReserveBuffer(IN size_t a_bytes /*= DefaultBufferSize*/) asd_noexcept
 	{
 		assert(m_total_capacity >= m_total_write);
-		assert(m_list.Count() >= m_writeOffset);
+		assert(m_list.size() >= m_writeOffset);
 
 		while (m_total_capacity - m_total_write < a_bytes) {
 			m_total_capacity += DefaultBufferSize;
-			m_list.PushBack(NewBuffer());
+			m_list.push_back(NewBuffer());
 		}
 	}
 
@@ -115,7 +119,7 @@ namespace asd
 	void BufferList::ReserveBuffer(MOVE Buffer_ptr&& a_buffer) asd_noexcept
 	{
 		assert(m_total_capacity >= m_total_write);
-		assert(m_list.Count() >= m_writeOffset);
+		assert(m_list.size() >= m_writeOffset);
 
 		if (a_buffer == nullptr)
 			return;
@@ -126,13 +130,13 @@ namespace asd
 
 		a_buffer->SetSize(0);
 		m_total_capacity += capacity;
-		m_list.PushBack(std::move(a_buffer));
+		m_list.push_back(std::move(a_buffer));
 	}
 
 
 	void BufferList::PushBack(MOVE Buffer_ptr&& a_buffer) asd_noexcept
 	{
-		assert(m_list.Count() >= m_writeOffset);
+		assert(m_list.size() >= m_writeOffset);
 		if (a_buffer == nullptr)
 			return;
 
@@ -142,14 +146,14 @@ namespace asd
 		assert(capacity > 0);
 		assert(capacity >= size);
 		m_total_capacity += capacity;
-		m_list.PushBack(std::move(a_buffer));
+		m_list.push_back(std::move(a_buffer));
 
 		if (size == 0)
 			return; // 새로 추가하는 버퍼가 빈 버퍼이므로 여유버퍼로 취급
 		m_total_write += size;
 
 		// 오프셋 위치까지 쉬프트
-		size_t writeOffset = m_list.Count() - 1;
+		size_t writeOffset = m_list.size() - 1;
 		auto newbe = m_list.rbegin();
 		auto before = newbe;
 		while (++before != m_list.rend()) {
@@ -178,7 +182,7 @@ namespace asd
 	void BufferList::PushFront(MOVE Buffer_ptr&& a_buffer) asd_noexcept
 	{
 		assert(m_readOffset == Offset());
-		assert(m_list.Count() >= m_writeOffset);
+		assert(m_list.size() >= m_writeOffset);
 		if (a_buffer == nullptr)
 			return;
 
@@ -191,12 +195,12 @@ namespace asd
 
 		if (size == 0) {
 			// 새로 추가하는 버퍼가 빈 버퍼이므로 여유버퍼로 취급
-			m_list.PushBack(std::move(a_buffer));
+			m_list.push_back(std::move(a_buffer));
 			return;
 		}
 		m_total_write += size;
 
-		if (m_list.Count() > 0)
+		if (m_list.size() > 0)
 			++m_writeOffset;
 		else {
 			// 빈 상태에서 새로 추가된 경우
@@ -204,7 +208,7 @@ namespace asd
 			if (capacity - size == 0)
 				++m_writeOffset;
 		}
-		m_list.PushFront(std::move(a_buffer));
+		m_list.push_front(std::move(a_buffer));
 	}
 
 
@@ -212,7 +216,7 @@ namespace asd
 	{
 		auto& srcList = a_bufferList.m_list;
 		for (auto it=srcList.rbegin(); it!=srcList.rend(); ++it) {
-			m_list.PushFront(std::move(*it));
+			m_list.push_front(std::move(*it));
 		}
 		a_bufferList.Clear();
 	}
@@ -220,7 +224,7 @@ namespace asd
 
 	bool BufferList::Readable(IN size_t a_bytes) const asd_noexcept
 	{
-		assert(m_list.Count() >= m_readOffset.Row);
+		assert(m_list.size() >= m_readOffset.Row);
 		assert(m_total_capacity >= m_total_write);
 		assert(m_total_write >= m_total_read);
 
@@ -259,7 +263,7 @@ namespace asd
 
 			buf->SetSize(capacity);
 			++m_writeOffset;
-			assert(m_list.Count() > m_writeOffset);
+			assert(m_list.size() > m_writeOffset);
 		}
 
 		m_total_write += a_bytes;
@@ -294,7 +298,7 @@ namespace asd
 
 			m_readOffset.Col = 0;
 			++m_readOffset.Row;
-			assert(m_list.Count() > m_readOffset.Row);
+			assert(m_list.size() > m_readOffset.Row);
 		}
 
 		m_total_read += a_bytes;
@@ -309,7 +313,7 @@ namespace asd
 	{
 		auto& rb = const_cast<Offset&>(m_rollbackPoint);
 		rb.Row = m_bufferList.m_writeOffset;
-		if (m_bufferList.m_list.Count() > rb.Row)
+		if (m_bufferList.m_list.size() > rb.Row)
 			rb.Col = m_bufferList.m_list[rb.Row]->GetSize();
 		else
 			rb.Col = 0;
@@ -326,7 +330,7 @@ namespace asd
 	void Transactional<BufferOperation::Write>::Rollback() asd_noexcept
 	{
 		for (size_t i = 1 + m_rollbackPoint.Row;
-			 i <= m_bufferList.m_writeOffset && i < m_bufferList.m_list.Count();
+			 i <= m_bufferList.m_writeOffset && i < m_bufferList.m_list.size();
 			 ++i)
 		{
 			m_bufferList.m_list[i]->SetSize(0);
