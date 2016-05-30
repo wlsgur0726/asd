@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "asdbase.h"
 #include "asd/exception.h"
 #include <memory>
@@ -72,4 +72,11 @@ namespace asd
 
 
 
+	template <typename T, typename... Args>
+	inline void Reset(REF T& a_target,
+					  IN const Args&... a_constructorArgs)
+	{
+		a_target.~T();
+		new(&a_target) T(a_constructorArgs...);
+	}
 }

@@ -1,71 +1,51 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include "asd/buffer.h"
 #include "asd/objpool.h"
 
 namespace asd
 {
-#define asd_BufferListPool		ObjectPool2<BufferList, true>
-#define asd_DefaultBufferPool	ObjectPool2<DefaultBuffer> // dequeÀÇ capacity¸¦ º¸Á¸ÇÏ±â À§ÇØ ¼Ò¸êÀÚ È£ÃâÀ» ÇÏÁö ¾Ê´Â´Ù.
 	const size_t BufferList::DefaultBufferSize = 16 * 1024;
+	struct DefaultBuffer;
+	typedef ObjectPool2<DefaultBuffer>		DefaultBufferPool;
+	typedef ObjectPool2<BufferList, true>	BufferListPool; // dequeì˜ capacityë¥¼ ë³´ì¡´í•˜ê¸° ìœ„í•´ ì†Œë©¸ì í˜¸ì¶œì„ í•˜ì§€ ì•ŠëŠ”ë‹¤.
 
 
 	struct DefaultBuffer
 		: public StaticBuffer<BufferList::DefaultBufferSize>
 	{
-		asd_DefaultBufferPool* m_srcPool = nullptr;
-		inline static void operator delete(IN void* a_ptr)
-		{
-			auto cast = reinterpret_cast<DefaultBuffer*>(a_ptr);
-			auto srcPool = cast->m_srcPool;
-
-			if (srcPool == nullptr)
-				::operator delete(a_ptr);
-			else {
-				cast->m_srcPool = nullptr;
-				srcPool->Free(cast);
-			}
-		}
+		DefaultBufferPool* m_pool;
 	};
-
-
-	void BufferListDeleter::operator()(IN void* a_ptr) asd_noexcept
-	{
-		auto ptr = reinterpret_cast<BufferList*>(a_ptr);
-		auto pool = reinterpret_cast<asd_BufferListPool*>(m_srcPool);
-		if (pool == nullptr) {
-			ptr->Clear();
-			pool->Free(ptr);
-		}
-		else
-			delete ptr;
-	}
-
 
 
 	Buffer_ptr BufferList::NewBuffer() asd_noexcept
 	{
-		static ObjectPoolShardSet<asd_DefaultBufferPool> t_bufferPool;
+		typedef ObjectPool2<DefaultBuffer> DefaultBufferPool;
+		static ObjectPoolShardSet<DefaultBufferPool> g_bufferPool;
 
-		auto& pool = t_bufferPool.GetShard();
+		auto& pool = g_bufferPool.GetShard();
 		auto newBuf = pool.Alloc();
-		newBuf->m_srcPool = &pool;
+		newBuf->m_pool = &pool;
 
-		return Buffer_ptr(newBuf);
+		return Buffer_ptr(newBuf, [](IN BufferInterface* a_ptr)
+		{
+			auto cast = reinterpret_cast<DefaultBuffer*>(a_ptr);
+			cast->m_pool->Free(cast);
+		});
 	}
 
 
 	BufferList_ptr BufferList::NewList() asd_noexcept
 	{
-		static ObjectPoolShardSet<asd_BufferListPool> t_bufferListPool;
+		static ObjectPoolShardSet<BufferListPool> g_bufferListPool;
 
-		auto& pool = t_bufferListPool.GetShard();
+		auto& pool = g_bufferListPool.GetShard();
 		auto newList = pool.Alloc();
 		newList->Clear();
-
-		BufferListDeleter deleter;
-		deleter.m_srcPool = &pool;
-
-		return BufferList_ptr(newList, deleter);
+		return BufferList_ptr(newList, [&pool](IN BufferList* a_ptr)
+		{
+			a_ptr->Clear();
+			pool.Free(a_ptr);
+		});
 	}
 
 
@@ -85,10 +65,8 @@ namespace asd
 		const size_t CapacityLimit = 1024;
 		if (m_list.size() <= CapacityLimit)
 			m_list.resize(0);
-		else {
-			m_list.~deque();
-			new(&m_list) std::deque<Buffer_ptr>();
-		}
+		else
+			Reset(m_list);
 
 		m_readOffset = Offset();
 		m_writeOffset = 0;
@@ -149,10 +127,10 @@ namespace asd
 		m_list.push_back(std::move(a_buffer));
 
 		if (size == 0)
-			return; // »õ·Î Ãß°¡ÇÏ´Â ¹öÆÛ°¡ ºó ¹öÆÛÀÌ¹Ç·Î ¿©À¯¹öÆÛ·Î Ãë±Ş
+			return; // ìƒˆë¡œ ì¶”ê°€í•˜ëŠ” ë²„í¼ê°€ ë¹ˆ ë²„í¼ì´ë¯€ë¡œ ì—¬ìœ ë²„í¼ë¡œ ì·¨ê¸‰
 		m_total_write += size;
 
-		// ¿ÀÇÁ¼Â À§Ä¡±îÁö ½¬ÇÁÆ®
+		// ì˜¤í”„ì…‹ ìœ„ì¹˜ê¹Œì§€ ì‰¬í”„íŠ¸
 		size_t writeOffset = m_list.size() - 1;
 		auto newbe = m_list.rbegin();
 		auto before = newbe;
@@ -194,7 +172,7 @@ namespace asd
 		m_total_capacity += capacity;
 
 		if (size == 0) {
-			// »õ·Î Ãß°¡ÇÏ´Â ¹öÆÛ°¡ ºó ¹öÆÛÀÌ¹Ç·Î ¿©À¯¹öÆÛ·Î Ãë±Ş
+			// ìƒˆë¡œ ì¶”ê°€í•˜ëŠ” ë²„í¼ê°€ ë¹ˆ ë²„í¼ì´ë¯€ë¡œ ì—¬ìœ ë²„í¼ë¡œ ì·¨ê¸‰
 			m_list.push_back(std::move(a_buffer));
 			return;
 		}
@@ -203,7 +181,7 @@ namespace asd
 		if (m_list.size() > 0)
 			++m_writeOffset;
 		else {
-			// ºó »óÅÂ¿¡¼­ »õ·Î Ãß°¡µÈ °æ¿ì
+			// ë¹ˆ ìƒíƒœì—ì„œ ìƒˆë¡œ ì¶”ê°€ëœ ê²½ìš°
 			assert(m_writeOffset == 0);
 			if (capacity - size == 0)
 				++m_writeOffset;

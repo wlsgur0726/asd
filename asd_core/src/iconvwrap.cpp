@@ -44,15 +44,19 @@ namespace asd
 
 	// enum Encoding의 순서와 맞춰야 함.
 	// 프로세스 시작 시 초기화 후 오로지 조회 용도로만 사용.
-	const EncodingInfo g_encodingInfo[(int)Encoding::Last] = {
-		//              Enum             MinSize   AvgSize   MaxSize    Name
-		EncodingInfo(Encoding::UTF8,       1,        2.5,      4,      "UTF-8"),
-		EncodingInfo(Encoding::UTF16LE,    2,        2,        4,      "UTF-16LE"),
-		EncodingInfo(Encoding::UTF16BE,    2,        2,        4,      "UTF-16BE"),
-		EncodingInfo(Encoding::UTF32LE,    4,        4,        4,      "UTF-32LE"),
-		EncodingInfo(Encoding::UTF32BE,    4,        4,        4,      "UTF-32BE"),
-		EncodingInfo(Encoding::CP949,      1,        1.5,      2,      "CP949")
-	};
+	const EncodingInfo& GetEncodingInfo(IN Encoding a_enc)
+	{
+		static const EncodingInfo g_encodingInfo[(int)Encoding::Last] = {
+			//              Enum             MinSize   AvgSize   MaxSize    Name
+			EncodingInfo(Encoding::UTF8,       1,        2.5,      4,      "UTF-8"),
+			EncodingInfo(Encoding::UTF16LE,    2,        2,        4,      "UTF-16LE"),
+			EncodingInfo(Encoding::UTF16BE,    2,        2,        4,      "UTF-16BE"),
+			EncodingInfo(Encoding::UTF32LE,    4,        4,        4,      "UTF-32LE"),
+			EncodingInfo(Encoding::UTF32BE,    4,        4,        4,      "UTF-32BE"),
+			EncodingInfo(Encoding::CP949,      1,        1.5,      2,      "CP949")
+		};
+		return g_encodingInfo[(int)a_enc];
+	}
 
 
 
@@ -63,14 +67,14 @@ namespace asd
 
 
 
-	// g_encodingInfo가 제대로 초기화 되었는지 확인하는 함수
+	// GetEncodingInfo가 제대로 초기화 되었는지 확인하는 함수
 	inline void Check_EncodingInfo_Table()
 	{
 #ifdef asd_Debug
 		static bool g_checkedTable = false;
 		if (g_checkedTable == false) {
 			for (int i=0; i<(int)Encoding::Last; ++i) {
-				assert(g_encodingInfo[i].m_encoding == (Encoding)i);
+				assert(GetEncodingInfo((Encoding)i).m_encoding == (Encoding)i);
 			}
 			g_checkedTable = true;
 		}
@@ -86,7 +90,7 @@ namespace asd
 			assert(false);
 			return nullptr;
 		}
-		return g_encodingInfo[(int)a_enc].m_encodingName;
+		return GetEncodingInfo(a_enc).m_encodingName;
 	}
 
 
@@ -155,7 +159,7 @@ namespace asd
 		if (IsValidEncoding(a_enc) == false)
 			return -1;
 
-		return g_encodingInfo[(int)a_enc].m_minSize;
+		return GetEncodingInfo(a_enc).m_minSize;
 	}
 
 
@@ -166,7 +170,7 @@ namespace asd
 		if (IsValidEncoding(a_enc) == false)
 			return -1;
 
-		return g_encodingInfo[(int)a_enc].m_avgSize;
+		return GetEncodingInfo(a_enc).m_avgSize;
 	}
 
 
@@ -177,7 +181,7 @@ namespace asd
 		if (IsValidEncoding(a_enc) == false)
 			return -1;
 
-		return g_encodingInfo[(int)a_enc].m_maxSize;
+		return GetEncodingInfo(a_enc).m_maxSize;
 	}
 
 

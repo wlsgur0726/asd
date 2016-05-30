@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "asd/asdbase.h"
 #include "asd/sysutil.h"
 #include "asd/buffer.h"
@@ -34,8 +34,8 @@ namespace asd
 
 	inline void BufferDeficiency()
 	{
-		// Write  :  ¹öÆÛÀÇ ¿©À¯°ø°£ÀÌ ºÎÁ·ÇÏ¿© ¾µ ¼ö ¾øÀ½
-		// Read   :  ¹öÆÛ¿¡ µé¾îÀÖ´Â µ¥ÀÌÅÍ°¡ ¿ÂÀüÇÏÁö ¾Ê¾Æ ÀĞÀ» ¼ö ¾øÀ½
+		// Write  :  ë²„í¼ì˜ ì—¬ìœ ê³µê°„ì´ ë¶€ì¡±í•˜ì—¬ ì“¸ ìˆ˜ ì—†ìŒ
+		// Read   :  ë²„í¼ì— ë“¤ì–´ìˆëŠ” ë°ì´í„°ê°€ ì˜¨ì „í•˜ì§€ ì•Šì•„ ì½ì„ ìˆ˜ ì—†ìŒ
 		assert(false);
 	}
 
@@ -293,7 +293,6 @@ namespace asd
 	asd_Define_Write_And_Read_PrimitiveType(uint64_t);
 	asd_Define_Write_And_Read_PrimitiveType(float);
 	asd_Define_Write_And_Read_PrimitiveType(double);
-	asd_Define_Write_And_Read_PrimitiveType(long double);
 
 
 
@@ -384,7 +383,7 @@ namespace asd
 		if (Nullity)
 			return 0;
 
-		const size_t I = Nullity ? 0 : Index;	// static_assert ¹æÁö
+		const size_t I = Nullity ? 0 : Index;	// static_assert ë°©ì§€
 		const auto& data = std::get<I>(a_data);
 		const size_t cur = Write(a_buffer, data);
 		if (cur == 0)
@@ -412,7 +411,7 @@ namespace asd
 		if (Nullity)
 			return 0;
 
-		const size_t I = Nullity ? 0 : Index;	// static_assert ¹æÁö
+		const size_t I = Nullity ? 0 : Index;	// static_assert ë°©ì§€
 		auto& data = std::get<I>(a_data);
 		const size_t cur = Read(a_buffer, data);
 		if (cur == 0)

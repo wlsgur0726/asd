@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "asd/asdbase.h"
 #include "asd/socket.h"
 

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "asd/asdbase.h"
 #include "asd/classutil.h"
 #include "asd/sysutil.h"
@@ -271,15 +271,27 @@ namespace asd
 		Read,
 	};
 
-	struct BufferListDeleter
+
+
+	template <typename T>
+	class UniquePtr
+		: public std::unique_ptr<T, std::function<void(T*)>>
 	{
-		void* m_srcPool = nullptr;
-		void operator()(IN void* a_ptr) asd_noexcept;
+		typedef std::unique_ptr<T, std::function<void(T*)>> Base;
+
+	public:
+		UniquePtr(IN T* a_newPtr = nullptr,
+				  MOVE std::function<void(T*)>&& a_deleter = std::default_delete<T>())
+			: Base(a_newPtr, std::move(a_deleter))
+		{
+		}
 	};
 
+
+
 	class BufferList;
-	typedef std::unique_ptr<BufferList, BufferListDeleter> BufferList_ptr;
-	typedef std::unique_ptr<BufferInterface> Buffer_ptr;
+	typedef UniquePtr<BufferList>		BufferList_ptr;
+	typedef UniquePtr<BufferInterface>	Buffer_ptr;
 
 
 	class BufferList

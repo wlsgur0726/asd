@@ -1,7 +1,10 @@
 ﻿#include "stdafx.h"
 #include "asd/serialize.h"
 #include <memory>
-#include <boost/endian/conversion.hpp>
+#if !asd_Platform_Windows
+#include <netinet/in.h>
+#endif
+
 
 namespace asdtest_serialize
 {
@@ -51,30 +54,55 @@ namespace asdtest_serialize
 		Test_PrimitiveType<uint64_t>();
 		Test_PrimitiveType<float>();
 		Test_PrimitiveType<double>();
-		Test_PrimitiveType<long double>();
 	}
 
 
 
 	template <typename T>
-	void Test_Endian_Reverse()
+	void Test_Endian_Reverse_1()
 	{
 		const T src = static_cast<T>(0xABCDEF);
 		T asd = asd::Reverse(src);
-		T boost = boost::endian::endian_reverse(src);
-		EXPECT_EQ(0, std::memcmp(&asd, &boost, sizeof(T)));
+		T libc;
+		if (sizeof(T) == 2)
+			libc = htons(src);
+		else if (sizeof(T) == 4)
+			libc = htonl(src);
+		else
+			return;
+
+		EXPECT_EQ(0, std::memcmp(&asd, &libc, sizeof(T)));
+	}
+
+	template <typename T>
+	void Test_Endian_Reverse_2()
+	{
+		const T src = static_cast<T>(0xABCDEF01020304);
+		const T reverse1 = asd::Reverse(src);
+		const T reverse2 = asd::Reverse(reverse1);
+		const T reverse3 = asd::Reverse(reverse2);
+
+		EXPECT_EQ(0, std::memcmp(&src, &reverse2, sizeof(T)));
+		EXPECT_EQ(0, std::memcmp(&reverse1, &reverse3, sizeof(T)));
 	}
 
 	TEST(Serialize, Endian_Reverse)
 	{
-		Test_Endian_Reverse<int8_t>();
-		Test_Endian_Reverse<uint8_t>();
-		Test_Endian_Reverse<int16_t>();
-		Test_Endian_Reverse<uint16_t>();
-		Test_Endian_Reverse<int32_t>();
-		Test_Endian_Reverse<uint32_t>();
-		Test_Endian_Reverse<int64_t>();
-		Test_Endian_Reverse<uint64_t>();
+		Test_Endian_Reverse_1<int16_t>();
+		Test_Endian_Reverse_1<uint16_t>();
+		Test_Endian_Reverse_1<int32_t>();
+		Test_Endian_Reverse_1<uint32_t>();
+
+		Test_Endian_Reverse_2<int8_t>();
+		Test_Endian_Reverse_2<uint8_t>();
+		Test_Endian_Reverse_2<int16_t>();
+		Test_Endian_Reverse_2<uint16_t>();
+		Test_Endian_Reverse_2<int32_t>();
+		Test_Endian_Reverse_2<uint32_t>();
+		Test_Endian_Reverse_2<int64_t>();
+		Test_Endian_Reverse_2<uint64_t>();
+		Test_Endian_Reverse_2<float>();
+		Test_Endian_Reverse_2<double>();
 	}
 
 
@@ -83,7 +111,7 @@ namespace asdtest_serialize
 	void Test_Endian_Array_Internal(const T* src)
 	{
 		const size_t ExpectBytes = sizeof(T)*ElemCnt;
-		const size_t BufCnt = 30;
+		const size_t BufCnt = 10;
 
 		auto bufferList = asd::BufferList::NewList();
 		for (auto i=BufCnt; i>0; --i)
@@ -100,10 +128,14 @@ namespace asdtest_serialize
 		for (size_t i=0; i<ElemCnt; ++i) {
 			if (SrcEndian == DstEndian) {
 				EXPECT_EQ(src[i], dst[i]);
+				if (src[i] != dst[i])
+					break;
 			}
 			else {
 				T reverse = asd::Reverse(dst[i]);
 				EXPECT_EQ(src[i], reverse);
+				if (src[i] != reverse)
+					break;
 			}
 		}
 	}
@@ -141,7 +173,6 @@ namespace asdtest_serialize
 		Test_Endian_Array<uint64_t>();
 		Test_Endian_Array<float>();
 		Test_Endian_Array<double>();
-		Test_Endian_Array<long double>();
 	}
 
 
@@ -177,7 +208,6 @@ namespace asdtest_serialize
 			uint64_t,
 			float,
 			double,
-			long double,
 			const int> TestTuple;
 		const TestTuple src(-8,
 							8,
@@ -189,7 +219,6 @@ namespace asdtest_serialize
 							64,
 							1.23,
 							4.56,
-							7.89,
 							100);
 		Test_WriteRead<TestTuple, SmallBuf>(src);
 		Test_WriteRead<TestTuple, LargeBuf>(src);
@@ -335,3 +364,4 @@ namespace asdtest_serialize
 		Test_WriteRead<CustomStruct, LargeBuf>(src);
 	}
 }
+

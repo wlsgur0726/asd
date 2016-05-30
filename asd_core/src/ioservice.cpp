@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "asd/ioservice.h"
 #include "asd/objpool.h"
 #include "asd/util.h"

@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "asd/threadutil.h"
 #include <atomic>
 #include <cstdlib>
