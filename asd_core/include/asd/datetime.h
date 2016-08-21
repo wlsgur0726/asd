@@ -1,9 +1,8 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/exception.h"
+#include "asdbase.h"
+#include "exception.h"
 #include <ctime>
 #include <chrono>
-#include <sqltypes.h>
 
 namespace asd
 {
@@ -49,6 +48,34 @@ namespace asd
 		Type& To(OUT Type& a_dst) const asd_noexcept;		\
 															\
 		operator Type() const asd_noexcept;					\
+
+
+
+	struct SQL_TIMESTAMP_STRUCT
+	{
+		int16_t		year;
+		uint16_t	month;
+		uint16_t	day;
+		uint16_t	hour;
+		uint16_t	minute;
+		uint16_t	second;
+		uint32_t	fraction;
+	};
+
+	struct SQL_DATE_STRUCT
+	{
+		int16_t		year;
+		uint16_t	month;
+		uint16_t	day;
+	};
+
+	struct SQL_TIME_STRUCT
+	{
+		uint16_t	hour;
+		uint16_t	minute;
+		uint16_t	second;
+	};
+
 
 
 	class Date
@@ -102,7 +129,7 @@ namespace asd
 		uint32_t m_hour : 7;
 		uint32_t m_minute : 7;
 		uint32_t m_second : 7;
-		uint32_t m_millisecond : 10;
+		uint32_t m_millisecond : 11;
 
 	public:
 		// 현재시간

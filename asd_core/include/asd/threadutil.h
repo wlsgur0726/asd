@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
+#include "asdbase.h"
 #include <thread>
 
 

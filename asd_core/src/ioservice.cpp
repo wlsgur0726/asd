@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+﻿#include "asd_pch.h"
 #include "asd/ioservice.h"
 #include "asd/objpool.h"
 #include "asd/util.h"
@@ -30,4 +30,8 @@ namespace asd
 		{
 		}
 	};
+
+	void IOService::Register(REF Socket& a_socket) {}
+	void IOService::Unregister(IN Socket& a_socket) {}
+	size_t IOService::Poll(IN uint32_t a_timeoutSec) { return 0; }
 }

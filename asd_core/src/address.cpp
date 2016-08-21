@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+﻿#include "asd_pch.h"
 #include "asd/address.h"
 
 #if defined(asd_Platform_Windows)
@@ -93,12 +93,12 @@ namespace asd
 	{
 		AddrInfos ais(a_domain);
 		if (ais.m_error != 0) {
-			asd_RaiseException("fail getaddrinfo(), error:%#x", ais.m_error);
+			asd_RaiseException("fail getaddrinfo(), error:{}", ais.m_error);
 		}
 
 		addrinfo* ai = ais.Get();
 		if (ai == nullptr) {
-			asd_RaiseException("[%s] does not exist!", a_domain);
+			asd_RaiseException("[{}] does not exist!", a_domain);
 		}
 
 		switch (ai->ai_family) {
@@ -280,7 +280,7 @@ namespace asd
 				  ip,
 				  BufSize);
 
-		return MString("%s:%u", ip, (uint32_t)GetPort());
+		return MString("{}:{}", ip, (uint32_t)GetPort());
 	}
 
 

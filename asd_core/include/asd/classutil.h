@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "asdbase.h"
-#include "asd/exception.h"
+#include "exception.h"
 #include <memory>
 #include <atomic>
 #include <cassert>
@@ -36,7 +36,7 @@ namespace asd
 
 						cmp = InitState::Progress;
 						if (false == g_initState.compare_exchange_strong(cmp, InitState::Complete))
-							asd_RaiseException("fail init, %s", __FUNCTION__);
+							asd_RaiseException("fail init, {}", __FUNCTION__);
 					}
 					case InitState::Complete: {
 						return *g_globalObject;
@@ -45,7 +45,7 @@ namespace asd
 						continue;
 					}
 					default: {
-						asd_RaiseException("invalid InitState : %d, %s",
+						asd_RaiseException("invalid InitState : {}, {}",
 										   (int)state,
 										   __FUNCTION__);
 					}

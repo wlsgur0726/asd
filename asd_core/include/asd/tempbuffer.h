@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/exception.h"
+#include "asdbase.h"
+#include "exception.h"
 
 namespace asd
 {
@@ -74,7 +74,7 @@ namespace asd
 		inline Object& At(IN size_t a_index) const 
 		{
 			if (a_index < 0 || a_index >= GetCount()) {
-				asd_RaiseException("invalid argument (a_index : %lld)", (int64_t)a_index);
+				asd_RaiseException("invalid argument (a_index : {})", a_index);
 			}
 			return m_arr[a_index];
 		}

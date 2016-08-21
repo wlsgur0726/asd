@@ -172,32 +172,6 @@ namespace asdtest_string
 	}
 
 
-	const char* FormatString_String(char) {
-		return "%s";
-	}
-	const wchar_t* FormatString_String(wchar_t) {
-		return L"%ls";
-	}
-#define FormatString(TYPE, FORMAT)						\
-	const char* FormatString_##TYPE(char) {				\
-		return FORMAT;									\
-	}													\
-	const wchar_t* FormatString_##TYPE(wchar_t) {		\
-		return L ## FORMAT;								\
-	}													\
-
-	FormatString(Int32, "%d");
-
-	FormatString(Int64, "%lld");
-
-	FormatString(Double, "%lf");
-
-	FormatString(Pointer, "%p");
-
-	FormatString(True, "true");
-
-	FormatString(False, "false");
-
 
 	template <typename StringType_asd, typename StringType_std>
 	void TestCode_StringClass(const typename StringType_asd::CharType* a_testString)
@@ -205,10 +179,18 @@ namespace asdtest_string
 		typename StringType_asd::CharType c = 0;
 		const StringType_std stdString1 = a_testString;
 
+		auto Str = [](const char* str)
+		{
+			thread_local StringType_std t_format;
+			const std::string format(str);
+			t_format.assign(format.begin(), format.end());
+			return t_format.c_str();
+		};
+
 		// 각종 생성자와 대입연산자 테스트
-		const StringType_asd s1(a_testString);
+		StringType_asd s1(a_testString);
 		StringType_asd s2(s1);
-		StringType_asd s3(FormatString_String(c), a_testString);
+		StringType_asd s3(Str("{}"), a_testString);
 		StringType_asd s4 = a_testString;
 		StringType_asd s5 = s1;
 		StringType_asd s6;
@@ -245,10 +227,10 @@ namespace asdtest_string
 			int offset = 0;
 			asd::strcpy(buf+offset, s1);
 
-			offset += s1.GetLength();
+			offset += s1.length();
 			asd::strcpy(buf+offset, s3);
 
-			offset += s3.GetLength();
+			offset += s3.length();
 			asd::strcpy(buf+offset, s4);
 
 			// s2는 뒤에 s3와 s4의 내용이 붙어있어야 한다.
@@ -270,10 +252,10 @@ namespace asdtest_string
 			int offset = 0;
 			asd::strcpy(buf+offset, s1);
 
-			offset += s1.GetLength();
+			offset += s1.length();
 			asd::strcpy(buf+offset, s3);
 
-			offset += s3.GetLength();
+			offset += s3.length();
 			asd::strcpy(buf+offset, s4);
 
 			// s2는 뒤에 s3와 s4의 내용이 붙어있어야 한다.
@@ -295,13 +277,9 @@ namespace asdtest_string
 			s3 += p;
 			s3 += stdString1;
 
-			s4 =  s1 
-				+ FormatString_Int32(c)
-				+ FormatString_Double(c)
-				+ FormatString_String(c)
-				+ FormatString_Pointer(c)
-				+ FormatString_String(c);
-			s5.Format(s4, 123, 1.23, FormatString_True(c), p, stdString1.data());
+			s4 = s1;
+			s4 += Str("{}{}{}{}{}");
+			s5.Format(s4, 123, 1.23, Str("true"), p, stdString1.data());
 
 			// 값이 모두 같은지 확인.
 			EXPECT_EQ(s2, s3);

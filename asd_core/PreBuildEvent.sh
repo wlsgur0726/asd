@@ -3,7 +3,7 @@
 echo asd PreBuildEvent start
 
 cd ../src
-g++ -I../include -std=c++11 stdafx.h
+g++ -I../include -std=c++11 asd_pch.h
 
 echo asd PreBuildEvent end
 

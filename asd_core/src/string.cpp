@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+﻿#include "asd_pch.h"
 #include "asd/string.h"
 #include "asd/tempbuffer.h"
 
@@ -279,12 +279,16 @@ namespace asd
 
 	size_t strlen(IN const char* a_str) asd_noexcept
 	{
+		if (a_str == nullptr)
+			return 0;
 		return ::strlen(a_str);
 	}
 
 
 	size_t strlen(IN const wchar_t* a_str) asd_noexcept
 	{
+		if (a_str == nullptr)
+			return 0;
 		return ::wcslen(a_str);
 	}
 
@@ -295,13 +299,13 @@ namespace asd
 		assert(a_sizeOfChar==1 || a_sizeOfChar==2 || a_sizeOfChar==4);
 		switch (a_sizeOfChar) {
 			case 1:
-				return ::strlen((const char*)a_str);
+				return asd::strlen((const char*)a_str);
 			case 2:
 				return asd::strlen<2>(a_str);
 			case 4:
 				return asd::strlen<4>(a_str);
 		}
-		return -1;
+		return 0;
 	}
 
 

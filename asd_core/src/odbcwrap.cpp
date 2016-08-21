@@ -1,9 +1,35 @@
-﻿#include "stdafx.h"
+﻿#include "asd_pch.h"
 #include "asd/odbcwrap.h"
 #include "asd/util.h"
 #include <sql.h>
 #include <sqlext.h>
+#include <sqltypes.h>
 #include <unordered_map>
+
+
+// sqltypes.h의 타입들과 asd에서 선언한 타입이 안전하게 동일 취급 가능한지 체크
+#define asd_Check_Size(T) static_assert(sizeof(::T) == sizeof(asd::T), "different size")
+#define asd_Check_Member(T, M) static_assert(offsetof(::T, M) == offsetof(asd::T, M), "different offset");
+
+asd_Check_Size(SQL_TIMESTAMP_STRUCT);
+asd_Check_Member(SQL_TIMESTAMP_STRUCT, year);
+asd_Check_Member(SQL_TIMESTAMP_STRUCT, month);
+asd_Check_Member(SQL_TIMESTAMP_STRUCT, day);
+asd_Check_Member(SQL_TIMESTAMP_STRUCT, hour);
+asd_Check_Member(SQL_TIMESTAMP_STRUCT, minute);
+asd_Check_Member(SQL_TIMESTAMP_STRUCT, second);
+asd_Check_Member(SQL_TIMESTAMP_STRUCT, fraction);
+
+asd_Check_Size(SQL_DATE_STRUCT);
+asd_Check_Member(SQL_DATE_STRUCT, year);
+asd_Check_Member(SQL_DATE_STRUCT, month);
+asd_Check_Member(SQL_DATE_STRUCT, day);
+
+asd_Check_Size(SQL_TIME_STRUCT);
+asd_Check_Member(SQL_TIME_STRUCT, hour);
+asd_Check_Member(SQL_TIME_STRUCT, minute);
+asd_Check_Member(SQL_TIME_STRUCT, second);
+
 
 
 #define asd_CheckError(...) CheckError(__FILE__, __LINE__, __VA_ARGS__)
@@ -12,10 +38,10 @@ namespace asd
 {
 	MString DBDiagInfo::ToString() const asd_noexcept
 	{
-		return MString("State=%s,NativeError=%d,Message=%s",
+		return MString("State={},NativeError={},Message={}",
 					   m_state,
 					   m_nativeError,
-					   m_message.GetData());
+					   m_message);
 	}
 
 
@@ -24,7 +50,7 @@ namespace asd
 							 IN const char* a_lastFileName,
 							 IN int a_lastFileLine) asd_noexcept
 	{
-		m_what.Format("DBException(%s:%d)", a_lastFileName, a_lastFileLine);
+		m_what.Format("DBException({}:{})", a_lastFileName, a_lastFileLine);
 		int index = 1;
 		for (auto& diagInfo : a_diagInfoList) {
 			m_diagInfoList.push_back(diagInfo);
@@ -78,7 +104,7 @@ namespace asd
 		{
 			auto it = m_codeToEnum.find(a_code);
 			if (it == m_codeToEnum.end())
-				asd_RaiseException("SQLTypeCode(%d) is not suported", a_code);
+				asd_RaiseException("SQLTypeCode({}) is not suported", a_code);
 			return it->second;
 		}
 	};
@@ -106,7 +132,7 @@ namespace asd
 		}
 
 
-		virtual OdbcHandle& operator = (MOVE OdbcHandle&& a_rval)
+		virtual OdbcHandle& operator=(MOVE OdbcHandle&& a_rval)
 		{
 			m_handle = a_rval.m_handle;
 			m_handleType = a_rval.m_handleType;
@@ -214,7 +240,7 @@ namespace asd
 				if (r == SQL_NO_DATA)
 					break;
 				else if (r!=SQL_SUCCESS && r!=SQL_SUCCESS_WITH_INFO) {
-					asd_RaiseException("fail SQLGetDiagRec(), return:", r);
+					asd_RaiseException("fail SQLGetDiagRec(), return:{}", r);
 				}
 
 				DBDiagInfo diagInfo;
@@ -250,7 +276,7 @@ namespace asd
 
 	private:
 		OdbcHandle(IN const OdbcHandle&) = delete;
-		OdbcHandle& operator = (IN const OdbcHandle&) = delete;
+		OdbcHandle& operator=(IN const OdbcHandle&) = delete;
 
 	};
 
@@ -292,10 +318,12 @@ namespace asd
 
 		void SetAutoCommit(IN bool a_auto)
 		{
+#pragma warning(disable:4312)
 			SQLRETURN r = SQLSetConnectAttr(m_handle,
 											SQL_ATTR_AUTOCOMMIT,
-											(SQLPOINTER)(a_auto ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF),
+											reinterpret_cast<SQLPOINTER>(a_auto ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF),
 											SQL_IS_INTEGER);
+#pragma warning(default:4312)
 			asd_CheckError(r);
 			m_autoCommit = a_auto;
 		}
@@ -553,7 +581,7 @@ namespace asd
 					// 2-1-3. 컬럼을 순회하면서 컬럼명과 인덱스를 매핑한다.
 					for (SQLUSMALLINT i=1; i<=colCount; ++i) {
 						MString colName = GetColumnName(i);
-						if (colName.GetLength() > 0)
+						if (colName.length() > 0)
 							m_columnIndexMap[colName] = i;
 					}
 				}
@@ -613,10 +641,10 @@ namespace asd
 		MString GetColumnName(IN SQLUSMALLINT a_colIndex)
 		{
 			if (a_colIndex > m_columnNameList.size())
-				asd_RaiseException("column[%u] does not exist", a_colIndex);
+				asd_RaiseException("column[{}] does not exist", a_colIndex);
 
 			auto& ret = m_columnNameList[a_colIndex - 1];
-			if (ret.GetLength() == 0) {
+			if (ret.length() == 0) {
 				SQLCHAR buf[SQL_MAX_MESSAGE_LENGTH];
 				SQLSMALLINT retlen;
 				asd_CheckError(SQLColAttribute(m_handle,
@@ -626,7 +654,7 @@ namespace asd
 											   sizeof(buf),
 											   &retlen,
 											   nullptr));
-				ret.Append((const char*)buf, retlen);
+				ret.append((const char*)buf, retlen);
 			}
 			return ret;
 		}
@@ -663,7 +691,7 @@ namespace asd
 		{
 			auto it = m_paramMap_byParamNum.find(a_paramNumber);
 			if (it == m_paramMap_byParamNum.end()) {
-				asd_RaiseException("parameter[%u] does not exist", a_paramNumber);
+				asd_RaiseException("parameter[{}] does not exist", a_paramNumber);
 			}
 			it->second->GetBoundObj(a_bufPtr, a_indicator);
 		}
@@ -675,7 +703,7 @@ namespace asd
 		{
 			auto it = m_paramMap_byBoundPtr.find(a_key);
 			if (it == m_paramMap_byBoundPtr.end()) {
-				asd_RaiseException("parameter[%p] does not exist", a_key);
+				asd_RaiseException("parameter[{}] does not exist", a_key);
 			}
 			it->second->GetBoundObj(a_bufPtr, a_indicator);
 		}
@@ -804,16 +832,16 @@ namespace asd
 
 
 
-	thread_local DBStatement::Caster* t_lastCaster;
+	thread_local Caster* t_lastCaster;
 
-	struct Caster_GetData : public DBStatement::Caster
+	struct Caster_GetData : public Caster
 	{
 		DBStatementHandle* m_handle;
 		uint16_t m_index;
-		asd_DBStatement_Declare_CastOperatorList;
+		asd_Caster_Declare_CastOperatorList;
 	};
 
-	DBStatement::Caster& DBStatement::GetData(IN uint16_t a_columnIndex)
+	Caster& DBStatement::GetData(IN uint16_t a_columnIndex)
 	{
 		thread_local Caster_GetData t_caster;
 		t_caster.m_handle = m_handle.get();
@@ -822,21 +850,21 @@ namespace asd
 		return t_caster;
 	}
 
-	DBStatement::Caster& DBStatement::GetData(IN const char* a_columnName)
+	Caster& DBStatement::GetData(IN const char* a_columnName)
 	{
 		return GetData(m_handle->GetColumnIndex(a_columnName));
 	}
 
 
 
-	struct Caster_GetParam : public DBStatement::Caster
+	struct Caster_GetParam : public Caster
 	{
 		DBStatementHandle* m_handle;
 		uint16_t m_index;
-		asd_DBStatement_Declare_CastOperatorList;
+		asd_Caster_Declare_CastOperatorList;
 	};
 
-	DBStatement::Caster& DBStatement::GetParam(IN uint16_t a_paramNumber)
+	Caster& DBStatement::GetParam(IN uint16_t a_paramNumber)
 	{
 		thread_local Caster_GetParam t_caster;
 		t_caster.m_handle = m_handle.get();
@@ -928,14 +956,14 @@ namespace asd
 	}
 
 #define asd_Define_Caster_GetData_Ptr(Type, PtrClass)										\
-	DBStatement::Caster::operator PtrClass<Type>()											\
+	Caster::operator PtrClass<Type>() const													\
 	{																						\
 		/* unused function, avoid build error */											\
 		assert(false);																		\
 		return t_lastCaster->operator PtrClass<Type>();										\
 	}																						\
 																							\
-	Caster_GetData::operator PtrClass<Type>()												\
+	Caster_GetData::operator PtrClass<Type>() const											\
 	{																						\
 		PtrClass<Type> ret;																	\
 		Type temp;																			\
@@ -945,21 +973,21 @@ namespace asd
 	}																						\
 
 #define asd_Define_Caster_GetData(Type)														\
-	DBStatement::Caster::operator Type()													\
+	Caster::operator Type() const															\
 	{																						\
 		/* unused function, avoid build error */											\
 		assert(false);																		\
 		return t_lastCaster->operator Type();												\
 	}																						\
 																							\
-	DBStatement::Caster::operator Type*()													\
+	Caster::operator Type*() const															\
 	{																						\
 		/* unused function, avoid build error */											\
 		assert(false);																		\
 		return t_lastCaster->operator Type*();												\
 	}																						\
 																							\
-	Caster_GetData::operator Type()															\
+	Caster_GetData::operator Type() const													\
 	{																						\
 		Type ret;																			\
 		if (GetData_Internal<Type>(m_handle, m_index, ret) == nullptr)						\
@@ -967,7 +995,7 @@ namespace asd
 		return ret;																			\
 	}																						\
 																							\
-	Caster_GetData::operator Type*()														\
+	Caster_GetData::operator Type*() const													\
 	{																						\
 		thread_local Type t_temp;															\
 		t_temp = Type();																	\
@@ -1028,7 +1056,7 @@ namespace asd
 	}
 
 #define asd_Define_Caster_GetParam_Ptr(Type, PtrClass)										\
-	Caster_GetParam::operator PtrClass<Type>()												\
+	Caster_GetParam::operator PtrClass<Type>() const										\
 	{																						\
 		PtrClass<Type> ret;																	\
 		Type temp;																			\
@@ -1038,7 +1066,7 @@ namespace asd
 	}																						\
 
 #define asd_Define_GetParam(Type)															\
-	Caster_GetParam::operator Type()														\
+	Caster_GetParam::operator Type() const													\
 	{																						\
 		Type ret;																			\
 		if (GetParam_Internal<Type>(m_handle, m_index, ret) == nullptr)						\
@@ -1046,7 +1074,7 @@ namespace asd
 		return ret;																			\
 	}																						\
 																							\
-	Caster_GetParam::operator Type*()														\
+	Caster_GetParam::operator Type*() const													\
 	{																						\
 		thread_local Type t_temp;															\
 		return GetParam_Internal<Type>(m_handle, m_index, t_temp);							\
@@ -1835,14 +1863,14 @@ namespace asd
 	asd_Define_ConvertStream_TypicalCase(bool, SQL_C_BIT);
 	asd_Define_BindParam_TypicalCase(bool);
 
-	asd_Define_ConvertStream_TypicalCase(SQL_TIMESTAMP_STRUCT, SQL_C_TIMESTAMP);
-	asd_Define_BindParam_TypicalCase(SQL_TIMESTAMP_STRUCT);
+	asd_Define_ConvertStream_TypicalCase(asd::SQL_TIMESTAMP_STRUCT, SQL_C_TIMESTAMP);
+	asd_Define_BindParam_TypicalCase(asd::SQL_TIMESTAMP_STRUCT);
 
-	asd_Define_ConvertStream_TypicalCase(SQL_DATE_STRUCT, SQL_C_DATE);
-	asd_Define_BindParam_TypicalCase(SQL_DATE_STRUCT);
+	asd_Define_ConvertStream_TypicalCase(asd::SQL_DATE_STRUCT, SQL_C_DATE);
+	asd_Define_BindParam_TypicalCase(asd::SQL_DATE_STRUCT);
 
-	asd_Define_ConvertStream_TypicalCase(SQL_TIME_STRUCT, SQL_C_TIME);
-	asd_Define_BindParam_TypicalCase(SQL_TIME_STRUCT);
+	asd_Define_ConvertStream_TypicalCase(asd::SQL_TIME_STRUCT, SQL_C_TIME);
+	asd_Define_BindParam_TypicalCase(asd::SQL_TIME_STRUCT);
 
 	asd_Define_ConvertStream_BinaryCase(MString, SQL_C_CHAR, true);
 	asd_Define_BindParam_BinaryCase(MString, true, true);
@@ -1859,10 +1887,10 @@ namespace asd
 	asd_Define_ConvertStream_BinaryCase(std::vector<uint8_t>, SQL_C_BINARY, false);
 	asd_Define_BindParam_BinaryCase(std::vector<uint8_t>, false, false);
 
-	asd_Define_ConvertStream_BinaryCase(SharedArray<uint8_t>, SQL_C_BINARY, false);
-	asd_Define_BindParam_BinaryCase(SharedArray<uint8_t>, false, true);
+	asd_Define_ConvertStream_BinaryCase(SharedVector<uint8_t>, SQL_C_BINARY, false);
+	asd_Define_BindParam_BinaryCase(SharedVector<uint8_t>, false, true);
 
-	asd_Define_ConvertData_ProxyCase(tm, a_src, SQL_TIMESTAMP_STRUCT, a_proxy, a_direction)
+	asd_Define_ConvertData_ProxyCase(tm, a_src, asd::SQL_TIMESTAMP_STRUCT, a_proxy, a_direction)
 	{
 		if (Is_Left_To_Right(a_direction)) {
 			memset(&a_proxy, 0, sizeof(a_proxy));
@@ -1879,32 +1907,38 @@ namespace asd
 			DateTime(a_proxy).To(a_src);
 		}
 	}
-	asd_Define_BindParam_ProxyCase(tm, SQL_TIMESTAMP_STRUCT);
+	asd_Define_BindParam_ProxyCase(tm, asd::SQL_TIMESTAMP_STRUCT);
 
-	asd_Define_ConvertData_ProxyCase(Date, a_src, SQL_DATE_STRUCT, a_proxy, a_direction)
+	asd_Define_ConvertData_ProxyCase(Date, a_src, asd::SQL_DATE_STRUCT, a_proxy, a_direction)
 	{
-		if (Is_Left_To_Right(a_direction))
+		if (Is_Left_To_Right(a_direction)) {
 			a_src.To(a_proxy);
-		else
+		}
+		else {
 			a_src.From(a_proxy);
+		}
 	}
-	asd_Define_BindParam_ProxyCase(Date, SQL_DATE_STRUCT);
+	asd_Define_BindParam_ProxyCase(Date, asd::SQL_DATE_STRUCT);
 
-	asd_Define_ConvertData_ProxyCase(Time, a_src, SQL_TIME_STRUCT, a_proxy, a_direction)
+	asd_Define_ConvertData_ProxyCase(Time, a_src, asd::SQL_TIME_STRUCT, a_proxy, a_direction)
 	{
-		if (Is_Left_To_Right(a_direction))
+		if (Is_Left_To_Right(a_direction)) {
 			a_src.To(a_proxy);
-		else
+		}
+		else {
 			a_src.From(a_proxy);
+		}
 	}
-	asd_Define_BindParam_ProxyCase(Time, SQL_TIME_STRUCT);
+	asd_Define_BindParam_ProxyCase(Time, asd::SQL_TIME_STRUCT);
 
-	asd_Define_ConvertData_ProxyCase(DateTime, a_src, SQL_TIMESTAMP_STRUCT, a_proxy, a_direction)
+	asd_Define_ConvertData_ProxyCase(DateTime, a_src, asd::SQL_TIMESTAMP_STRUCT, a_proxy, a_direction)
 	{
-		if (Is_Left_To_Right(a_direction))
+		if (Is_Left_To_Right(a_direction)) {
 			a_src.To(a_proxy);
-		else
+		}
+		else {
 			a_src.From(a_proxy);
+		}
 	}
-	asd_Define_BindParam_ProxyCase(DateTime, SQL_TIMESTAMP_STRUCT);
+	asd_Define_BindParam_ProxyCase(DateTime, asd::SQL_TIMESTAMP_STRUCT);
 }

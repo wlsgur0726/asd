@@ -1,7 +1,7 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/lock.h"
-#include "asd/util.h"
+#include "asdbase.h"
+#include "lock.h"
+#include "util.h"
 #include <stack>
 #include <atomic>
 #include <typeinfo>

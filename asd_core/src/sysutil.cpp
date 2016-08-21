@@ -1,5 +1,6 @@
-﻿#include "stdafx.h"
+﻿#include "asd_pch.h"
 #include "asd/sysutil.h"
+#include <cstdlib>
 
 
 namespace asd
@@ -24,11 +25,27 @@ namespace asd
 					return;
 				}
 
-				assert(false);
 				asd_RaiseException("unsupported system");
 			}
 		};
 		static const EndianCheck g_endian;
 		return g_endian.endian;
+	}
+
+
+
+	void Pause() asd_noexcept
+	{
+#if asd_Platform_Windows
+		system("pause");
+
+#elif asd_Platform_Linux
+		asd::puts("press any key to continue...");
+		getchar();
+
+#else
+		asd_RaiseException("unsupported system");
+
+#endif
 	}
 }

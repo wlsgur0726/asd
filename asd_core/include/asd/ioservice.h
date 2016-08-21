@@ -1,12 +1,10 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/socket.h"
+#include "asdbase.h"
+#include "socket.h"
 
 
 namespace asd
 {
-
-
 	class IOServiceImpl;
 	class IOService
 	{

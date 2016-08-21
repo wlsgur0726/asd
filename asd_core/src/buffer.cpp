@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+﻿#include "asd_pch.h"
 #include "asd/buffer.h"
 #include "asd/objpool.h"
 

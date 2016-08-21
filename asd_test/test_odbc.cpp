@@ -10,9 +10,9 @@ bool operator == (const Type& left, const Type& right)		\
 }															\
 
 Define_OperatorEqual(tm);
-Define_OperatorEqual(SQL_DATE_STRUCT);
-Define_OperatorEqual(SQL_TIME_STRUCT);
-Define_OperatorEqual(SQL_TIMESTAMP_STRUCT);
+Define_OperatorEqual(asd::SQL_DATE_STRUCT);
+Define_OperatorEqual(asd::SQL_TIME_STRUCT);
+Define_OperatorEqual(asd::SQL_TIMESTAMP_STRUCT);
 
 
 namespace asdtest_odbc
@@ -307,7 +307,7 @@ namespace asdtest_odbc
 #else
 	typedef asd::MString StringType;
 	typedef asd::DateTime DateTimeType;
-	typedef asd::SharedArray<uint8_t> BlobType;
+	typedef asd::SharedVector<uint8_t> BlobType;
 
 #endif
 
@@ -338,9 +338,9 @@ namespace asdtest_odbc
 	{
 		const size_t Limit = 512;
 		size_t sz = p.size();
-		asd::MString r("(%llu bytes)", sz);
+		asd::MString r("({} bytes)", sz);
 		for (int i=0; i<sz; ++i) {
-			r += asd::MString(" %02x", p.data()[i]);
+			r += asd::MString(" {:02x}", p[i]);
 			if (i > Limit) {
 				r += " ...";
 				break;
@@ -368,7 +368,7 @@ namespace asdtest_odbc
 
 	StringType TestData_String(int pk)
 	{
-		return asd::MString("test%d", pk);
+		return asd::MString("test{}", pk);
 	}
 
 
@@ -397,7 +397,10 @@ namespace asdtest_odbc
 
 	double TestData_double(int pk)
 	{
-		return pk + 0.123456;
+		// cppformat 라이브러리에서 실수를 %g로 포맷팅하는데
+		// %g가 부정확한 소숫점은 반올림을 해서 테스트에 방해가 되므로
+		// 자릿수를 적게 한다.
+		return pk + 0.12345;
 	}
 
 
@@ -415,7 +418,7 @@ namespace asdtest_odbc
 		{																				\
 			{																			\
 				const char* FuncName = # TestName ;										\
-				COUT << asd::MString("\n[%s] %s:%d\n", FuncName, __FILE__, __LINE__);	\
+				COUT << asd::MString("\n[{}] {}:{}\n", FuncName, __FILE__, __LINE__);	\
 			}																			\
 			try {																		\
 				asd::DBConnection ConVarName;											\
@@ -445,7 +448,7 @@ namespace asdtest_odbc
 						asd::DBStatement::FetchCallback fetchCallback = nullptr)
 		{
 			COUT << "[Execute] " << query << '\n';
-			if (query.GetLength() > 0) {
+			if (query.length() > 0) {
 				return stmt.Execute(query, fetchCallback);
 			}
 			else {
@@ -827,12 +830,12 @@ namespace asdtest_odbc
 									EXPECT_EQ(TestData_bool(pk), *val);
 								}
 								else {
-									asd_RaiseException("invalid colName : %s", colName.GetData());
+									asd_RaiseException("invalid colName : {}", colName.data());
 								}
 
-								COUT << asd::MString("  %10s  :  %s\n",
-													 colName.GetData(),
-													 colValue.GetData());
+								COUT << asd::MString("  {:10s}  :  {}\n",
+													 colName,
+													 colValue);
 							}
 							COUT << '\n';
 						}
@@ -1053,12 +1056,12 @@ namespace asdtest_odbc
 									EXPECT_EQ(val, nullptr);
 								}
 								else {
-									asd_RaiseException("invalid colName : %s", colName.GetData());
+									asd_RaiseException("invalid colName : {}", colName.data());
 								}
 
-								COUT << asd::MString("  %10s  :  %s\n",
-													 colName.GetData(),
-													 colValue.GetData());
+								COUT << asd::MString("  {:10s}  :  {}\n",
+													 colName,
+													 colValue);
 							}
 							COUT << '\n';
 						}
@@ -1075,9 +1078,7 @@ namespace asdtest_odbc
 			// Delete
 			{
 				int64_t ret = Execute(stmt,
-									  asd::MString()
-									  << "DELETE FROM " << TableName << " "
-									  << "WHERE cInt % 2 = 0");
+									  asd::MString("DELETE FROM {} WHERE cInt % 2 = 0", TableName));
 				// 영향을 받은(삭제된) 행 수가 리턴된다.
 				EXPECT_EQ(ret, 2);
 			}
@@ -1154,12 +1155,12 @@ namespace asdtest_odbc
 									EXPECT_EQ(val, nullptr);
 								}
 								else {
-									asd_RaiseException("invalid colName : %s", colName.GetData());
+									asd_RaiseException("invalid colName : {}", colName.data());
 								}
 
-								COUT << asd::MString("  %10s  :  %s\n",
-													 colName.GetData(),
-													 colValue.GetData());
+								COUT << asd::MString("  {:10s}  :  {}\n",
+													 colName,
+													 colValue);
 							}
 							COUT << '\n';
 						}
@@ -1327,8 +1328,8 @@ namespace asdtest_odbc
 
 			// SP 생성
 			Execute(stmt, GetStr(CreateProcedure_Insert));
-			asd::MString query = asd::MString("{ CALL %s(?,?,?,?,?,?,?,?) }",
-											  SPName_Insert.data());
+			asd::MString query = asd::MString("{{ CALL {}(?,?,?,?,?,?,?,?) }}",
+											  SPName_Insert);
 
 			// SetParam 방식
 			{
@@ -1475,8 +1476,8 @@ namespace asdtest_odbc
 			// SP 생성
 			Execute(stmt, GetStr(CreateProcedure_Update));
 			asd::MString query;
-			query = asd::MString("{ CALL %s(?,?,?,?,?) }",
-								 SPName_Update.data());
+			query = asd::MString("{{ CALL {}(?,?,?,?,?) }}",
+								 SPName_Update);
 
 			// SetParam 방식
 			{
@@ -1593,8 +1594,8 @@ namespace asdtest_odbc
 			// SP 생성
 			Execute(stmt, GetStr(CreateProcedure_Select));
 			asd::MString query;
-			query = asd::MString("{ CALL %s(?) }",
-								 SPName_Select.data());
+			query = asd::MString("{{ CALL {}(?) }}",
+								 SPName_Select);
 
 			int loop = 0;
 			int res1 = 0;
@@ -1705,12 +1706,12 @@ namespace asdtest_odbc
 						EXPECT_EQ(val, nullptr);
 					}
 					else {
-						asd_RaiseException("invalid colName : %s", colName.GetData());
+						asd_RaiseException("invalid colName : {}", colName.data());
 					}
 
-					COUT << asd::MString("  %10s  :  %s\n",
-										 colName.GetData(),
-										 colValue.GetData());
+					COUT << asd::MString::StdFormat("  %10s  :  %s\n",
+													colName.data(),
+													colValue.data());
 				}
 				COUT << '\n';
 

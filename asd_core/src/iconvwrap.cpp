@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+﻿#include "asd_pch.h"
 #include "asd/iconvwrap.h"
 #include "asd/classutil.h"
 #include <cwchar>

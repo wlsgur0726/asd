@@ -1,6 +1,7 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/datetime.h"
+#include "asdbase.h"
+#include "datetime.h"
+#include "caster.h"
 #include <functional>
 #include <vector>
 
@@ -257,52 +258,52 @@ namespace asd
 		bool IsNullParam(IN T* a_boundPtr);
 
 
-		struct Caster
-		{
-#define asd_DBStatement_Declare_CastOperator(Type)							\
-			virtual operator Type();					/* (1) */			\
-																			\
-			virtual operator Type*();					/* (2) */			\
-																			\
-			virtual operator std::shared_ptr<Type>();	/* (3) */			\
-																			\
-			virtual operator std::unique_ptr<Type>();	/* (4) */			\
-
-			// (1) : 사본을 복사하여 리턴한다. 
-			//       해당 파라메터가 만약 null값인 경우 NullDataException이 발생한다.
-			//
-			// (2) : thread local의 임시객체에 값을 복사하고 그 포인터를 리턴한다.
-			//       해당 파라메터가 만약 null값인 경우  nullptr을 리턴한다.
-			//       thread local 객체의 포인터이므로 리턴받은 직후 복사를 하던지 해야 할 것이다.
-			//
-			// (3),(4) : new로 생성한 객체에 값을 복사하고 스마트포인터에 붙여서 리턴한다.
-
-
-			// 지원 타입 목록
-#define asd_DBStatement_Declare_CastOperatorList												\
-			asd_DBStatement_Declare_CastOperator(int8_t);					/*  TINYINT   */	\
-			asd_DBStatement_Declare_CastOperator(short);					/*  SMALLINT  */	\
-			asd_DBStatement_Declare_CastOperator(int);						/*  INT       */	\
-			asd_DBStatement_Declare_CastOperator(int64_t);					/*  BIGINT    */	\
-			asd_DBStatement_Declare_CastOperator(float);					/*  FLOAT     */	\
-			asd_DBStatement_Declare_CastOperator(double);					/*  DOUBLE    */	\
-			asd_DBStatement_Declare_CastOperator(bool);						/*  BIT       */	\
-			asd_DBStatement_Declare_CastOperator(SQL_TIMESTAMP_STRUCT);		/*  DATETIME  */	\
-			asd_DBStatement_Declare_CastOperator(SQL_DATE_STRUCT);			/*  DATE      */	\
-			asd_DBStatement_Declare_CastOperator(SQL_TIME_STRUCT);			/*  TIME      */	\
-			asd_DBStatement_Declare_CastOperator(MString);					/*  VARCHAR   */	\
-			asd_DBStatement_Declare_CastOperator(WString);					/*  WVARCHAR  */	\
-			asd_DBStatement_Declare_CastOperator(std::string);				/*  VARCHAR   */	\
-			asd_DBStatement_Declare_CastOperator(std::wstring);				/*  WVARCHAR  */	\
-			asd_DBStatement_Declare_CastOperator(SharedArray<uint8_t>);		/*  BLOB      */	\
-			asd_DBStatement_Declare_CastOperator(std::vector<uint8_t>);		/*  BLOB      */	\
-			asd_DBStatement_Declare_CastOperator(tm);						/*  DATETIME  */	\
-			asd_DBStatement_Declare_CastOperator(Date);						/*  DATE      */	\
-			asd_DBStatement_Declare_CastOperator(Time);						/*  TIME      */	\
-			asd_DBStatement_Declare_CastOperator(DateTime);					/*  DATETIME  */	\
-
-			asd_DBStatement_Declare_CastOperatorList;
-		};
+//		struct Caster
+//		{
+//#define asd_Caster_Declare_CastOperator(Type)							\
+//			virtual operator Type();					/* (1) */			\
+//																			\
+//			virtual operator Type*();					/* (2) */			\
+//																			\
+//			virtual operator std::shared_ptr<Type>();	/* (3) */			\
+//																			\
+//			virtual operator std::unique_ptr<Type>();	/* (4) */			\
+//
+//			// (1) : 사본을 복사하여 리턴한다. 
+//			//       해당 파라메터가 만약 null값인 경우 NullDataException이 발생한다.
+//			//
+//			// (2) : thread local의 임시객체에 값을 복사하고 그 포인터를 리턴한다.
+//			//       해당 파라메터가 만약 null값인 경우  nullptr을 리턴한다.
+//			//       thread local 객체의 포인터이므로 리턴받은 직후 복사를 하던지 해야 할 것이다.
+//			//
+//			// (3),(4) : new로 생성한 객체에 값을 복사하고 스마트포인터에 붙여서 리턴한다.
+//
+//
+//			// 지원 타입 목록
+//#define asd_Caster_Declare_CastOperatorList												\
+//			asd_Caster_Declare_CastOperator(int8_t);					/*  TINYINT   */	\
+//			asd_Caster_Declare_CastOperator(short);					/*  SMALLINT  */	\
+//			asd_Caster_Declare_CastOperator(int);						/*  INT       */	\
+//			asd_Caster_Declare_CastOperator(int64_t);					/*  BIGINT    */	\
+//			asd_Caster_Declare_CastOperator(float);					/*  FLOAT     */	\
+//			asd_Caster_Declare_CastOperator(double);					/*  DOUBLE    */	\
+//			asd_Caster_Declare_CastOperator(bool);						/*  BIT       */	\
+//			asd_Caster_Declare_CastOperator(SQL_TIMESTAMP_STRUCT);		/*  DATETIME  */	\
+//			asd_Caster_Declare_CastOperator(SQL_DATE_STRUCT);			/*  DATE      */	\
+//			asd_Caster_Declare_CastOperator(SQL_TIME_STRUCT);			/*  TIME      */	\
+//			asd_Caster_Declare_CastOperator(MString);					/*  VARCHAR   */	\
+//			asd_Caster_Declare_CastOperator(WString);					/*  WVARCHAR  */	\
+//			asd_Caster_Declare_CastOperator(std::string);				/*  VARCHAR   */	\
+//			asd_Caster_Declare_CastOperator(std::wstring);				/*  WVARCHAR  */	\
+//			asd_Caster_Declare_CastOperator(SharedVector<uint8_t>);	/*  BLOB      */	\
+//			asd_Caster_Declare_CastOperator(std::vector<uint8_t>);		/*  BLOB      */	\
+//			asd_Caster_Declare_CastOperator(tm);						/*  DATETIME  */	\
+//			asd_Caster_Declare_CastOperator(Date);						/*  DATE      */	\
+//			asd_Caster_Declare_CastOperator(Time);						/*  TIME      */	\
+//			asd_Caster_Declare_CastOperator(DateTime);					/*  DATETIME  */	\
+//
+//			asd_Caster_Declare_CastOperatorList;
+//		};
 
 
 		Caster& GetData(IN uint16_t a_columnIndex);
@@ -313,5 +314,4 @@ namespace asd
 
 		Caster& GetParam(IN uint16_t a_paramNumber);
 	};
-
 }

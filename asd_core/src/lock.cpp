@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+﻿#include "asd_pch.h"
 #include "asd/lock.h"
 #include "asd/threadutil.h"
 #include <thread>
@@ -45,15 +45,15 @@ namespace asd
 			pthread_mutexattr_t attr;
 			if (pthread_mutexattr_init(&attr) != 0) {
 				auto e = errno;
-				asd_RaiseException("fail pthread_mutexattr_init(), errno:%#x", e);
+				asd_RaiseException("fail pthread_mutexattr_init(), errno:{}", e);
 			}
 			if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0) {
 				auto e = errno;
-				asd_RaiseException("fail pthread_mutexattr_settype(), errno:%#x", e);
+				asd_RaiseException("fail pthread_mutexattr_settype(), errno:{}", e);
 			}
 			if (pthread_mutex_init(&m_mtx, &attr) != 0) {
 				auto e = errno;
-				asd_RaiseException("fail pthread_mutex_init(), errno:%#x", e);
+				asd_RaiseException("fail pthread_mutex_init(), errno:{}", e);
 			}
 #endif
 		}
@@ -71,7 +71,7 @@ namespace asd
 			assert(m_ownerThread == std::thread::id());
 			if (pthread_mutex_destroy(&m_mtx) != 0) {
 				auto e = errno;
-				asd_RaiseException("fail pthread_mutex_destroy(), errno:%#x", e);
+				asd_RaiseException("fail pthread_mutex_destroy(), errno:{}", e);
 			}
 #endif
 		}
@@ -120,7 +120,7 @@ namespace asd
 #else
 		if (pthread_mutex_lock(&m_data->m_mtx) != 0) {
 			auto e = errno;
-			asd_RaiseException("fail pthread_mutex_lock(), errno:%#x", e);
+			asd_RaiseException("fail pthread_mutex_lock(), errno:{}", e);
 		}
 		
 		if (++m_data->m_recursionCount == 1)
@@ -143,7 +143,7 @@ namespace asd
 		if (pthread_mutex_trylock(&m_data->m_mtx) != 0) {
 			auto e = errno;
 			if ( e != EBUSY ) {
-				asd_RaiseException("fail pthread_mutex_trylock(), errno:%#x", e);
+				asd_RaiseException("fail pthread_mutex_trylock(), errno:{}", e);
 			}
 			return false;
 		}
@@ -177,7 +177,7 @@ namespace asd
 			if (++m_data->m_recursionCount == 1)
 				m_data->m_ownerThread = GetCurrentThreadID();
 
-			asd_RaiseException("fail pthread_mutex_unlock(), errno:%#x", e);
+			asd_RaiseException("fail pthread_mutex_unlock(), errno:{}", e);
 		}
 
 #endif

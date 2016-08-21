@@ -1,7 +1,7 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/sysutil.h"
-#include "asd/buffer.h"
+#include "asdbase.h"
+#include "sysutil.h"
+#include "buffer.h"
 #include <cstring>
 #include <utility>
 #include <array>

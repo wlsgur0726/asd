@@ -222,7 +222,7 @@ namespace asdtest_iconv
 				asd::MString r = asd::ConvToM(src1.buffer,
 											  encodig_enum1,
 											  encodig_enum2);
-				bool check = goal.Equal(r.GetData());
+				bool check = goal.Equal(r.data());
 				EXPECT_TRUE(check);
 				ret &= check;
 			}
@@ -231,7 +231,7 @@ namespace asdtest_iconv
 			if (srcUnitSize==1 && encodig_enum2==defaultEnc_W) {
 				asd::WString r = asd::ConvToW(src1.buffer,
 											  encodig_enum1);
-				bool check = goal.Equal((const char*)r.GetData());
+				bool check = goal.Equal((const char*)r.data());
 				EXPECT_TRUE(check);
 				ret &= check;
 			}
@@ -239,7 +239,7 @@ namespace asdtest_iconv
 			// M to W (기본인자)
 			if (encodig_enum1==defaultEnc_M && encodig_enum2==defaultEnc_W) {
 				asd::WString r = asd::ConvToW(src1.buffer);
-				bool check = goal.Equal((const char*)r.GetData());
+				bool check = goal.Equal((const char*)r.data());
 				EXPECT_TRUE(check);
 				ret &= check;
 			}
@@ -248,7 +248,7 @@ namespace asdtest_iconv
 			if (encodig_enum1==defaultEnc_W && dstUnitSize==1) {
 				asd::MString r = asd::ConvToM((const wchar_t*)src1.buffer,
 											  encodig_enum2);
-				bool check = goal.Equal(r.GetData());
+				bool check = goal.Equal(r.data());
 				EXPECT_TRUE(check);
 				ret &= check;
 			}
@@ -256,7 +256,7 @@ namespace asdtest_iconv
 			// W to M (기본인자)
 			if (encodig_enum1==defaultEnc_W && encodig_enum2==defaultEnc_M) {
 				asd::MString r = asd::ConvToM((const wchar_t*)src1.buffer);
-				bool check = goal.Equal(r.GetData());
+				bool check = goal.Equal(r.data());
 				EXPECT_TRUE(check);
 				ret &= check;
 			}

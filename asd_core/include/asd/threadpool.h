@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/lock.h"
+#include "asdbase.h"
+#include "lock.h"
 #include <functional>
 #include <thread>
 #include <queue>

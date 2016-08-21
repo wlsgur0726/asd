@@ -1,8 +1,8 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/classutil.h"
-#include "asd/sysutil.h"
-#include "asd/threadutil.h"
+#include "asdbase.h"
+#include "classutil.h"
+#include "sysutil.h"
+#include "threadutil.h"
 
 
 namespace asd

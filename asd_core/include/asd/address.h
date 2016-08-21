@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "asd/asdbase.h"
-#include "asd/string.h"
-#include "asd/exception.h"
+#include "asdbase.h"
+#include "string.h"
+#include "exception.h"
 
 struct sockaddr;
 struct sockaddr_in;

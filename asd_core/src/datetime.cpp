@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+﻿#include "asd_pch.h"
 #include "asd/datetime.h"
 #include "asd/classutil.h"
 
@@ -176,7 +176,9 @@ namespace asd
 	// 1년 1월 1일(월요일)로부터 a_days일 만큼 지난 날짜의 요일을 구한다.
 	inline DayOfTheWeek GetDayOfTheWeek(IN int a_days)
 	{
-		return (DayOfTheWeek)(((a_days % 7) + 1) % 7);
+		if (a_days >= 0)
+			return (DayOfTheWeek)(((a_days % 7) + 1) % 7);
+		return (DayOfTheWeek)((7 - ( (-a_days) % 7 ) + 1) % 7);
 	}
 
 
@@ -198,14 +200,14 @@ namespace asd
 		size_t bufsize = 64;
 
 		do {
-			ret.Resize(bufsize);
-			size_t len = std::strftime(ret.GetData(),
+			ret.resize(bufsize);
+			size_t len = std::strftime(ret.data(),
 									   bufsize,
 									   a_format,
 									   &a_tm);
 			if (len > 0) {
-				ret.Resize(len, true);
-				assert(ret.GetLength() == len);
+				ret.resize(len);
+				assert(ret.length() == len);
 				break;
 			}
 			assert(len == 0);
@@ -221,10 +223,13 @@ namespace asd
 		const int LimitMax = (1 << 23) - 1;
 		const int LimitMin = ~LimitMax;
 		if (a_year > LimitMax) {
-			asd_RaiseException("overflow parameter : %d", a_year);
+			asd_RaiseException("overflow parameter : {}", a_year);
 		}
 		else if (a_year < LimitMin) {
-			asd_RaiseException("underflow parameter : %d", a_year);
+			asd_RaiseException("underflow parameter : {}", a_year);
+		}
+		else if (a_year == 0) {
+			asd_RaiseException("invalid parameter : {}", a_year);
 		}
 	}
 
@@ -232,42 +237,42 @@ namespace asd
 	inline void CheckParam_Month(IN int a_month)
 	{
 		if (a_month < 1 || a_month > 12)
-			asd_RaiseException("invalid parameter : %d", a_month);
+			asd_RaiseException("invalid parameter : {}", a_month);
 	}
 
 
 	inline void CheckParam_Day(IN int a_day)
 	{
 		if (a_day < 1 || a_day > 31)
-			asd_RaiseException("invalid parameter : %d", a_day);
+			asd_RaiseException("invalid parameter : {}", a_day);
 	}
 
 
 	inline void CheckParam_Hour(IN int a_hour)
 	{
 		if (a_hour < 0 || a_hour >= 24)
-			asd_RaiseException("invalid parameter : %d", a_hour);
+			asd_RaiseException("invalid parameter : {}", a_hour);
 	}
 
 
 	inline void CheckParam_Minute(IN int a_minute)
 	{
 		if (a_minute < 0 || a_minute >= 60)
-			asd_RaiseException("invalid parameter : %d", a_minute);
+			asd_RaiseException("invalid parameter : {}", a_minute);
 	}
 
 
 	inline void CheckParam_Second(IN int a_second)
 	{
 		if (a_second < 0 || a_second > 60)
-			asd_RaiseException("invalid parameter : %d", a_second);
+			asd_RaiseException("invalid parameter : {}", a_second);
 	}
 
 
 	inline void CheckParam_Millisecond(IN int a_millisecond)
 	{
 		if (a_millisecond < 0 || a_millisecond >= 1000)
-			asd_RaiseException("invalid parameter : %d", a_millisecond);
+			asd_RaiseException("invalid parameter : {}", a_millisecond);
 	}
 
 
@@ -590,7 +595,7 @@ namespace asd
 			return asd::ToString(a_format, *this);
 		}
 		else {
-			return MString("%02d:%02d:%02d.%04d",
+			return MString("{:02d}:{:02d}:{:02d}.{:04d}",
 						   Hour(), Minute(), Second(), Millisecond());
 		}
 	}
@@ -857,9 +862,9 @@ namespace asd
 	MString DateTime::ToString(const char* a_format /*= "%Y-%m-%d %H:%M:%S"*/) const asd_noexcept
 	{
 		if (a_format == nullptr) {
-			return MString("%s %s",
-						   m_date.ToString().data(),
-						   m_time.ToString().data());
+			return MString("{} {}",
+						   m_date.ToString(),
+						   m_time.ToString());
 		}
 		return asd::ToString(a_format, *this);
 	}

@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
+#include "asdbase.h"
 
 
 namespace asd
@@ -11,4 +11,9 @@ namespace asd
 	};
 
 	Endian GetNativeEndian() asd_noexcept;
+
+
+
+	// 아무키나 입력을 기다리며 대기
+	void Pause() asd_noexcept;
 }

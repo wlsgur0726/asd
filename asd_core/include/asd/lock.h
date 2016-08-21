@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/exception.h"
+#include "asdbase.h"
+#include "exception.h"
 #include <thread>
 #include <mutex>
 

@@ -41,6 +41,7 @@ namespace asdtest_datetime
 		ConvType conv1 = asdt1;
 		asdType asdt2 = conv1;
 		ConvType conv2 = asdt2;
+
 		EXPECT_EQ(0, memcmp(&asdt1, &asdt2, sizeof(asdType)));
 		EXPECT_EQ(0, memcmp(&conv1, &conv2, sizeof(ConvType)));
 	}
@@ -68,8 +69,8 @@ namespace asdtest_datetime
 
 	TEST(DateTime, ConvertTest_SQL_TIMESTAMP_STRUCT)
 	{
-		ConvertTest<asd::Date, SQL_TIMESTAMP_STRUCT>();
-		ConvertTest<asd::Time, SQL_TIMESTAMP_STRUCT>();
-		ConvertTest<asd::DateTime, SQL_TIMESTAMP_STRUCT>();
+		ConvertTest<asd::Date, asd::SQL_TIMESTAMP_STRUCT>();
+		ConvertTest<asd::Time, asd::SQL_TIMESTAMP_STRUCT>();
+		ConvertTest<asd::DateTime, asd::SQL_TIMESTAMP_STRUCT>();
 	}
 }

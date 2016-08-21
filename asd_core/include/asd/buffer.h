@@ -1,7 +1,7 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/classutil.h"
-#include "asd/sysutil.h"
+#include "asdbase.h"
+#include "classutil.h"
+#include "sysutil.h"
 #include <array>
 #include <vector>
 #include <deque>

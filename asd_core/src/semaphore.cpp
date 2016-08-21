@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+﻿#include "asd_pch.h"
 #include "asd/semaphore.h"
 
 #if !defined(asd_Platform_Windows)
@@ -30,13 +30,13 @@ namespace asd
 									   NULL);
 			if (m_handle == NULL) {
 				auto e = GetLastError();
-				asd_RaiseException("fail CreateSemaphore(), GetLastError:%#x", e);
+				asd_RaiseException("fail CreateSemaphore(), GetLastError:{}", e);
 			}
 			m_count = a_initCount;
 #else
 			if (sem_init(&m_handle, 0, a_initCount) == -1) {
 				auto e = errno;
-				asd_RaiseException("fail sem_init(), errno:%#x", e);
+				asd_RaiseException("fail sem_init(), errno:{}", e);
 			}
 #endif
 
@@ -56,12 +56,12 @@ namespace asd
 #if defined(asd_Platform_Windows)
 			if (CloseHandle(m_handle) == 0) {
 				auto e = GetLastError();
-				asd_RaiseException("GetLastError:%#x", e);
+				asd_RaiseException("GetLastError:{}", e);
 			}
 #else
 			if (sem_destroy(&m_handle) != 0) {
 				auto e = errno;
-				asd_RaiseException("errno:%#x", e);
+				asd_RaiseException("errno:{}", e);
 			}
 #endif
 		}
@@ -111,7 +111,7 @@ namespace asd
 		int sval;
 		if (sem_getvalue(&m_data->m_handle, &sval) != 0) {
 			auto e = errno;
-			asd_RaiseException("errno:%#x", e);
+			asd_RaiseException("errno:{}", e);
 		}
 		assert(sval >= 0);
 		return sval;
@@ -137,7 +137,7 @@ namespace asd
 			default:
 				assert(r == WAIT_FAILED);
 				auto e = GetLastError();
-				asd_RaiseException("GetLastError:%#x", e);
+				asd_RaiseException("GetLastError:{}", e);
 				break;
 		}
 		assert(GetCount() >= 0);
@@ -157,7 +157,7 @@ namespace asd
 				timespec t;
 				if (clock_gettime(CLOCK_REALTIME, &t) != 0) {
 					auto e = errno;
-					asd_RaiseException("errno:%#x", e);
+					asd_RaiseException("errno:{}", e);
 				}
 				t.tv_nsec += a_timeoutMs * (1000*1000);
 				t.tv_sec += t.tv_nsec / (1000*1000*1000);
@@ -173,7 +173,7 @@ namespace asd
 				e != EAGAIN &&
 				e != EINTR) 
 			{
-				asd_RaiseException("errno:%#x", e);
+				asd_RaiseException("errno:{}", e);
 			}
 			else 
 			{
@@ -200,13 +200,13 @@ namespace asd
 		if (ReleaseSemaphore(m_data->m_handle, a_count, NULL) == 0) {
 			auto e = GetLastError();
 			m_data->m_count -= a_count;
-			asd_RaiseException("GetLastError:%#x", e);
+			asd_RaiseException("GetLastError:{}", e);
 		}
 #else
 		for (uint32_t i=0; i<a_count; ++i) {
 			if (sem_post(&m_data->m_handle) != 0) {
 				auto e = errno;
-				asd_RaiseException("errno:%#x; successCount:%u", e, i);
+				asd_RaiseException("errno:{}; successCount:{}", e, i);
 			}
 		}
 #endif

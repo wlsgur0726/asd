@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+﻿#include "asd_pch.h"
 #include "asd/threadpool.h"
 #include "asd/threadutil.h"
 #include "asd/semaphore.h"
@@ -110,7 +110,7 @@ namespace asd
 				mtx.lock();
 				if (ev)
 					continue;
-				
+
 				// 타임아웃
 				auto it = std::find(m_data->waitingList.begin(), m_data->waitingList.end(), &t_event);
 				if (it != m_data->waitingList.end())

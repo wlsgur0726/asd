@@ -243,7 +243,7 @@ namespace asdtest_objpool
 
 		Count sum;
 		for (auto it : Counter) {
-			asd::MString print("  [%p]    ", it.first);
+			asd::MString print("  [{}]    ", it.first);
 			print << it.second.Alloc << "    " << it.second.Free;
 			printf("%s\n", print.c_str());
 			sum.Alloc += it.second.Alloc;

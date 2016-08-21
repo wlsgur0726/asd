@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/string.h"
+#include "asdbase.h"
+#include "string.h"
 
 namespace asd
 {

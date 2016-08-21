@@ -1,24 +1,36 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/string.h"
+#include "asdbase.h"
+#include "string.h"
 #include <vector>
+#include <functional>
+
 
 namespace asd
 {
 	struct DebugInfo 
 	{
-		static const char ToStringFormat[]; // = "[%s(%d) %s] %s ";
+		static const char ToStringFormat[]; // = "[{}({}) {}] {} ";
 
 		const char*	m_file;
 		const int	m_line;
 		const char* m_function;
 		MString m_comment;
 
-		DebugInfo(IN const char* a_file,
-				  IN const int a_line,
-				  IN const char* a_function,
-				  IN const char* a_comment = "",
-				  IN ...) asd_noexcept;
+		template<typename... ARGS>
+		inline DebugInfo(IN const char* a_file,
+						 IN const int a_line,
+						 IN const char* a_function,
+						 IN const char* a_comment = "",
+						 IN const ARGS&... a_args) asd_noexcept
+			: m_file(a_file)
+			, m_line(a_line)
+			, m_function(a_function)
+			, m_comment(a_comment, a_args...)
+		{
+			assert(a_file != nullptr);
+			assert(m_line > 0);
+			assert(a_function != nullptr);
+		}
 
 		MString ToString() const asd_noexcept;
 	};
@@ -85,16 +97,16 @@ namespace asd
 #define asd_Destructor_Start try {
 #define asd_Destructor_End }														\
 	catch (asd::Exception& e) {														\
-		OnException(e, asd_MakeDebugInfo("asd::Exception! %s\n", e.what()));		\
+		OnException(e, asd_MakeDebugInfo("asd::Exception! {}\n", e.what()));		\
 	}																				\
 	catch (std::bad_alloc& e) {														\
-		OnException(e, asd_MakeDebugInfo("std::bad_alloc! %s\n", e.what()));		\
+		OnException(e, asd_MakeDebugInfo("std::bad_alloc! {}\n", e.what()));		\
 	}																				\
 	catch (std::exception& e) {														\
-		OnException(e, asd_MakeDebugInfo("std::exception! %s\n", e.what()));		\
+		OnException(e, asd_MakeDebugInfo("std::exception! {}\n", e.what()));		\
 	}																				\
 	catch (const char* e) {															\
-		OnException(e, asd_MakeDebugInfo("const char* exception! %s\n", e));		\
+		OnException(e, asd_MakeDebugInfo("const char* exception! {}\n", e));		\
 	}																				\
 	catch (...) {																	\
 		OnUnknownException(asd_MakeDebugInfo("unknown exception!"));				\
@@ -136,4 +148,18 @@ namespace asd
 	#endif
 
 #endif
+
+
+
+	// 표준 assert와는 다르게 release에서도 Check는 수행된다.
+	// Check가 false인 경우 기본동작
+	//  - 에러메시지를 stderr에 출력
+	//  - debug일 경우 키입력 대기 후 assert(false) 호출
+	//  - release일때는 무시
+#define asd_Assert(Check, MsgFormat, ...) (Check ? true : asd::Assert_Internal(asd_MakeDebugInfo(MsgFormat, __VA_ARGS__)))
+	bool Assert_Internal(IN const DebugInfo& a_info);
+
+	// asd_Assert에서 Check가 false일 때 기본동작 대신 핸들러를 호출한다.
+	// nullptr을 입력하면 기본동작을 수행한다.
+	void SetAssertHandler(IN const std::function<void(IN const DebugInfo&)>& a_handler) asd_noexcept;
 }

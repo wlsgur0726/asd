@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "asd/asdbase.h"
-#include "asd/address.h"
+#include "asdbase.h"
+#include "address.h"
 #include <vector>
 
 #if defined(asd_Platform_Windows)
