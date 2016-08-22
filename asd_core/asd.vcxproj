@@ -313,14 +313,7 @@
     <ClCompile Include="src\exception.cpp" />
     <ClCompile Include="src\iconvwrap.cpp" />
     <ClCompile Include="src\buffer.cpp" />
-    <ClCompile Include="src\ioservice.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Profiling|Win32'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Profiling|x64'">Use</PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="src\ioservice.cpp" />
     <ClCompile Include="src\lock.cpp" />
     <ClCompile Include="src\odbcwrap.cpp" />
     <ClCompile Include="src\semaphore.cpp" />
