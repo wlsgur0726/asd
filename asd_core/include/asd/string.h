@@ -79,20 +79,17 @@ namespace asd
 	int puts(IN const wchar_t* a_str) asd_noexcept;
 
 
-	int strcmp(IN const char* a_str1, 
-			   IN const char* a_str2,
-			   IN bool a_caseSensitive = true) asd_noexcept;
-
-	int strcmp(IN const wchar_t* a_str1, 
-			   IN const wchar_t* a_str2,
-			   IN bool a_caseSensitive = true) asd_noexcept;
-
-
 	char* strcpy(OUT char* a_dst,
 				 IN const char* a_src) asd_noexcept;
 
 	wchar_t* strcpy(OUT wchar_t* a_dst,
 					IN const wchar_t* a_src) asd_noexcept;
+
+	char16_t* strcpy(OUT char16_t* a_dst,
+					 IN const char16_t* a_src) asd_noexcept;
+
+	char32_t* strcpy(OUT char32_t* a_dst,
+					 IN const char32_t* a_src) asd_noexcept;
 
 
 	// Ascii문자열만 사용 할 것.
@@ -107,6 +104,10 @@ namespace asd
 	size_t strlen(IN const char* a_str) asd_noexcept;
 
 	size_t strlen(IN const wchar_t* a_str) asd_noexcept;
+
+	size_t strlen(IN const char16_t* a_str) asd_noexcept;
+
+	size_t strlen(IN const char32_t* a_str) asd_noexcept;
 
 	// SizeOfChar값 단위로 문자열 길이를 구한다.
 	template<int SizeOfChar>
@@ -147,6 +148,50 @@ namespace asd
 		if (a_char < 'A' || a_char > 'Z')
 			return a_char;
 		return a_char + 0x20;
+	}
+
+
+
+	template<typename CharType>
+	inline int strcmp(IN const CharType* a_str1,
+					  IN const CharType* a_str2,
+					  IN bool a_caseSensitive = true)
+	{
+		if (a_str1 == a_str2)
+			return 0;
+
+		const CharType NullChar = '\0';
+		if (a_str1 == nullptr)
+			a_str1 = &NullChar;
+
+		if (a_str2 == nullptr)
+			a_str2 = &NullChar;
+
+		if (a_caseSensitive) {
+			for (size_t i=0;; ++i) {
+				const CharType c1 = a_str1[i];
+				const CharType c2 = a_str2[i];
+				if (c1 < c2)
+					return -1;
+				if (c1 > c2)
+					return 1;
+				if (c1 == '\0')
+					break;
+			}
+		}
+		else {
+			for (size_t i=0;; ++i) {
+				const CharType c1 = asd::tolower(a_str1[i]);
+				const CharType c2 = asd::tolower(a_str2[i]);
+				if (c1 < c2)
+					return -1;
+				if (c1 > c2)
+					return 1;
+				if (c1 == '\0')
+					break;
+			}
+		}
+		return 0;
 	}
 
 
@@ -210,10 +255,12 @@ namespace asd
 	class BasicString : public asd::SharedArray<std::basic_string<CHARTYPE>>
 	{
 		// char16_t와 char32_t는 
-		// 표준 C 함수가 제공되지 않으므로 미지원
+		// cppformat 라이브러리에서 지원되지 않고,
+		// 표준 C 함수도 제공되지 않으므로 미지원
 		static_assert(   std::is_same<CHARTYPE, char>::value
 					  || std::is_same<CHARTYPE, wchar_t>::value,
 					  "CHARTYPE is not supported.");
+
 	public:
 		typedef CHARTYPE							CharType;
 		typedef BasicString<CharType>				ThisType;
@@ -274,40 +321,6 @@ namespace asd
 			auto p = BaseType::GetArrayPtr(false);
 			*p = fmt::format(a_format, a_args...);
 			return *this;
-		}
-
-
-
-		inline static ThisType StdFormat(IN const CharType* a_format,
-										 IN ...) asd_noexcept
-		{
-			va_list args;
-			va_start(args, a_format);
-			ThisType ret = StdFormatV(a_format, args);
-			va_end(args);
-			return ret;
-		}
-
-
-
-		inline static ThisType StdFormatV(IN const CharType* a_format,
-										  IN va_list& a_args) asd_noexcept
-		{
-			ThisType ret;
-			auto len = asd::vscprintf(a_format, a_args);
-			assert(len >= 0);
-			ret.resize(len);
-
-			if (len == 0)
-				return ret;
-
-			auto r = asd::vsprintf(ret.data(),
-								   len + 1,
-								   a_format,
-								   a_args);
-			assert(r >= 0);
-			assert(r == len);
-			return ret;
 		}
 
 

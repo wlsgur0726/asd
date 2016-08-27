@@ -1709,9 +1709,7 @@ namespace asdtest_odbc
 						asd_RaiseException("invalid colName : {}", colName.data());
 					}
 
-					COUT << asd::MString::StdFormat("  %10s  :  %s\n",
-													colName.data(),
-													colValue.data());
+					COUT << asd::MString("  {:10s}  :  {}\n", colName, colValue);
 				}
 				COUT << '\n';
 

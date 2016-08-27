@@ -32,7 +32,7 @@
 
 namespace asd
 {
-	const wchar_t NullChar = '\0';
+	const char32_t NullChar = '\0';
 
 
 	inline bool SamePtr(IN const void* a_p1,
@@ -293,6 +293,18 @@ namespace asd
 	}
 
 
+	size_t strlen(IN const char16_t* a_str) asd_noexcept
+	{
+		return asd::strlen<sizeof(char16_t)>(a_str);
+	}
+
+
+	size_t strlen(IN const char32_t* a_str) asd_noexcept
+	{
+		return asd::strlen<sizeof(char32_t)>(a_str);
+	}
+
+
 	size_t strlen(IN const void* a_str,
 				  IN int a_sizeOfChar) asd_noexcept
 	{
@@ -310,60 +322,16 @@ namespace asd
 
 
 
-	int strcmp(IN const char* a_str1, 
-			   IN const char* a_str2,
-			   IN bool a_caseSensitive /*= true*/) asd_noexcept
-	{
-		if (SamePtr(a_str1, a_str2))
-			return 0;
-
-		if (a_str1 == nullptr)
-			a_str1 = (const char*)&NullChar;
-
-		if (a_str2 == nullptr)
-			a_str2 = (const char*)&NullChar;
-
-		if (a_caseSensitive)
-			return ::strcmp(a_str1, a_str2);
-
-#if defined(asd_Platform_Windows)
-		return _stricmp(a_str1, a_str2);
-#else
-		return strcasecmp(a_str1, a_str2);
-#endif
-	}
-
-
-	int strcmp(IN const wchar_t* a_str1, 
-			   IN const wchar_t* a_str2,
-			   IN bool a_caseSensitive /*= true*/) asd_noexcept
-	{
-		if (SamePtr(a_str1, a_str2))
-			return 0;
-
-		if (a_str1 == nullptr)
-			a_str1 = &NullChar;
-
-		if (a_str2 == nullptr)
-			a_str2 = &NullChar;
-
-		if (a_caseSensitive)
-			return ::wcscmp(a_str1, a_str2);
-
-#if defined(asd_Platform_Windows)
-		return _wcsicmp(a_str1, a_str2);
-#else
-		return wcscasecmp(a_str1, a_str2);
-#endif
-	}
-
-
-
 	template<typename ReturnType, typename ProxyType, bool AsciiOnly=false>
 	inline void strcpy_internal(OUT ReturnType* a_dst,
 								IN const ProxyType* a_src) asd_noexcept
 	{
-		// 잘못된 메모리를 접근하는 경우는 없다. (caller를 믿는다)
+		if (SamePtr(a_dst, a_src))
+			return;
+
+		if (a_src == nullptr)
+			a_src = (const ProxyType*)&NullChar;
+
 		for (; *a_src!='\0'; ++a_src,++a_dst) {
 			if (AsciiOnly) {
 				bool isAsciiChar = (0x7F - *a_src) >= 0;
@@ -380,36 +348,32 @@ namespace asd
 	char* strcpy(OUT char* a_dst,
 				 IN const char* a_src) asd_noexcept
 	{
-		if (SamePtr(a_dst, a_src))
-			return a_dst;
-
-		if (a_src == nullptr)
-			a_src = (const char*)&NullChar;
-
-#if defined(asd_Platform_Windows)
 		strcpy_internal(a_dst, a_src);
 		return a_dst;
-#else
-		return ::strcpy(a_dst, a_src);
-#endif
 	}
 
 
 	wchar_t* strcpy(OUT wchar_t* a_dst,
 					IN const wchar_t* a_src) asd_noexcept
 	{
-		if (SamePtr(a_dst, a_src))
-			return a_dst;
-
-		if (a_src == nullptr)
-			a_src = &NullChar;
-
-#if defined(asd_Platform_Windows)
 		strcpy_internal(a_dst, a_src);
 		return a_dst;
-#else
-		return ::wcscpy(a_dst, a_src);
-#endif
+	}
+
+
+	char16_t* strcpy(OUT char16_t* a_dst,
+					 IN const char16_t* a_src) asd_noexcept
+	{
+		strcpy_internal(a_dst, a_src);
+		return a_dst;
+	}
+
+
+	char32_t* strcpy(OUT char32_t* a_dst,
+					 IN const char32_t* a_src) asd_noexcept
+	{
+		strcpy_internal(a_dst, a_src);
+		return a_dst;
 	}
 
 
@@ -417,12 +381,6 @@ namespace asd
 	char* strcpy(OUT char* a_dst,
 				 IN const wchar_t* a_src) asd_noexcept
 	{
-		if (SamePtr(a_dst, a_src))
-			return a_dst;
-
-		if (a_src == nullptr)
-			a_src = &NullChar;
-
 		strcpy_internal<char, wchar_t, true>(a_dst, a_src);
 		return a_dst;
 	}
@@ -432,12 +390,6 @@ namespace asd
 	wchar_t* strcpy(OUT wchar_t* a_dst,
 					IN const char* a_src) asd_noexcept
 	{
-		if (SamePtr(a_dst, a_src))
-			return a_dst;
-
-		if (a_src == nullptr)
-			a_src = (const char*)&NullChar;
-
 		strcpy_internal<wchar_t, char, true>(a_dst, a_src);
 		return a_dst;
 	}
