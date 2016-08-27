@@ -173,9 +173,10 @@ namespace asdtest_string
 
 
 
-	template <typename StringType_asd, typename StringType_std>
+	template <typename StringType_asd>
 	void TestCode_StringClass(const typename StringType_asd::CharType* a_testString)
 	{
+		typedef typename StringType_asd::StdStrType StringType_std;
 		typename StringType_asd::CharType c = 0;
 		const StringType_std stdString1 = a_testString;
 
@@ -314,14 +315,28 @@ namespace asdtest_string
 			EXPECT_GT(s1, NullPtr);
 			EXPECT_EQ(s4, NullPtr);
 		}
+
+
+		// 레퍼런스 테스트
+		{
+			s2 = s1;
+			EXPECT_EQ(s1.get(), s2.get());
+			s3 = s2;
+			EXPECT_EQ(s1.get(), s3.get());
+
+			s2.Format(Str("change"));
+			EXPECT_NE(s1, s2);
+			s3 << 123;
+			EXPECT_NE(s1, s3);
+		}
 	}
 
 	TEST(String, StringClass)
 	{
 		// MultiByte
-		TestCode_StringClass<asd::MString, std::string>("abc가나다123");
+		TestCode_StringClass<asd::MString>("abc가나다123");
 
 		// Wide
-		TestCode_StringClass<asd::WString, std::wstring>(L"abc가나다123");
+		TestCode_StringClass<asd::WString>(L"abc가나다123");
 	}
 }
