@@ -145,11 +145,11 @@ namespace asd
 
 
 #if asd_Platform_Windows
-		const wchar_t* g_Create_Arg = nullptr;
+		thread_local const wchar_t* t_Create_Arg = nullptr;
 
 		void Create(IN const wchar_t* a_name /*= nullptr*/)
 		{
-			g_Create_Arg = a_name;
+			t_Create_Arg = a_name;
 			__try {
 				static int z = 0;
 				z = 1 / z; // 'divide by zero' 발생시켜서 CreateMiniDump 함수 호출
@@ -161,8 +161,8 @@ namespace asd
 		long CreateMiniDump(IN void* a_PEXCEPTION_POINTERS)
 		{
 			MtxCtl_asdMutex lock(g_lock);
-			Ready(g_Create_Arg);
-			g_Create_Arg = nullptr;
+			Ready(t_Create_Arg);
+			t_Create_Arg = nullptr;
 
 			HANDLE dumpFile = ::CreateFileW(g_path_temp,
 											GENERIC_WRITE,
