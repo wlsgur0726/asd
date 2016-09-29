@@ -130,14 +130,15 @@ namespace asd
 
 			asd::sprintf(g_path_temp,
 						 LEN_PATH,
+						 //       1 2 3     4     5  6    7    8    9    A    B    C
 						 asd_str("%s%s%s_pid%u_tid%u_%04d-%02d-%02d_%02dh%02dm%02ds%s"),
-						 g_path,
-						 g_path[0] != '\0' ? g_path_delimiter : asd_str(""),
-						 name,
-						 pid, tid,
-						 now.Year(), now.Month(), now.Day(),
-						 now.Hour(), now.Minute(), now.Second(),
-						 g_dump_ext);
+						 g_path,                                               // 1
+						 g_path[0] != '\0' ? g_path_delimiter : asd_str(""),   // 2
+						 name,                                                 // 3
+						 pid, tid,                                             // 4, 5
+						 now.Year(), now.Month(), now.Day(),                   // 6, 7, 8
+						 now.Hour(), now.Minute(), now.Second(),               // 9, A, B
+						 g_dump_ext);                                          // C
 		}
 
 
