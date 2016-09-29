@@ -5,7 +5,7 @@
 #include "asd/datetime.h"
 #include "asd/util.h"
 
-#if asd_Compiler_MSVC
+#if asd_Platform_Windows
 #	include <DbgHelp.h>
 #	pragma comment(lib,"DbgHelp.lib")
 #
@@ -20,7 +20,7 @@ namespace asd
 {
 	namespace MemDump
 	{
-#if asd_Compiler_MSVC
+#if asd_Platform_Windows
 		#define asd_str(str) L ## str
 		#define asd_mkdir(path) _wmkdir(path)
 		typedef wchar_t Char;
@@ -79,13 +79,14 @@ namespace asd
 		}
 
 #endif
+
 #define asd_CopyToBuf(src, dst) CopyToBuf_Internal(src, dst, sizeof(dst)/sizeof(dst[0]))
 #define asd_GetProcessName(dst) GetProcessName_Internal(dst, sizeof(dst)/sizeof(dst[0]))
 
 		const size_t LEN_PATH = 4096;
 		const size_t LEN_NAME = 256;
 
-		SpinMutex g_lock;
+		Mutex g_lock;
 
 		Char g_path[LEN_PATH] = {0};
 		Char g_path_temp[LEN_PATH] = {0};
@@ -96,23 +97,21 @@ namespace asd
 
 		void SetOutPath(IN const wchar_t* a_path)
 		{
-			MtxCtl_asdSpinMutex lock(g_lock);
+			MtxCtl_asdMutex lock(g_lock);
 			asd_CopyToBuf(a_path, g_path);
 		}
 
+
 		void SetDefaultName(IN const wchar_t* a_name)
 		{
-			MtxCtl_asdSpinMutex lock(g_lock);
+			MtxCtl_asdMutex lock(g_lock);
 			asd_CopyToBuf(a_name, g_name);
 		}
 
-		void CreateDump();
-		void Create(IN const wchar_t* a_name /*= nullptr*/)
-		{
-			uint32_t pid = GetCurrentProcessID();
-			uint32_t tid = GetCurrentThreadID();
 
-			MtxCtl_asdSpinMutex lock(g_lock);
+		void Ready(IN const wchar_t* a_name)
+		{
+			asd_mkdir(g_path);
 
 			Char* name;
 			if (a_name != nullptr) {
@@ -125,9 +124,10 @@ namespace asd
 				name = g_name;
 			}
 
-			asd_mkdir(g_path);
-
 			DateTime now = DateTime::Now();
+			uint32_t pid = GetCurrentProcessID();
+			uint32_t tid = GetCurrentThreadID();
+
 			asd::sprintf(g_path_temp,
 						 LEN_PATH,
 						 asd_str("%s%s%s_pid%u_tid%u_%04d-%02d-%02d_%02dh%02dm%02ds%s"),
@@ -138,62 +138,71 @@ namespace asd
 						 now.Year(), now.Month(), now.Day(),
 						 now.Hour(), now.Minute(), now.Second(),
 						 g_dump_ext);
-
-			CreateDump();
 		}
 
-#if asd_Compiler_MSVC
-		void CreateDump()
+
+#if asd_Platform_Windows
+		const wchar_t* g_Create_Arg = nullptr;
+
+		void Create(IN const wchar_t* a_name /*= nullptr*/)
 		{
-			auto WriteDump = [](EXCEPTION_POINTERS* ep) -> LONG
-			{
-				HANDLE dumpFile = ::CreateFileW(g_path_temp,
-												GENERIC_WRITE,
-												0,
-												nullptr,
-												CREATE_ALWAYS,
-												FILE_ATTRIBUTE_NORMAL,
-												nullptr);
-				if (dumpFile == INVALID_HANDLE_VALUE)
-					return EXCEPTION_EXECUTE_HANDLER;
-
-				MINIDUMP_EXCEPTION_INFORMATION info;
-				info.ThreadId = ::GetCurrentThreadId();
-				info.ExceptionPointers = ep;
-				info.ClientPointers = FALSE;
-
-				MINIDUMP_TYPE option = (MINIDUMP_TYPE)(MiniDumpWithFullMemory |
-													   MiniDumpWithHandleData |
-													   MiniDumpWithProcessThreadData |
-													   MiniDumpWithFullMemoryInfo |
-													   MiniDumpWithThreadInfo);
-
-				::MiniDumpWriteDump(::GetCurrentProcess(),
-									::GetCurrentProcessId(),
-									dumpFile,
-									option,
-									&info,
-									nullptr,
-									nullptr);
-
-				::CloseHandle(dumpFile);
-				return EXCEPTION_EXECUTE_HANDLER;
-			};
+			g_Create_Arg = a_name;
 			__try {
 				static int z = 0;
-				z = 1 / z; // 'divide by zero' 발생시켜서 WriteDump 함수 호출
+				z = 1 / z; // 'divide by zero' 발생시켜서 CreateMiniDump 함수 호출
 			}
-			__except (WriteDump(GetExceptionInformation()))
-			{
+			__except (CreateMiniDump(GetExceptionInformation())) {
 			}
+		}
+
+		long CreateMiniDump(IN void* a_PEXCEPTION_POINTERS)
+		{
+			MtxCtl_asdMutex lock(g_lock);
+			Ready(g_Create_Arg);
+			g_Create_Arg = nullptr;
+
+			HANDLE dumpFile = ::CreateFileW(g_path_temp,
+											GENERIC_WRITE,
+											0,
+											nullptr,
+											CREATE_ALWAYS,
+											FILE_ATTRIBUTE_NORMAL,
+											nullptr);
+			if (dumpFile == INVALID_HANDLE_VALUE)
+				return EXCEPTION_EXECUTE_HANDLER;
+
+			MINIDUMP_EXCEPTION_INFORMATION info;
+			info.ThreadId = ::GetCurrentThreadId();
+			info.ExceptionPointers = (PEXCEPTION_POINTERS)a_PEXCEPTION_POINTERS;
+			info.ClientPointers = FALSE;
+
+			MINIDUMP_TYPE option = (MINIDUMP_TYPE)(MiniDumpWithFullMemory |
+												   MiniDumpWithHandleData |
+												   MiniDumpWithProcessThreadData |
+												   MiniDumpWithFullMemoryInfo |
+												   MiniDumpWithThreadInfo);
+
+			::MiniDumpWriteDump(::GetCurrentProcess(),
+								::GetCurrentProcessId(),
+								dumpFile,
+								option,
+								&info,
+								nullptr,
+								nullptr);
+
+			::CloseHandle(dumpFile);
+			return EXCEPTION_EXECUTE_HANDLER;
 		}
 
 #else
-		Char g_command[LEN_PATH] = {0};
-		void CreateDump()
+		void Create(IN const wchar_t* a_name /*= nullptr*/)
 		{
+			MtxCtl_asdMutex lock(g_lock);
+			Ready(a_name);
+
 			// gcore가 설치되어 있어야 함
 			// 추후 google-coredumper (https://code.google.com/archive/p/google-coredumper/) 도입 검토 요망
+			static Char g_command[LEN_PATH] = {0};
 			asd::sprintf(g_command,
 						 LEN_PATH,
 						 "gcore -o \"%s\" %u",
