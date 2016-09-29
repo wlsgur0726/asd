@@ -25,6 +25,7 @@ namespace asd
 		#define asd_mkdir(path) _wmkdir(path)
 		typedef wchar_t Char;
 		const Char g_path_delimiter[] = asd_str("\\");
+		const Char g_dump_pre[] = asd_str("");
 		const Char g_dump_ext[] = asd_str(".dmp");
 
 		void CopyToBuf_Internal(IN const wchar_t* a_str,
@@ -52,7 +53,8 @@ namespace asd
 		#define asd_mkdir(path) mkdir(path, 0777)
 		typedef char Char;
 		const Char g_path_delimiter[] = asd_str("/");
-		const Char g_dump_ext[] = asd_str(".core");
+		const Char g_dump_pre[] = asd_str("core.");
+		const Char g_dump_ext[] = asd_str("");
 
 		void CopyToBuf_Internal(IN const wchar_t* a_str,
 								OUT Char* a_dst,
@@ -130,15 +132,15 @@ namespace asd
 
 			asd::sprintf(g_path_temp,
 						 LEN_PATH,
-						 //       1 2 3     4     5  6    7    8    9    A    B    C
-						 asd_str("%s%s%s_pid%u_tid%u_%04d-%02d-%02d_%02dh%02dm%02ds%s"),
+						 //       1 2 3 4     5     6  7    8    9    A    B    C    D
+						 asd_str("%s%s%s%s_pid%u_tid%u_%04d-%02d-%02d_%02dh%02dm%02ds%s"),
 						 g_path,                                               // 1
 						 g_path[0] != '\0' ? g_path_delimiter : asd_str(""),   // 2
-						 name,                                                 // 3
-						 pid, tid,                                             // 4, 5
-						 now.Year(), now.Month(), now.Day(),                   // 6, 7, 8
-						 now.Hour(), now.Minute(), now.Second(),               // 9, A, B
-						 g_dump_ext);                                          // C
+						 g_dump_pre, name,                                     // 3, 4
+						 pid, tid,                                             // 5, 6
+						 now.Year(), now.Month(), now.Day(),                   // 7, 8, 9
+						 now.Hour(), now.Minute(), now.Second(),               // A, B, C
+						 g_dump_ext);                                          // D
 		}
 
 
