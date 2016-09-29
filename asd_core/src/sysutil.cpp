@@ -2,6 +2,11 @@
 #include "asd/sysutil.h"
 #include <cstdlib>
 
+#if !asd_Platform_Windows
+#	include <sys/types.h>
+#	include <unistd.h>
+#
+#endif
 
 namespace asd
 {
@@ -30,6 +35,21 @@ namespace asd
 		};
 		static const EndianCheck g_endian;
 		return g_endian.endian;
+	}
+
+
+
+	uint32_t GetCurrentProcessID() asd_noexcept
+	{
+		static uint32_t g_pid = 0;
+		if (g_pid == 0) {
+#if asd_Platform_Windows
+			g_pid = ::GetCurrentProcessId();
+#else
+			g_pid = ::getpid();
+#endif
+		}
+		return g_pid;
 	}
 
 

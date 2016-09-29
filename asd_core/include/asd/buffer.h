@@ -1,7 +1,8 @@
 ﻿#pragma once
 #include "asdbase.h"
 #include "classutil.h"
-#include "sysutil.h"
+#include "objpool.h"
+#include "util.h"
 #include <array>
 #include <vector>
 #include <deque>
@@ -15,8 +16,8 @@ namespace asd
 {
 	struct Offset
 	{
-		size_t Row = 0;
-		size_t Col = 0;
+		size_t Row = 0;	// 버퍼의 인덱스
+		size_t Col = 0;	// 버퍼 내에서의 오프셋
 
 		inline static int Compare(IN const Offset& a_left,
 								  IN const Offset& a_right) asd_noexcept
@@ -36,6 +37,45 @@ namespace asd
 
 		asd_Define_CompareOperator(Compare, Offset);
 	};
+
+
+
+	template <typename T>
+	struct IsDirectSerializableType { static constexpr bool Value = false; };
+
+	template<>
+	struct IsDirectSerializableType<int8_t> { static constexpr bool Value = true; };
+
+	template<>
+	struct IsDirectSerializableType<uint8_t> { static constexpr bool Value = true; };
+
+	template<>
+	struct IsDirectSerializableType<int16_t> { static constexpr bool Value = true; };
+
+	template<>
+	struct IsDirectSerializableType<uint16_t> { static constexpr bool Value = true; };
+
+	template<>
+	struct IsDirectSerializableType<int32_t> { static constexpr bool Value = true; };
+
+	template<>
+	struct IsDirectSerializableType<uint32_t> { static constexpr bool Value = true; };
+
+	template<>
+	struct IsDirectSerializableType<int64_t> { static constexpr bool Value = true; };
+
+	template<>
+	struct IsDirectSerializableType<uint64_t> { static constexpr bool Value = true; };
+
+	template<>
+	struct IsDirectSerializableType<float> { static constexpr bool Value = true; };
+
+	template<>
+	struct IsDirectSerializableType<double> { static constexpr bool Value = true; };
+
+	template<>
+	struct IsDirectSerializableType<long double> { static constexpr bool Value = true; };
+
 
 
 	class BufferInterface
@@ -103,80 +143,6 @@ namespace asd
 
 
 
-	template <typename T>
-	struct IsDirectSerializableType
-	{
-		static constexpr bool Value = false;
-	};
-
-	template<>
-	struct IsDirectSerializableType<int8_t>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<>
-	struct IsDirectSerializableType<uint8_t>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<>
-	struct IsDirectSerializableType<int16_t>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<>
-	struct IsDirectSerializableType<uint16_t>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<>
-	struct IsDirectSerializableType<int32_t>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<>
-	struct IsDirectSerializableType<uint32_t>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<>
-	struct IsDirectSerializableType<int64_t>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<>
-	struct IsDirectSerializableType<uint64_t>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<>
-	struct IsDirectSerializableType<float>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<>
-	struct IsDirectSerializableType<double>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<>
-	struct IsDirectSerializableType<long double>
-	{
-		static constexpr bool Value = true;
-	};
-
-
-
 	template <
 		typename T,
 		typename... Args
@@ -219,12 +185,7 @@ namespace asd
 		: public BufferInterface
 	{
 		flatbuffers::unique_ptr_t m_data;
-		flatbuffers::uoffset_t m_bytes;
-
-		inline FlatBuffersData()
-		{
-			m_bytes = 0;
-		}
+		flatbuffers::uoffset_t m_bytes = 0;
 
 		inline FlatBuffersData(MOVE flatbuffers::FlatBufferBuilder& a_builder)
 		{
@@ -265,55 +226,68 @@ namespace asd
 
 
 
-	enum class BufferOperation
+	enum class BufOp
 	{
 		Write,
 		Read,
 	};
 
 
+	typedef UniquePtr<BufferInterface> Buffer_ptr;
 
-	template <typename T>
-	class UniquePtr
-		: public std::unique_ptr<T, std::function<void(T*)>>
+
+	template<size_t BYTES>
+	Buffer_ptr NewBuffer() asd_noexcept
 	{
-		typedef std::unique_ptr<T, std::function<void(T*)>> Base;
-
-	public:
-		UniquePtr(IN T* a_newPtr = nullptr,
-				  MOVE std::function<void(T*)>&& a_deleter = std::default_delete<T>())
-			: Base(a_newPtr, std::move(a_deleter))
+		struct Buffer : public StaticBuffer<BYTES>
 		{
-		}
-	};
+			typedef ObjectPool2<Buffer> Pool;
+			Pool* m_pool;
+		};
+		static ObjectPoolShardSet<typename Buffer::Pool> g_bufferPool;
+
+		auto& pool = g_bufferPool.GetShard();
+		auto newBuf = pool.Alloc();
+		newBuf->m_pool = &pool;
+
+		return Buffer_ptr(newBuf, [](IN BufferInterface* a_ptr)
+		{
+			auto cast = reinterpret_cast<Buffer*>(a_ptr);
+			cast->m_pool->Free(cast);
+		});
+	}
 
 
 
 	class BufferList;
-	typedef UniquePtr<BufferList>		BufferList_ptr;
-	typedef UniquePtr<BufferInterface>	Buffer_ptr;
+	typedef UniquePtr<BufferList> BufferList_ptr;
 
-
+	// gather-scatter를 고려한 버퍼 목록
 	class BufferList
+		: protected std::deque<Buffer_ptr>
 	{
 	public:
-		template<BufferOperation Operation> friend class Transactional;
-		static const size_t DefaultBufferSize;
+		typedef std::deque<Buffer_ptr> BaseType;
+		template<BufOp Operation> friend class Transactional;
+		#define asd_BufferList_DefaultWriteBufferSize	( 16 * 1024 )
+		#define asd_BufferList_DefaultReadBufferSize	(  2 * 1024 )
 
 
 	private:
-		std::deque<Buffer_ptr> m_list;
-		Offset m_readOffset;
-		size_t m_writeOffset;
-		size_t m_total_capacity;
-		size_t m_total_write;
-		size_t m_total_read;
+		Offset m_readOffset;		// 읽기 오프셋
+		size_t m_writeOffset;		// 쓰기 Row 오프셋, (BufferInterface.GetSize()가 Col 오프셋)
+		size_t m_total_capacity;	// 여분을 포함한 버퍼 용량 총합 (bytes)
+		size_t m_total_write;		// 여분을 제외하고 쓰여진 버퍼 크기 총합 (bytes)
+		size_t m_total_read;		// 현재까지 읽은 바이트 수 (bytes)
 
 
 	public:
-		static Buffer_ptr NewBuffer() asd_noexcept;
+		inline static Buffer_ptr NewWriteBuffer() asd_noexcept
+		{
+			return NewBuffer<asd_BufferList_DefaultWriteBufferSize>();
+		}
 
-		static BufferList_ptr NewList() asd_noexcept;
+		static BufferList_ptr New() asd_noexcept;
 
 		BufferList() asd_noexcept;
 
@@ -323,7 +297,7 @@ namespace asd
 
 		size_t GetTotalSize() const asd_noexcept;
 
-		void ReserveBuffer(IN size_t a_bytes = DefaultBufferSize) asd_noexcept;
+		void ReserveBuffer(IN size_t a_bytes = asd_BufferList_DefaultWriteBufferSize) asd_noexcept;
 
 		void ReserveBuffer(MOVE Buffer_ptr&& a_buffer) asd_noexcept;
 
@@ -331,9 +305,15 @@ namespace asd
 
 		void PushBack(MOVE BufferList&& a_bufferList) asd_noexcept;
 
+		void PushBack(MOVE BaseType&& a_bufferList) asd_noexcept;
+
 		void PushFront(MOVE Buffer_ptr&& a_buffer) asd_noexcept;
 
 		void PushFront(MOVE BufferList&& a_bufferList) asd_noexcept;
+
+		void PushFront(MOVE BaseType&& a_bufferList) asd_noexcept;
+
+		void Flush() asd_noexcept;
 
 		bool Readable(IN size_t a_bytes) const asd_noexcept;
 
@@ -343,14 +323,19 @@ namespace asd
 		size_t Read(OUT void* a_data,
 					IN const size_t a_bytes) asd_noexcept;
 
+		using BaseType::begin;
+		using BaseType::end;
+		using BaseType::rbegin;
+		using BaseType::rend;
+		using BaseType::at;
+		using BaseType::operator[];
 	};
 
 
-
-	template <BufferOperation Operation>
+	template <BufOp Operation>
 	class Transactional final
 	{
-		static_assert(Operation==BufferOperation::Write || Operation==BufferOperation::Read,
+		static_assert(Operation==BufOp::Write || Operation==BufOp::Read,
 					  "invalid Operation");
 
 	private:

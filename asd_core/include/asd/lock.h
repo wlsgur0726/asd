@@ -60,25 +60,25 @@ namespace asd
 
 
 	template <typename MutexType>
-	class MutexController final
+	class MtxCtl final
 	{
 	public:
 		MutexType& m_mutex;
 		int m_recursionCount = 0;
 		const int m_recursionLimit;
 
-		MutexController(REF MutexType& a_mutex,
-						IN bool a_getLock = true,
-						IN int a_recursionLimit = 1) 
-						: m_mutex(a_mutex)
-						, m_recursionLimit(a_recursionLimit)
+		MtxCtl(REF MutexType& a_mutex,
+			   IN bool a_getLock = true,
+			   IN int a_recursionLimit = 1)
+			: m_mutex(a_mutex)
+			, m_recursionLimit(a_recursionLimit)
 		{
 			assert(a_recursionLimit > 0);
 			if (a_getLock)
 				lock();
 		}
 		
-		~MutexController()
+		~MtxCtl()
 		{
 			assert(m_recursionCount >= 0);
 			for (; m_recursionCount > 0; --m_recursionCount)
@@ -90,7 +90,7 @@ namespace asd
 
 
 	template <typename MutexType>
-	void MutexController<MutexType>::lock()
+	void MtxCtl<MutexType>::lock()
 	{
 		if (m_recursionLimit > m_recursionCount + 1) {
 			assert(false);
@@ -105,7 +105,7 @@ namespace asd
 
 
 	template <typename MutexType>
-	bool MutexController<MutexType>::try_lock()
+	bool MtxCtl<MutexType>::try_lock()
 	{
 		if (m_recursionLimit > m_recursionCount + 1) {
 			assert(false);
@@ -124,7 +124,7 @@ namespace asd
 
 
 	template <typename MutexType>
-	void MutexController<MutexType>::unlock()
+	void MtxCtl<MutexType>::unlock()
 	{
 		if (m_recursionCount > 0) {
 			--m_recursionCount;
@@ -132,4 +132,9 @@ namespace asd
 		}
 		assert(m_recursionCount >= 0);
 	}
+
+
+	typedef MtxCtl<std::mutex>	MtxCtl_stdMutex;
+	typedef MtxCtl<Mutex>		MtxCtl_asdMutex;
+	typedef MtxCtl<SpinMutex>	MtxCtl_asdSpinMutex;
 }

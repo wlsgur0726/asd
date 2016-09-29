@@ -9,7 +9,7 @@ namespace asd
 {
 	struct DebugInfo 
 	{
-		static const char ToStringFormat[]; // = "[{}({}) {}] {} ";
+		static const char ToStringFormat[]; // "[{}({}) {}] {}", m_file, m_line, m_function, m_comment)
 
 		const char*	m_file;
 		const int	m_line;
@@ -25,7 +25,7 @@ namespace asd
 			: m_file(a_file)
 			, m_line(a_line)
 			, m_function(a_function)
-			, m_comment(a_comment, a_args...)
+			, m_comment(MString::Format(a_comment, a_args...))
 		{
 			assert(a_file != nullptr);
 			assert(m_line > 0);
@@ -155,8 +155,14 @@ namespace asd
 	// Check가 false인 경우 기본동작
 	//  - 에러메시지를 stderr에 출력
 	//  - debug일 경우 키입력 대기 후 assert(false) 호출
-	//  - release일때는 무시
-#define asd_Assert(Check, MsgFormat, ...) (Check ? true : asd::Assert_Internal(asd_MakeDebugInfo(MsgFormat, __VA_ARGS__)))
+	//  - release일때는 계속 진행
+#if defined(asd_Compiler_MSVC)
+#	define asd_Assert(Check, MsgFormat, ...)\
+	( (Check) ? (true) : (asd::Assert_Internal(asd_MakeDebugInfo(MsgFormat, __VA_ARGS__))) )
+#else
+#	define asd_Assert(Check, ...)\
+	( (Check) ? (true) : (asd::Assert_Internal(asd_MakeDebugInfo(__VA_ARGS__))) )
+#endif
 	bool Assert_Internal(IN const DebugInfo& a_info);
 
 	// asd_Assert에서 Check가 false일 때 기본동작 대신 핸들러를 호출한다.

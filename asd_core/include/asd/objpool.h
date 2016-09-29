@@ -17,7 +17,7 @@ namespace asd
 	public:
 		typedef ObjectPool<ObjectType>		ThisType;
 		typedef ObjectType					Object;
-		typedef MutexController<MutexType>	MtxCtl;
+		typedef MtxCtl<MutexType>			Lock;
 
 
 		ObjectPool(const ThisType&) = delete;
@@ -43,7 +43,7 @@ namespace asd
 		{
 			Object* ret = nullptr;
 
-			MtxCtl lock(m_lock, true);
+			Lock lock(m_lock, true);
 			if (m_pool.empty() == false) {
 				ret = m_pool.top();
 				m_pool.pop();
@@ -81,7 +81,7 @@ namespace asd
 
 			bool loop;
 			do {
-				MtxCtl lock(m_lock, true);
+				Lock lock(m_lock, true);
 				int i;
 				for (i=0; m_pool.empty()==false && i<BufSize; ++i) {
 					buf[i] = m_pool.top();
@@ -134,7 +134,7 @@ namespace asd
 			if (a_obj == nullptr)
 				return true;
 
-			MtxCtl lock(m_lock, true);
+			Lock lock(m_lock, true);
 			if (m_pool.size() < m_limitCount) {
 				m_pool.push(a_obj);
 				return true;

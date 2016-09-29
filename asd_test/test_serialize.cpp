@@ -16,7 +16,7 @@ namespace asdtest_serialize
 	template <typename T, typename Buf>
 	void Test_PrimitiveType_Internal(const T in)
 	{
-		auto bufferList = asd::BufferList::NewList();
+		auto bufferList = asd::BufferList::New();
 		for (int i=0; i<3; ++i)
 			bufferList->ReserveBuffer(asd::Buffer_ptr(new Buf));
 
@@ -113,7 +113,7 @@ namespace asdtest_serialize
 		const size_t ExpectBytes = sizeof(T)*ElemCnt;
 		const size_t BufCnt = 10;
 
-		auto bufferList = asd::BufferList::NewList();
+		auto bufferList = asd::BufferList::New();
 		for (auto i=BufCnt; i>0; --i)
 			bufferList->ReserveBuffer(asd::Buffer_ptr(new Buf));
 
@@ -182,7 +182,7 @@ namespace asdtest_serialize
 	{
 		const size_t BufCnt = 1000;
 
-		auto bufferList = asd::BufferList::NewList();
+		auto bufferList = asd::BufferList::New();
 		for (auto i=BufCnt; i>0; --i)
 			bufferList->ReserveBuffer(asd::Buffer_ptr(new Buf));
 
@@ -193,6 +193,10 @@ namespace asdtest_serialize
 
 		EXPECT_EQ(ret1, ret2);
 		EXPECT_EQ(src, dst);
+
+		bufferList->Flush();
+		bufferList->ReserveBuffer(asd::Buffer_ptr(new Buf)); // 남은 버퍼가 없을 수도 있으므로
+		EXPECT_EQ(bufferList->GetTotalSize(), bufferList->at(0)->GetSize());
 	}
 
 	TEST(Serialize, Tuple)
@@ -235,7 +239,7 @@ namespace asdtest_serialize
 
 		inline size_t WriteTo(asd::BufferList& buffer) const
 		{
-			asd::Transactional<asd::BufferOperation::Write> tran(buffer);
+			asd::Transactional<asd::BufOp::Write> tran(buffer);
 			size_t sum = 0;
 			size_t ret;
 
@@ -272,7 +276,7 @@ namespace asdtest_serialize
 
 		inline size_t ReadFrom(asd::BufferList& buffer)
 		{
-			asd::Transactional<asd::BufferOperation::Read> tran(buffer);
+			asd::Transactional<asd::BufOp::Read> tran(buffer);
 			size_t sum = 0;
 			size_t ret;
 
@@ -362,6 +366,41 @@ namespace asdtest_serialize
 		}
 		Test_WriteRead<CustomStruct, SmallBuf>(src);
 		Test_WriteRead<CustomStruct, LargeBuf>(src);
+	}
+
+	TEST(Serialize, Push_Buffer)
+	{
+		// 새로운 버퍼를 추가했을 때 Capacity 관리가 제대로 되는지 테스트
+		const auto DefaultSize = asd_BufferList_DefaultWriteBufferSize;
+		std::array<uint8_t, DefaultSize> data;
+		asd::BufferList buffers;
+		asd::Buffer_ptr buf;
+
+		buf = asd::NewBuffer<DefaultSize>();
+		buf->SetSize(DefaultSize / 2 - 1);
+		buffers.PushBack(std::move(buf));
+
+		buf = asd::NewBuffer<DefaultSize>();
+		buf->SetSize(DefaultSize / 2 - 1);
+		buffers.PushBack(std::move(buf));
+
+		size_t r = asd::Write(buffers, data);
+		EXPECT_EQ(r, DefaultSize);
+		size_t total = (DefaultSize/2-1)*2 + DefaultSize;
+		EXPECT_EQ(buffers.GetTotalSize(), total);
+
+		buf = asd::NewBuffer<DefaultSize>();
+		buf->SetSize(DefaultSize / 2 - 1);
+		buffers.PushFront(std::move(buf));
+
+		buf = asd::NewBuffer<DefaultSize>();
+		buf->SetSize(DefaultSize / 2 - 1);
+		buffers.PushBack(std::move(buf));
+
+		r = asd::Write(buffers, data);
+		EXPECT_EQ(r, DefaultSize);
+		total += (DefaultSize/2-1)*2 + DefaultSize;
+		EXPECT_EQ(buffers.GetTotalSize(), total);
 	}
 }
 

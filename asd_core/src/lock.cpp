@@ -33,7 +33,7 @@ namespace asd
 #else
 		pthread_mutex_t m_mtx;
 		int m_recursionCount = 0;
-		std::thread::id m_ownerThread;
+		uint32_t m_ownerThread = 0;
 #endif
 
 		MutexData()
@@ -59,8 +59,7 @@ namespace asd
 		}
 
 
-		~MutexData() 
-			noexcept(false)
+		~MutexData() asd_noexcept
 		{
 #if defined (asd_Platform_Windows)
 			assert(m_mtx.RecursionCount == 0);
@@ -68,7 +67,7 @@ namespace asd
 			DeleteCriticalSection(&m_mtx);
 #else
 			assert(m_recursionCount == 0);
-			assert(m_ownerThread == std::thread::id());
+			assert(m_ownerThread == 0);
 			if (pthread_mutex_destroy(&m_mtx) != 0) {
 				auto e = errno;
 				asd_RaiseException("fail pthread_mutex_destroy(), errno:{}", e);
@@ -168,7 +167,7 @@ namespace asd
 #else
 		assert(m_data->m_ownerThread == GetCurrentThreadID());
 		if (--m_data->m_recursionCount == 0)
-			m_data->m_ownerThread = std::thread::id();
+			m_data->m_ownerThread = 0;
 
 		if (pthread_mutex_unlock(&m_data->m_mtx) != 0) {
 			auto e = errno;

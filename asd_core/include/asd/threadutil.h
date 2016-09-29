@@ -5,7 +5,7 @@
 
 namespace asd
 {
-	const std::thread::id& GetCurrentThreadID() asd_noexcept;
+	uint32_t GetCurrentThreadID() asd_noexcept;
 
 	uint32_t GetCurrentThreadSequence() asd_noexcept;
 

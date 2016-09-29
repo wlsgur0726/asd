@@ -17,7 +17,7 @@
 #endif
 
 
-#if defined(asd_Platform_Linux)
+#if defined(asd_Platform_Android) || defined(asd_Platform_Linux)
 #	include <pthread.h>
 #	include <unistd.h>
 #

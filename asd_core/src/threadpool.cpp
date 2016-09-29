@@ -9,7 +9,6 @@
 
 namespace asd
 {
-	typedef MutexController<Mutex> MtxCtl;
 	struct ThreadPoolData
 	{
 		ThreadPoolData(IN const uint32_t a_threadCount)
@@ -31,10 +30,10 @@ namespace asd
 		bool overtime = true;
 
 		// 작업을 수행하는 쓰레드 관련
-		const uint32_t						threadCount;
-		std::vector<std::thread>			threads;
-		std::unordered_set<std::thread::id>	workers;
-		std::deque<Semaphore*>				waitingList;
+		const uint32_t					threadCount;
+		std::vector<std::thread>		threads;
+		std::unordered_set<uint32_t>	workers;
+		std::deque<Semaphore*>			waitingList;
 
 		// 사용자가 입력한 작업에서 발생한 예외를 처리하는 핸들러
 		std::shared_ptr<ThreadPool::ExceptionHandler> exceptionHandler;
@@ -60,7 +59,7 @@ namespace asd
 
 	ThreadPool& ThreadPool::Start()
 	{
-		MtxCtl mtx(m_data->tpLock);
+		MtxCtl_asdMutex mtx(m_data->tpLock);
 		if (m_data->run)
 			asd_RaiseException("already running");
 
@@ -69,7 +68,7 @@ namespace asd
 		for (auto& t : m_data->threads) {
 			t = std::thread([this]()
 			{
-				MtxCtl lock(m_data->tpLock);
+				MtxCtl_asdMutex lock(m_data->tpLock);
 				m_data->workers.insert(GetCurrentThreadID());
 				lock.unlock();
 
@@ -98,7 +97,7 @@ namespace asd
 
 		thread_local Semaphore t_event;
 		size_t procCount = 0;
-		MtxCtl mtx(m_data->tpLock);
+		MtxCtl_asdMutex mtx(m_data->tpLock);
 
 		// 이벤트 체크
 		while (m_data->run || (m_data->overtime && !m_data->taskQueue.empty())) {
@@ -149,7 +148,7 @@ namespace asd
 	ThreadPool& ThreadPool::PushTask(MOVE Task&& a_task)
 	{
 		assert(a_task != nullptr);
-		MtxCtl mtx(m_data->tpLock);
+		MtxCtl_asdMutex mtx(m_data->tpLock);
 		if (m_data->run == false)
 			return *this;
 
@@ -175,7 +174,7 @@ namespace asd
 	{
 		if (m_data != nullptr)
 		{
-			MtxCtl mtx(m_data->tpLock);
+			MtxCtl_asdMutex mtx(m_data->tpLock);
 			if (m_data->run == false)
 				return;
 

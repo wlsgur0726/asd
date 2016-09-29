@@ -14,57 +14,17 @@
 
 namespace asd
 {
-	int IpAddress::ToNativeCode(Family a_family) asd_noexcept
+	int IpAddress::ToNativeCode(AddressFamily a_family) asd_noexcept
 	{
 		switch (a_family) {
-			case IpAddress::Family::IPv4:
+			case AddressFamily::IPv4:
 				return AF_INET;
-			case IpAddress::Family::IPv6:
+			case AddressFamily::IPv6:
 				return AF_INET6;
 		}
-		assert(false);
+		asd_Assert(false, "invalid AddressFamily");
 		return -1;
 	}
-
-	struct AddrInfos
-	{
-		int m_error = 0;
-		addrinfo* m_result = nullptr;
-
-		AddrInfos(IN const char* a_domain)
-		{
-			addrinfo hints;
-			memset(&hints, 0, sizeof(hints));
-
-			m_error = getaddrinfo(a_domain, NULL, &hints, &m_result);
-		}
-
-		// 1순위 : IPv4,
-		// 2순위 : IPv6,
-		// 그 외 : nullptr
-		addrinfo* Get()
-		{
-			assert(m_result != nullptr);
-			assert(m_error == 0);
-
-			addrinfo* ret = nullptr;
-			for (auto p=m_result; p!=nullptr; p=p->ai_next) {
-				if (p->ai_family == AF_INET)
-					return p;
-				else if (p->ai_family == AF_INET6) {
-					if (ret == nullptr)
-						ret = p;
-				}
-			}
-			return ret;
-		}
-
-		~AddrInfos()
-		{
-			if (m_result != nullptr)
-				freeaddrinfo(m_result);
-		}
-	};
 
 
 
@@ -75,52 +35,23 @@ namespace asd
 			delete[] p;
 			m_addr = nullptr;
 			m_addrlen = 0;
-			m_addrFamily = Family::IPv4;
+			m_addrFamily = AddressFamily::IPv4;
 		}
 	}
 
 
 
-	IpAddress::IpAddress(IN Family a_addrFamily /*= IPv4*/) asd_noexcept
+	IpAddress::IpAddress(IN AddressFamily a_addrFamily /*= IPv4*/) asd_noexcept
 	{
 		m_addrFamily = a_addrFamily;
 	}
 
 
 
-	IpAddress::IpAddress(IN const char* a_domain,
-						 IN uint16_t a_port /*= 0*/)
+	IpAddress::IpAddress(IN const char* a_ip,
+						 IN uint16_t a_port /*= 0*/) asd_noexcept
 	{
-		AddrInfos ais(a_domain);
-		if (ais.m_error != 0) {
-			asd_RaiseException("fail getaddrinfo(), error:{}", ais.m_error);
-		}
-
-		addrinfo* ai = ais.Get();
-		if (ai == nullptr) {
-			asd_RaiseException("[{}] does not exist!", a_domain);
-		}
-
-		switch (ai->ai_family) {
-			case AF_INET: {
-				auto& sin = *(sockaddr_in*)ai->ai_addr;
-				sin.sin_port = htons(a_port);
-				assert(sin.sin_family == AF_INET);
-				*this = sin;
-				break;
-			}
-			case AF_INET6: {
-				auto& sin = *(sockaddr_in6*)ai->ai_addr;
-				sin.sin6_port = htons(a_port);
-				assert(sin.sin6_family == AF_INET6);
-				*this = sin;
-				break;
-			}
-			default:
-				// 지원되지 않는 Address Family
-				assert(false);
-				break;
-		}
+		SetPort(a_port);
 	}
 
 
@@ -166,7 +97,7 @@ namespace asd
 
 
 
-#define asd_IpAddress_Define_Init(NativeType, Family)									\
+#define asd_IpAddress_Define_Init(NativeType, AddressFamily)							\
 	IpAddress::IpAddress(IN const NativeType& a_native) asd_noexcept					\
 	{																					\
 		*this = a_native;																\
@@ -178,13 +109,13 @@ namespace asd
 		m_addrlen = sizeof(NativeType);													\
 		m_addr = (sockaddr*)new uint8_t[m_addrlen];										\
 		memcpy(m_addr, &a_native, m_addrlen);											\
-		m_addrFamily = Family;															\
+		m_addrFamily = AddressFamily;													\
 		return *this;																	\
 	}																					\
 
-	asd_IpAddress_Define_Init(sockaddr_in, Family::IPv4);
+	asd_IpAddress_Define_Init(sockaddr_in, AddressFamily::IPv4);
 
-	asd_IpAddress_Define_Init(sockaddr_in6, Family::IPv6);
+	asd_IpAddress_Define_Init(sockaddr_in6, AddressFamily::IPv6);
 
 
 
@@ -202,7 +133,7 @@ namespace asd
 
 
 
-	IpAddress::Family IpAddress::GetAddressFamily() const asd_noexcept
+	AddressFamily IpAddress::GetAddressFamily() const asd_noexcept
 	{
 		return m_addrFamily;
 	}
@@ -218,20 +149,20 @@ namespace asd
 		int sz = 0;
 
 		switch (m_addrFamily) {
-			case Family::IPv4: {
+			case AddressFamily::IPv4: {
 				auto cast = (sockaddr_in*)m_addr;
 				p = &cast->sin_addr;
-				sz = 4; // sizeof(cast->sin_addr);
+				sz = sizeof(cast->sin_addr);
 				break;
 			}
-			case Family::IPv6: {
+			case AddressFamily::IPv6: {
 				auto cast = (sockaddr_in6*)m_addr;
 				p = &cast->sin6_addr;
-				sz = 16; // sizeof(cast->sin6_addr);
+				sz = sizeof(cast->sin6_addr);
 				break;
 			}
 			default:
-				assert(false);
+				asd_Assert(false, "invalid AddressFamily");
 				break;
 		}
 		
@@ -242,26 +173,50 @@ namespace asd
 	}
 
 
-	
+
 	uint16_t IpAddress::GetPort() const asd_noexcept
 	{
 		if (m_addr == nullptr)
 			return 0;
 
 		switch (m_addrFamily) {
-			case Family::IPv4: {
+			case AddressFamily::IPv4:{
 				auto cast = (sockaddr_in*)m_addr;
 				return ntohs(cast->sin_port);
 			}
-			case Family::IPv6: {
+			case AddressFamily::IPv6:{
 				auto cast = (sockaddr_in6*)m_addr;
 				return ntohs(cast->sin6_port);
 			}
 			default:
-				assert(false);
+				asd_Assert(false, "invalid AddressFamily");
 				break;
 		}
 		return 0;
+	}
+
+
+
+	void IpAddress::SetPort(IN uint16_t a_port) asd_noexcept
+	{
+		if (m_addr == nullptr)
+			return;
+
+		switch (m_addrFamily) {
+			case AddressFamily::IPv4:{
+				auto cast = (sockaddr_in*)m_addr;
+				cast->sin_port = htons(a_port);
+				break;
+			}
+			case AddressFamily::IPv6:{
+				auto cast = (sockaddr_in6*)m_addr;
+				cast->sin6_port = htons(a_port);
+				break;
+			}
+			default:
+				asd_Assert(false, "invalid AddressFamily");
+				break;
+		}
 	}
 
 
@@ -280,7 +235,16 @@ namespace asd
 				  ip,
 				  BufSize);
 
-		return MString("{}:{}", ip, (uint32_t)GetPort());
+		switch (m_addrFamily) {
+			case AddressFamily::IPv4:
+				return MString::Format("{}:{}", ip, GetPort());
+			case AddressFamily::IPv6:
+				return MString::Format("[{}]:{}", ip, GetPort());
+			default:
+				asd_Assert(false, "invalid AddressFamily");
+				break;
+		}
+		return "";
 	}
 
 
@@ -363,6 +327,36 @@ namespace asd
 		port <<= (SizeOfSizeT - 2);
 		ret ^= port;
 
+		return ret;
+	}
+
+
+
+	std::vector<IpAddress> FindIP(IN const char* a_domain) asd_noexcept
+	{
+		std::vector<IpAddress> ret;
+		addrinfo* result;
+		addrinfo hints;
+		memset(&hints, 0, sizeof(hints));
+
+		int err = getaddrinfo(a_domain, NULL, &hints, &result);
+		if (err != 0)
+			return ret;
+
+		for (auto p=result; p!=nullptr; p=p->ai_next) {
+			switch (p->ai_family) {
+				case AF_INET:{
+					ret.push_back(*(sockaddr_in*)p->ai_addr);
+					break;
+				}
+				case AF_INET6:{
+					ret.push_back(*(sockaddr_in6*)p->ai_addr);
+					break;
+				}
+			}
+		}
+
+		freeaddrinfo(result);
 		return ret;
 	}
 }

@@ -17,11 +17,11 @@ TEST(Exception, MacroFunctionTest1)
 		EXPECT_STREQ(__FILE__, di.m_file);
 		EXPECT_STREQ("Test asd_MakeDebugInfo", di.m_comment);
 
-		asd::MString cmpstr(asd::DebugInfo::ToStringFormat,
-							__FILE__,
-							LineCheck,
-							__FUNCTION__,
-							"Test asd_MakeDebugInfo");
+		auto cmpstr = asd::MString::Format(asd::DebugInfo::ToStringFormat,
+										   __FILE__,
+										   LineCheck,
+										   __FUNCTION__,
+										   "Test asd_MakeDebugInfo");
 		EXPECT_STREQ(di.ToString(), cmpstr);
 		asd::puts(di.ToString());
 	}
@@ -34,11 +34,11 @@ TEST(Exception, MacroFunctionTest1)
 		EXPECT_STREQ(__FILE__, di.m_file);
 		EXPECT_STREQ("Test asd_MakeDebugInfo 123", di.m_comment);
 
-		asd::MString cmpstr(asd::DebugInfo::ToStringFormat,
-							__FILE__,
-							LineCheck,
-							__FUNCTION__,
-							"Test asd_MakeDebugInfo 123");
+		auto cmpstr = asd::MString::Format(asd::DebugInfo::ToStringFormat,
+										   __FILE__,
+										   LineCheck,
+										   __FUNCTION__,
+										   "Test asd_MakeDebugInfo 123");
 		EXPECT_STREQ(di.ToString(), cmpstr);
 		asd::puts(di.ToString());
 	}
@@ -54,11 +54,11 @@ TEST(Exception, MacroFunctionTest2)
 		asd_RaiseException("Test asd_RaiseException");
 	}
 	catch (asd::Exception& e) {
-		asd::MString cmpstr(asd::DebugInfo::ToStringFormat,
-							__FILE__,
-							LineCheck,
-							__FUNCTION__,
-							"Test asd_RaiseException");
+		auto cmpstr = asd::MString::Format(asd::DebugInfo::ToStringFormat,
+										   __FILE__,
+										   LineCheck,
+										   __FUNCTION__,
+										   "Test asd_RaiseException");
 		EXPECT_STREQ(e.what(), cmpstr);
 		puts(e.what());
 	}
@@ -68,11 +68,11 @@ TEST(Exception, MacroFunctionTest2)
 		asd_RaiseException("Test asd_RaiseException {}", 123);
 	}
 	catch (asd::Exception& e) {
-		asd::MString cmpstr(asd::DebugInfo::ToStringFormat,
-							__FILE__,
-							LineCheck,
-							__FUNCTION__,
-							"Test asd_RaiseException 123");
+		auto cmpstr = asd::MString::Format(asd::DebugInfo::ToStringFormat,
+										   __FILE__,
+										   LineCheck,
+										   __FUNCTION__,
+										   "Test asd_RaiseException 123");
 		EXPECT_STREQ(e.what(), cmpstr);
 		puts(e.what());
 	}

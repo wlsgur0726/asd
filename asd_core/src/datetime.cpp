@@ -595,8 +595,8 @@ namespace asd
 			return asd::ToString(a_format, *this);
 		}
 		else {
-			return MString("{:02d}:{:02d}:{:02d}.{:04d}",
-						   Hour(), Minute(), Second(), Millisecond());
+			return MString::Format("{:02d}:{:02d}:{:02d}.{:04d}",
+								   Hour(), Minute(), Second(), Millisecond());
 		}
 	}
 
@@ -862,9 +862,9 @@ namespace asd
 	MString DateTime::ToString(const char* a_format /*= "%Y-%m-%d %H:%M:%S"*/) const asd_noexcept
 	{
 		if (a_format == nullptr) {
-			return MString("{} {}",
-						   m_date.ToString(),
-						   m_time.ToString());
+			return MString::Format("{} {}",
+								   m_date.ToString(),
+								   m_time.ToString());
 		}
 		return asd::ToString(a_format, *this);
 	}

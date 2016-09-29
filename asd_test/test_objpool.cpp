@@ -243,13 +243,13 @@ namespace asdtest_objpool
 
 		Count sum;
 		for (auto it : Counter) {
-			asd::MString print("  [{}]    ", it.first);
+			auto print = asd::MString::Format("  [{}]    ", it.first);
 			print << it.second.Alloc << "    " << it.second.Free;
 			printf("%s\n", print.c_str());
 			sum.Alloc += it.second.Alloc;
 			sum.Free += it.second.Free;
 		}
-		asd::MString print("  total  :  ");
+		auto print = asd::MString::Format("  total  :  ");
 		print << sum.Alloc;
 		printf("%s\n", print.c_str());
 		EXPECT_EQ(g_objCount, 0);

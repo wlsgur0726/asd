@@ -40,4 +40,7 @@ namespace asd
 	}
 
 #define asd_RegisterFinallyTask(task) const auto ___asd_finally___ = asd::FinallyTask(task);
+
+
+
 }

@@ -324,7 +324,8 @@ namespace asd
 
 	template<typename ReturnType, typename ProxyType, bool AsciiOnly=false>
 	inline void strcpy_internal(OUT ReturnType* a_dst,
-								IN const ProxyType* a_src) asd_noexcept
+								IN const ProxyType* a_src,
+								IN size_t a_dstBufCount) asd_noexcept
 	{
 		if (SamePtr(a_dst, a_src))
 			return;
@@ -332,12 +333,19 @@ namespace asd
 		if (a_src == nullptr)
 			a_src = (const ProxyType*)&NullChar;
 
-		for (; *a_src!='\0'; ++a_src,++a_dst) {
+		size_t offset = 0;
+		for (; *a_src!='\0' && offset<a_dstBufCount; ++a_src, ++a_dst) {
 			if (AsciiOnly) {
 				bool isAsciiChar = (0x7F - *a_src) >= 0;
 				assert(isAsciiChar);
 			}
 			*a_dst = (ReturnType)*a_src;
+		}
+
+		if (offset >= a_dstBufCount) {
+			if (offset > 0)
+				a_dst[offset-1] = '\0';
+			return;
 		}
 
 		assert(*a_src == '\0');
@@ -346,51 +354,57 @@ namespace asd
 
 
 	char* strcpy(OUT char* a_dst,
-				 IN const char* a_src) asd_noexcept
+				 IN const char* a_src,
+				 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
 	{
-		strcpy_internal(a_dst, a_src);
+		strcpy_internal(a_dst, a_src, a_dstBufCount);
 		return a_dst;
 	}
 
 
 	wchar_t* strcpy(OUT wchar_t* a_dst,
-					IN const wchar_t* a_src) asd_noexcept
+					IN const wchar_t* a_src,
+					IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
 	{
-		strcpy_internal(a_dst, a_src);
+		strcpy_internal(a_dst, a_src, a_dstBufCount);
 		return a_dst;
 	}
 
 
 	char16_t* strcpy(OUT char16_t* a_dst,
-					 IN const char16_t* a_src) asd_noexcept
+					 IN const char16_t* a_src,
+					 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
 	{
-		strcpy_internal(a_dst, a_src);
+		strcpy_internal(a_dst, a_src, a_dstBufCount);
 		return a_dst;
 	}
 
 
 	char32_t* strcpy(OUT char32_t* a_dst,
-					 IN const char32_t* a_src) asd_noexcept
+					 IN const char32_t* a_src,
+					 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
 	{
-		strcpy_internal(a_dst, a_src);
+		strcpy_internal(a_dst, a_src, a_dstBufCount);
 		return a_dst;
 	}
 
 
 	// Ascii문자열만 사용 할 것.
 	char* strcpy(OUT char* a_dst,
-				 IN const wchar_t* a_src) asd_noexcept
+				 IN const wchar_t* a_src,
+				 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
 	{
-		strcpy_internal<char, wchar_t, true>(a_dst, a_src);
+		strcpy_internal<char, wchar_t, true>(a_dst, a_src, a_dstBufCount);
 		return a_dst;
 	}
 
 
 	// Ascii문자열만 사용 할 것.
 	wchar_t* strcpy(OUT wchar_t* a_dst,
-					IN const char* a_src) asd_noexcept
+					IN const char* a_src,
+					IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
 	{
-		strcpy_internal<wchar_t, char, true>(a_dst, a_src);
+		strcpy_internal<wchar_t, char, true>(a_dst, a_src, a_dstBufCount);
 		return a_dst;
 	}
 

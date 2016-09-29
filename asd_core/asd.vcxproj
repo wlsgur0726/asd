@@ -283,8 +283,10 @@
     <ClInclude Include="include\asd\exception.h" />
     <ClInclude Include="include\asd\iconvwrap.h" />
     <ClInclude Include="include\asd\buffer.h" />
-    <ClInclude Include="include\asd\ioservice.h" />
+    <ClInclude Include="include\asd\ioevent.h" />
     <ClInclude Include="include\asd\lock.h" />
+    <ClInclude Include="include\asd\log.h" />
+    <ClInclude Include="include\asd\memdump.h" />
     <ClInclude Include="include\asd\objpool.h" />
     <ClInclude Include="include\asd\odbcwrap.h" />
     <ClInclude Include="include\asd\semaphore.h" />
@@ -313,8 +315,10 @@
     <ClCompile Include="src\exception.cpp" />
     <ClCompile Include="src\iconvwrap.cpp" />
     <ClCompile Include="src\buffer.cpp" />
-    <ClCompile Include="src\ioservice.cpp" />
+    <ClCompile Include="src\ioevent.cpp" />
     <ClCompile Include="src\lock.cpp" />
+    <ClCompile Include="src\log.cpp" />
+    <ClCompile Include="src\memdump.cpp" />
     <ClCompile Include="src\odbcwrap.cpp" />
     <ClCompile Include="src\semaphore.cpp" />
     <ClCompile Include="src\socket.cpp" />

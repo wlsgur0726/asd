@@ -4,15 +4,25 @@
 #include <cstdlib>
 #include <ctime>
 
+#if !asd_Platform_Windows
+#	include <sys/types.h>
+#	include <unistd.h>
+#	include <sys/syscall.h>
+#
+#endif
+
 namespace asd
 {
-	const std::thread::id& GetCurrentThreadID() asd_noexcept
+	uint32_t GetCurrentThreadID() asd_noexcept
 	{
-		thread_local std::thread::id t_tid;
-		if (t_tid == std::thread::id())
-			t_tid = std::this_thread::get_id();
-
-		assert(t_tid != std::thread::id());
+		thread_local uint32_t t_tid = 0;
+		if (t_tid == 0) {
+#if asd_Platform_Windows
+			t_tid = ::GetCurrentThreadId();
+#else
+			t_tid = ::syscall(SYS_gettid);
+#endif
+		}
 		return t_tid;
 	}
 

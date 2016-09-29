@@ -191,7 +191,7 @@ namespace asdtest_string
 		// 각종 생성자와 대입연산자 테스트
 		StringType_asd s1(a_testString);
 		StringType_asd s2(s1);
-		StringType_asd s3(Str("{}"), a_testString);
+		StringType_asd s3 = StringType_asd::Format(Str("{}"), a_testString);
 		StringType_asd s4 = a_testString;
 		StringType_asd s5 = s1;
 		StringType_asd s6;
@@ -280,7 +280,7 @@ namespace asdtest_string
 
 			s4 = s1;
 			s4 += Str("{}{}{}{}{}");
-			s5.Format(s4, 123, 1.23, Str("true"), p, stdString1.data());
+			s5 = StringType_asd::Format(s4, 123, 1.23, Str("true"), p, stdString1.data());
 
 			// 값이 모두 같은지 확인.
 			EXPECT_EQ(s2, s3);
@@ -324,7 +324,7 @@ namespace asdtest_string
 			s3 = s2;
 			EXPECT_EQ(s1.get(), s3.get());
 
-			s2.Format(Str("change"));
+			s2 = StringType_asd::Format(Str("change"));
 			EXPECT_NE(s1, s2);
 			s3 << 123;
 			EXPECT_NE(s1, s3);

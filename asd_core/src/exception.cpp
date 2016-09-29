@@ -18,13 +18,11 @@ namespace asd
 
 	MString DebugInfo::ToString() const asd_noexcept
 	{
-		MString s;
-		s.Format(ToStringFormat,
-				 m_file, 
-				 m_line, 
-				 m_function, 
-				 m_comment);
-		return s;
+		return MString::Format(ToStringFormat,
+							   m_file, 
+							   m_line, 
+							   m_function, 
+							   m_comment);
 	}
 
 	Exception::Exception()  asd_noexcept
@@ -98,7 +96,7 @@ namespace asd
 	}
 
 
-	void SetAssertHandler(IN const std::function<void(const DebugInfo&)>& a_handler) asd_noexcept
+	void SetAssertHandler(IN const std::function<void(IN const DebugInfo&)>& a_handler) asd_noexcept
 	{
 		auto& ah = AssertHandler::GlobalInstance();
 		AssertHandler_ULock lock(ah.m_lock);

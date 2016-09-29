@@ -157,7 +157,7 @@ namespace asd
 		if (InvalidCount(count))
 			return 0;
 
-		Transactional<BufferOperation::Write> tran(a_buffer);
+		Transactional<BufOp::Write> tran(a_buffer);
 
 		size_t ret1 = Write_PrimitiveType<BufferEndian, DefaultCountType>(a_buffer,
 																		  static_cast<DefaultCountType>(count));
@@ -186,7 +186,7 @@ namespace asd
 	{
 		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
 
-		Transactional<BufferOperation::Read> tran(a_buffer);
+		Transactional<BufOp::Read> tran(a_buffer);
 
 		DefaultCountType count;
 		size_t ret1 = Read_PrimitiveType<BufferEndian, DefaultCountType>(a_buffer,
@@ -332,7 +332,7 @@ namespace asd
 	> size_t Write(REF BufferList& a_buffer,
 				   IN const std::pair<First, Second>& a_data)
 	{
-		Transactional<BufferOperation::Write> tran(a_buffer);
+		Transactional<BufOp::Write> tran(a_buffer);
 
 		size_t ret1 = Write(a_buffer,
 							a_data.first);
@@ -354,7 +354,7 @@ namespace asd
 	> size_t Read(REF BufferList& a_buffer,
 				  OUT std::pair<First, Second>& a_data)
 	{
-		Transactional<BufferOperation::Read> tran(a_buffer);
+		Transactional<BufOp::Read> tran(a_buffer);
 
 		size_t ret1 = Read(a_buffer,
 						   a_data.first);
@@ -432,7 +432,7 @@ namespace asd
 	inline size_t Write(REF BufferList& a_buffer,
 						IN const std::tuple<Args...>& a_data) asd_noexcept
 	{
-		Transactional<BufferOperation::Write> tran(a_buffer);
+		Transactional<BufOp::Write> tran(a_buffer);
 
 		typedef std::tuple<Args...> Tuple;
 		const size_t Count = sizeof...(Args);
@@ -447,7 +447,7 @@ namespace asd
 	inline size_t Read(REF BufferList& a_buffer,
 					   OUT std::tuple<Args...>& a_data) asd_noexcept
 	{
-		Transactional<BufferOperation::Read> tran(a_buffer);
+		Transactional<BufOp::Read> tran(a_buffer);
 
 		typedef std::tuple<Args...> Tuple;
 		const size_t Count = sizeof...(Args);
@@ -467,7 +467,7 @@ namespace asd
 		if (InvalidCount(count))
 			return 0;
 
-		Transactional<BufferOperation::Write> tran(a_buffer);
+		Transactional<BufOp::Write> tran(a_buffer);
 
 		size_t ret = Write(a_buffer,
 						   static_cast<DefaultCountType>(count));
@@ -497,7 +497,7 @@ namespace asd
 
 	asd_Define_Write_And_Read_StdContainer(std::vector)
 	{
-		Transactional<BufferOperation::Read> tran(a_buffer);
+		Transactional<BufOp::Read> tran(a_buffer);
 
 		DefaultCountType count;
 		size_t ret = Read(a_buffer, count);
@@ -527,7 +527,7 @@ namespace asd
 
 	asd_Define_Write_And_Read_StdContainer(std::list)
 	{
-		Transactional<BufferOperation::Read> tran(a_buffer);
+		Transactional<BufOp::Read> tran(a_buffer);
 
 		DefaultCountType count;
 		size_t ret = Read(a_buffer, count);
@@ -555,7 +555,7 @@ namespace asd
 
 	asd_Define_Write_And_Read_StdContainer(std::set)
 	{
-		Transactional<BufferOperation::Read> tran(a_buffer);
+		Transactional<BufOp::Read> tran(a_buffer);
 
 		DefaultCountType count;
 		size_t ret = Read(a_buffer, count);
@@ -588,7 +588,7 @@ namespace asd
 
 	asd_Define_Write_And_Read_StdContainer(std::unordered_set)
 	{
-		Transactional<BufferOperation::Read> tran(a_buffer);
+		Transactional<BufOp::Read> tran(a_buffer);
 
 		DefaultCountType count;
 		size_t ret = Read(a_buffer, count);
@@ -637,7 +637,7 @@ namespace asd
 	> inline size_t Read(REF BufferList& a_buffer,
 						 OUT std::map<Key, Value, Args...>& a_data)
 	{
-		Transactional<BufferOperation::Read> tran(a_buffer);
+		Transactional<BufOp::Read> tran(a_buffer);
 
 		DefaultCountType count;
 		size_t ret = Read(a_buffer, count);
@@ -685,7 +685,7 @@ namespace asd
 	> inline size_t Read(REF BufferList& a_buffer,
 						 OUT std::unordered_map<Key, Value, Args...>& a_data)
 	{
-		Transactional<BufferOperation::Read> tran(a_buffer);
+		Transactional<BufOp::Read> tran(a_buffer);
 
 		DefaultCountType count;
 		size_t ret = Read(a_buffer, count);
@@ -719,7 +719,7 @@ namespace asd
 #else
 	asd_Define_Write_And_Read_StdContainer(std::map)
 	{
-		Transactional<BufferOperation::Read> tran(a_buffer);
+		Transactional<BufOp::Read> tran(a_buffer);
 
 		DefaultCountType count;
 		size_t ret = Read(a_buffer, count);
@@ -752,7 +752,7 @@ namespace asd
 
 	asd_Define_Write_And_Read_StdContainer(std::unordered_map)
 	{
-		Transactional<BufferOperation::Read> tran(a_buffer);
+		Transactional<BufOp::Read> tran(a_buffer);
 
 		DefaultCountType count;
 		size_t ret = Read(a_buffer, count);

@@ -80,25 +80,31 @@ namespace asd
 
 
 	char* strcpy(OUT char* a_dst,
-				 IN const char* a_src) asd_noexcept;
+				 IN const char* a_src,
+				 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max()) asd_noexcept;
 
 	wchar_t* strcpy(OUT wchar_t* a_dst,
-					IN const wchar_t* a_src) asd_noexcept;
+					IN const wchar_t* a_sr,
+					IN size_t a_dstBufCount = std::numeric_limits<size_t>::max()) asd_noexcept;
 
 	char16_t* strcpy(OUT char16_t* a_dst,
-					 IN const char16_t* a_src) asd_noexcept;
+					 IN const char16_t* a_src,
+					 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max()) asd_noexcept;
 
 	char32_t* strcpy(OUT char32_t* a_dst,
-					 IN const char32_t* a_src) asd_noexcept;
+					 IN const char32_t* a_src,
+					 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max()) asd_noexcept;
 
 
 	// Ascii문자열만 사용 할 것.
 	char* strcpy(OUT char* a_dst,
-				 IN const wchar_t* a_src) asd_noexcept;
+				 IN const wchar_t* a_src,
+				 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max()) asd_noexcept;
 
 	// Ascii문자열만 사용 할 것.
 	wchar_t* strcpy(OUT wchar_t* a_dst,
-					IN const char* a_src) asd_noexcept;
+					IN const char* a_src,
+					IN size_t a_dstBufCount = std::numeric_limits<size_t>::max()) asd_noexcept;
 
 
 	size_t strlen(IN const char* a_str) asd_noexcept;
@@ -175,7 +181,7 @@ namespace asd
 					return -1;
 				if (c1 > c2)
 					return 1;
-				if (c1 == '\0')
+				if (c1 == NullChar)
 					break;
 			}
 		}
@@ -187,7 +193,7 @@ namespace asd
 					return -1;
 				if (c1 > c2)
 					return 1;
-				if (c1 == '\0')
+				if (c1 == NullChar)
 					break;
 			}
 		}
@@ -201,7 +207,7 @@ namespace asd
 	{
 		inline size_t operator() (IN const CharType* a_src) const asd_noexcept
 		{
-			const int cnt = sizeof(size_t) / sizeof(CharType);
+			const size_t cnt = sizeof(size_t) / sizeof(CharType);
 			static_assert(sizeof(size_t) >= sizeof(CharType),
 						  "invalid tempalte parameter");
 			static_assert(sizeof(size_t) % sizeof(CharType) == 0,
@@ -216,7 +222,7 @@ namespace asd
 			size_t ret = 0x5555555555555555;
 			while (*p != '\0') {
 				size_t block = 0;
-				for (int i=0; i<cnt; ++i) {
+				for (size_t i=0; i<cnt; ++i) {
 					CharType c;
 					if (CaseSensitive)
 						c = asd::toupper(*p);
@@ -303,24 +309,24 @@ namespace asd
 
 
 
-		template<typename... ARGS>
-		inline BasicString(IN const CharType* a_format,
-						   IN const ARGS&... a_args) asd_noexcept
+		inline BasicString(IN const CharType* a_str) asd_noexcept
 		{
-			Format(a_format, a_args...);
+			auto p = BaseType::GetArrayPtr(false);
+			*p = a_str;
 		}
 
 
 
 		template<typename... ARGS>
-		inline ThisType& Format(IN const CharType* a_format,
-								IN const ARGS&... a_args) asd_noexcept
+		inline static ThisType Format(IN const CharType* a_format,
+									  IN const ARGS&... a_args) asd_noexcept
 		{
+			ThisType ret;
 			if (a_format == nullptr)
-				return *this;
-			auto p = BaseType::GetArrayPtr(false);
+				return ret;
+			auto p = ret.GetArrayPtr(false);
 			*p = fmt::format(a_format, a_args...);
-			return *this;
+			return ret;
 		}
 
 
@@ -472,7 +478,7 @@ namespace asd
 		{
 			const CharType format[] = {'{', '}', 0};
 			if (length() == 0)
-				return Format(format, a_data);
+				return this->operator=(Format(format, a_data));
 			auto conv = fmt::format(format, a_data);
 			return append(conv.data(), conv.length());
 		}

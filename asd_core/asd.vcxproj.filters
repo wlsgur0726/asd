@@ -10,7 +10,6 @@
     <ClInclude Include="include\asd\datetime.h" />
     <ClInclude Include="include\asd\exception.h" />
     <ClInclude Include="include\asd\iconvwrap.h" />
-    <ClInclude Include="include\asd\ioservice.h" />
     <ClInclude Include="include\asd\lock.h" />
     <ClInclude Include="include\asd\objpool.h" />
     <ClInclude Include="include\asd\odbcwrap.h" />
@@ -24,6 +23,9 @@
     <ClInclude Include="include\asd\threadpool.h" />
     <ClInclude Include="include\asd\threadutil.h" />
     <ClInclude Include="include\asd\util.h" />
+    <ClInclude Include="include\asd\ioevent.h" />
+    <ClInclude Include="include\asd\log.h" />
+    <ClInclude Include="include\asd\memdump.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\address.cpp" />
@@ -32,7 +34,6 @@
     <ClCompile Include="src\datetime.cpp" />
     <ClCompile Include="src\exception.cpp" />
     <ClCompile Include="src\iconvwrap.cpp" />
-    <ClCompile Include="src\ioservice.cpp" />
     <ClCompile Include="src\lock.cpp" />
     <ClCompile Include="src\odbcwrap.cpp" />
     <ClCompile Include="src\semaphore.cpp" />
@@ -41,5 +42,8 @@
     <ClCompile Include="src\sysutil.cpp" />
     <ClCompile Include="src\threadpool.cpp" />
     <ClCompile Include="src\threadutil.cpp" />
+    <ClCompile Include="src\ioevent.cpp" />
+    <ClCompile Include="src\log.cpp" />
+    <ClCompile Include="src\memdump.cpp" />
   </ItemGroup>
 </Project>

@@ -23,6 +23,9 @@ namespace asd
 	// 단순한 Socket API 랩핑
 	class Socket
 	{
+		friend class Poller;
+
+
 	public:
 		asd_PlatformTypeDef_Socket;
 
@@ -48,7 +51,7 @@ namespace asd
 	private:
 		Handle m_handle = InvalidHandle;
 
-		IpAddress::Family m_addressFamily = IpAddress::Family::IPv4;
+		AddressFamily m_addressFamily = AddressFamily::IPv4;
 
 		Type m_socketType = Type::TCP;
 
@@ -61,7 +64,7 @@ namespace asd
 #endif
 
 	public:
-		Socket(IN IpAddress::Family a_addressFamily = IpAddress::Family::IPv4,
+		Socket(IN AddressFamily a_addressFamily = AddressFamily::IPv4,
 			   IN Socket::Type a_socketType = Type::TCP) asd_noexcept;
 
 
@@ -89,7 +92,7 @@ namespace asd
 		// AddressFamily와 SocketType이 기존과 동일하고, 
 		// a_force에 false를 주면 아무런 작업도 하지 않는다.
 		Error
-		Init(IN IpAddress::Family a_addressFamily,
+		Init(IN AddressFamily a_addressFamily,
 			 IN Socket::Type a_socketType,
 			 IN bool a_force) asd_noexcept;
 
@@ -292,7 +295,7 @@ namespace asd
 		uint8_t m_recvBuffer[BufferSize];
 		uint8_t m_sendBuffer[BufferSize];
 
-		EasySocket(IN IpAddress::Family a_addressFamily = IpAddress::Family::IPv4,
+		EasySocket(IN AddressFamily a_addressFamily = AddressFamily::IPv4,
 				   IN Socket::Type a_socketType = Socket::Type::TCP);
 
 		void Bind(IN const IpAddress& a_addr);

@@ -38,10 +38,10 @@ namespace asd
 {
 	MString DBDiagInfo::ToString() const asd_noexcept
 	{
-		return MString("State={},NativeError={},Message={}",
-					   m_state,
-					   m_nativeError,
-					   m_message);
+		return MString::Format("State={},NativeError={},Message={}",
+							   m_state,
+							   m_nativeError,
+							   m_message);
 	}
 
 

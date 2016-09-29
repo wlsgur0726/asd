@@ -338,9 +338,9 @@ namespace asdtest_odbc
 	{
 		const size_t Limit = 512;
 		size_t sz = p.size();
-		asd::MString r("({} bytes)", sz);
+		auto r = asd::MString::Format("({} bytes)", sz);
 		for (int i=0; i<sz; ++i) {
-			r += asd::MString(" {:02x}", p[i]);
+			r += asd::MString::Format(" {:02x}", p[i]);
 			if (i > Limit) {
 				r += " ...";
 				break;
@@ -368,7 +368,7 @@ namespace asdtest_odbc
 
 	StringType TestData_String(int pk)
 	{
-		return asd::MString("test{}", pk);
+		return asd::MString::Format("test{}", pk);
 	}
 
 
@@ -413,25 +413,25 @@ namespace asdtest_odbc
 	/***** ODBCTest ***********************************************************************************/
 	struct ODBCTest
 	{
-#define TestBegin(TestName, ConVarName, StmtVarName)									\
-		void TestName ()																\
-		{																				\
-			{																			\
-				const char* FuncName = # TestName ;										\
-				COUT << asd::MString("\n[{}] {}:{}\n", FuncName, __FILE__, __LINE__);	\
-			}																			\
-			try {																		\
-				asd::DBConnection ConVarName;											\
-				ConVarName.Open(ConnectionString);										\
-				asd::DBStatement StmtVarName(ConVarName);								\
+#define TestBegin(TestName, ConVarName, StmtVarName)											\
+		void TestName ()																		\
+		{																						\
+			{																					\
+				const char* FuncName = # TestName ;												\
+				COUT << asd::MString::Format("\n[{}] {}:{}\n", FuncName, __FILE__, __LINE__);	\
+			}																					\
+			try {																				\
+				asd::DBConnection ConVarName;													\
+				ConVarName.Open(ConnectionString);												\
+				asd::DBStatement StmtVarName(ConVarName);										\
 
-#define TestEnd																			\
-			}																			\
-			catch(std::exception& e) {													\
-				printf("Exception! : %s\n", e.what());									\
-				throw e;																\
-			}																			\
-		}																				\
+#define TestEnd																					\
+			}																					\
+			catch(std::exception& e) {															\
+				printf("Exception! : %s\n", e.what());											\
+				throw e;																		\
+			}																					\
+		}																						\
 
 #define GetStr(Str) (DBStr.Str[TestTarget])
 
@@ -833,9 +833,9 @@ namespace asdtest_odbc
 									asd_RaiseException("invalid colName : {}", colName.data());
 								}
 
-								COUT << asd::MString("  {:10s}  :  {}\n",
-													 colName,
-													 colValue);
+								COUT << asd::MString::Format("  {:10s}  :  {}\n",
+															 colName,
+															 colValue);
 							}
 							COUT << '\n';
 						}
@@ -1059,9 +1059,9 @@ namespace asdtest_odbc
 									asd_RaiseException("invalid colName : {}", colName.data());
 								}
 
-								COUT << asd::MString("  {:10s}  :  {}\n",
-													 colName,
-													 colValue);
+								COUT << asd::MString::Format("  {:10s}  :  {}\n",
+															 colName,
+															 colValue);
 							}
 							COUT << '\n';
 						}
@@ -1078,7 +1078,7 @@ namespace asdtest_odbc
 			// Delete
 			{
 				int64_t ret = Execute(stmt,
-									  asd::MString("DELETE FROM {} WHERE cInt % 2 = 0", TableName));
+									  asd::MString::Format("DELETE FROM {} WHERE cInt % 2 = 0", TableName));
 				// 영향을 받은(삭제된) 행 수가 리턴된다.
 				EXPECT_EQ(ret, 2);
 			}
@@ -1158,9 +1158,9 @@ namespace asdtest_odbc
 									asd_RaiseException("invalid colName : {}", colName.data());
 								}
 
-								COUT << asd::MString("  {:10s}  :  {}\n",
-													 colName,
-													 colValue);
+								COUT << asd::MString::Format("  {:10s}  :  {}\n",
+															 colName,
+															 colValue);
 							}
 							COUT << '\n';
 						}
@@ -1328,8 +1328,8 @@ namespace asdtest_odbc
 
 			// SP 생성
 			Execute(stmt, GetStr(CreateProcedure_Insert));
-			asd::MString query = asd::MString("{{ CALL {}(?,?,?,?,?,?,?,?) }}",
-											  SPName_Insert);
+			asd::MString query = asd::MString::Format("{{ CALL {}(?,?,?,?,?,?,?,?) }}",
+													  SPName_Insert);
 
 			// SetParam 방식
 			{
@@ -1476,8 +1476,8 @@ namespace asdtest_odbc
 			// SP 생성
 			Execute(stmt, GetStr(CreateProcedure_Update));
 			asd::MString query;
-			query = asd::MString("{{ CALL {}(?,?,?,?,?) }}",
-								 SPName_Update);
+			query = asd::MString::Format("{{ CALL {}(?,?,?,?,?) }}",
+										 SPName_Update);
 
 			// SetParam 방식
 			{
@@ -1594,8 +1594,8 @@ namespace asdtest_odbc
 			// SP 생성
 			Execute(stmt, GetStr(CreateProcedure_Select));
 			asd::MString query;
-			query = asd::MString("{{ CALL {}(?) }}",
-								 SPName_Select);
+			query = asd::MString::Format("{{ CALL {}(?) }}",
+										 SPName_Select);
 
 			int loop = 0;
 			int res1 = 0;
@@ -1709,7 +1709,7 @@ namespace asdtest_odbc
 						asd_RaiseException("invalid colName : {}", colName.data());
 					}
 
-					COUT << asd::MString("  {:10s}  :  {}\n", colName, colValue);
+					COUT << asd::MString::Format("  {:10s}  :  {}\n", colName, colValue);
 				}
 				COUT << '\n';
 

@@ -115,7 +115,7 @@ namespace asd
 				thread_local TaskObjectQueue t_queue;
 
 				// sequence check
-				MutexController<Mutex> mtx(m_lock);
+				MtxCtl<Mutex> mtx(m_lock);
 				auto emplace_result = m_workingMap.emplace(hashKey, &t_queue);
 				if (emplace_result.second == false) {
 					// 동일한 작업이 이미 수행중인 경우
@@ -167,7 +167,7 @@ namespace asd
 
 		Report GetReport() asd_noexcept
 		{
-			MutexController<Mutex> mtx(m_lock);
+			MtxCtl<Mutex> mtx(m_lock);
 			return m_report;
 		}
 
