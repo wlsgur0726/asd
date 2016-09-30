@@ -1,4 +1,5 @@
 ﻿#include "asd_pch.h"
+#include "asd/filedef.h"
 #include "asd/lock.h"
 #include "asd/memdump.h"
 #include "asd/iconvwrap.h"
@@ -21,26 +22,23 @@ namespace asd
 	namespace MemDump
 	{
 #if asd_Platform_Windows
-		#define asd_str(str) L ## str
 		#define asd_mkdir(path) _wmkdir(path)
-		typedef wchar_t Char;
-		const Char g_path_delimiter[] = asd_str("\\");
-		const Char g_dump_pre[] = asd_str("");
-		const Char g_dump_ext[] = asd_str(".dmp");
+		const FChar g_dump_pre[] = _F("");
+		const FChar g_dump_ext[] = _F(".dmp");
 
 		void CopyToBuf_Internal(IN const wchar_t* a_str,
-								OUT Char* a_dst,
+								OUT FChar* a_dst,
 								IN size_t a_dstBufCnt)
 		{
 			asd::strcpy(a_dst, a_str, a_dstBufCnt);
 		}
 
-		void GetProcessName_Internal(OUT Char* a_dst,
+		void GetProcessName_Internal(OUT FChar* a_dst,
 									 IN size_t a_dstBufCnt)
 		{
 			auto len = GetModuleFileNameW(NULL, a_dst, a_dstBufCnt);
 			for (auto i=len; i>0;) {
-				if (a_dst[--i] == g_path_delimiter[0]) {
+				if (a_dst[--i] == asd_fs_delimiter) {
 					for (auto j=++i; j<=len; ++j)
 						a_dst[j-i] = a_dst[j];
 					break;
@@ -49,15 +47,12 @@ namespace asd
 		}
 
 #else
-		#define asd_str(str) str
 		#define asd_mkdir(path) mkdir(path, 0777)
-		typedef char Char;
-		const Char g_path_delimiter[] = asd_str("/");
-		const Char g_dump_pre[] = asd_str("core.");
-		const Char g_dump_ext[] = asd_str("");
+		const FChar g_dump_pre[] = _F("core.");
+		const FChar g_dump_ext[] = _F("");
 
 		void CopyToBuf_Internal(IN const wchar_t* a_str,
-								OUT Char* a_dst,
+								OUT FChar* a_dst,
 								IN size_t a_dstBufCnt)
 		{
 			assert(Encoding::UTF8 == GetDefaultEncoding<char>());
@@ -65,14 +60,14 @@ namespace asd
 			asd::strcpy(a_dst, conv.c_str(), a_dstBufCnt);
 		}
 
-		void GetProcessName_Internal(OUT Char* a_dst,
+		void GetProcessName_Internal(OUT FChar* a_dst,
 									 IN size_t a_dstBufCnt)
 		{
 			const char* name = getenv("_");
 			asd::strcpy(a_dst, name, a_dstBufCnt);
 			auto len = asd::strlen(a_dst);
 			for (auto i=len; i>0;) {
-				if (a_dst[--i] == g_path_delimiter[0]) {
+				if (a_dst[--i] == asd_fs_delimiter) {
 					for (auto j=++i; j<=len; ++j)
 						a_dst[j-i] = a_dst[j];
 					break;
@@ -90,11 +85,11 @@ namespace asd
 
 		Mutex g_lock;
 
-		Char g_path[LEN_PATH] = {0};
-		Char g_path_temp[LEN_PATH] = {0};
+		FChar g_path[LEN_PATH] = {0};
+		FChar g_path_temp[LEN_PATH] = {0};
 
-		Char g_name[LEN_NAME] = {0};
-		Char g_name_temp[LEN_NAME] = {0};
+		FChar g_name[LEN_NAME] = {0};
+		FChar g_name_temp[LEN_NAME] = {0};
 
 
 		void SetOutPath(IN const wchar_t* a_path)
@@ -115,7 +110,7 @@ namespace asd
 		{
 			asd_mkdir(g_path);
 
-			Char* name;
+			FChar* name;
 			if (a_name != nullptr) {
 				asd_CopyToBuf(a_name, g_name_temp);
 				name = g_name_temp;
@@ -133,14 +128,14 @@ namespace asd
 			asd::sprintf(g_path_temp,
 						 LEN_PATH,
 						 //       1 2 3 4     5     6  7    8    9    A    B    C    D
-						 asd_str("%s%s%s%s_pid%u_tid%u_%04d-%02d-%02d_%02dh%02dm%02ds%s"),
-						 g_path,                                               // 1
-						 g_path[0] != '\0' ? g_path_delimiter : asd_str(""),   // 2
-						 g_dump_pre, name,                                     // 3, 4
-						 pid, tid,                                             // 5, 6
-						 now.Year(), now.Month(), now.Day(),                   // 7, 8, 9
-						 now.Hour(), now.Minute(), now.Second(),               // A, B, C
-						 g_dump_ext);                                          // D
+						 _F("%s%c%s%s_pid%u_tid%u_%04d-%02d-%02d_%02dh%02dm%02ds%s"),
+						 g_path,                                             // 1
+						 g_path[0] != '\0' ? asd_fs_delimiter : _F('\0'),    // 2
+						 g_dump_pre, name,                                   // 3, 4
+						 pid, tid,                                           // 5, 6
+						 now.Year(), now.Month(), now.Day(),                 // 7, 8, 9
+						 now.Hour(), now.Minute(), now.Second(),             // A, B, C
+						 g_dump_ext);                                        // D
 		}
 
 
@@ -205,7 +200,7 @@ namespace asd
 
 			// gcore가 설치되어 있어야 함
 			// 추후 google-coredumper (https://code.google.com/archive/p/google-coredumper/) 도입 검토 요망
-			static Char g_command[LEN_PATH] = {0};
+			static FChar g_command[LEN_PATH] = {0};
 			asd::sprintf(g_command,
 						 LEN_PATH,
 						 "gcore -o \"%s\" %u",

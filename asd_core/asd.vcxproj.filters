@@ -26,6 +26,7 @@
     <ClInclude Include="include\asd\ioevent.h" />
     <ClInclude Include="include\asd\log.h" />
     <ClInclude Include="include\asd\memdump.h" />
+    <ClInclude Include="include\asd\filedef.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\address.cpp" />

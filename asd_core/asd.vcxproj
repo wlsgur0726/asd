@@ -281,6 +281,7 @@
     <ClInclude Include="include\asd\caster.h" />
     <ClInclude Include="include\asd\classutil.h" />
     <ClInclude Include="include\asd\exception.h" />
+    <ClInclude Include="include\asd\filedef.h" />
     <ClInclude Include="include\asd\iconvwrap.h" />
     <ClInclude Include="include\asd\buffer.h" />
     <ClInclude Include="include\asd\ioevent.h" />

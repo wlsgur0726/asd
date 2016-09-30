@@ -176,10 +176,10 @@ namespace asd
 
 	class DateTime
 	{
+	public:
 		Date m_date;
 		Time m_time;
 
-	public:
 		// 현재시간
 		static DateTime Now();
 

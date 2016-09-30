@@ -20,13 +20,21 @@ namespace asd
 		typedef MtxCtl<MutexType>			Lock;
 
 
-		ObjectPool(const ThisType&) = delete;
-		ObjectPool& operator = (const ThisType&) = delete;
+		ObjectPool(IN const ThisType&) = delete;
+		ObjectPool& operator=(IN const ThisType&) = delete;
+
 		ObjectPool(IN size_t a_limitCount = std::numeric_limits<size_t>::max(),
 				   IN size_t a_initCount = 0)
 			: m_limitCount(a_limitCount)
 		{
 			AddCount(a_initCount);
+		}
+
+		ObjectPool(MOVE ThisType&& a_mv) asd_noexcept
+		{
+			std::swap(m_limitCount, a_mv.m_limitCount);
+			std::swap(m_lock, a_mv.m_lock);
+			std::swap(m_pool, a_mv.m_pool);
 		}
 
 
@@ -200,8 +208,9 @@ namespace asd
 
 
 	public:
-		ObjectPool2(const ThisType&) = delete;
-		ObjectPool2& operator = (const ThisType&) = delete;
+		ObjectPool2(IN const ThisType&) = delete;
+		ObjectPool2& operator=(IN const ThisType&) = delete;
+
 		ObjectPool2(IN size_t a_limitCount = std::numeric_limits<size_t>::max(),
 					IN size_t a_initCount = 0)
 			: m_limitCount(a_limitCount)

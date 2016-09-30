@@ -70,6 +70,11 @@ namespace asd
 			return GetArrayPtr()->size();
 		}
 
+		inline bool empty() const asd_noexcept
+		{
+			return GetArrayPtr()->empty();
+		}
+
 		inline const value_type* data() const asd_noexcept
 		{
 			return GetArrayPtr()->data();
@@ -80,12 +85,12 @@ namespace asd
 			return (value_type*)GetArrayPtr()->data();
 		}
 
-		inline reference at(IN size_type a_index) asd_noexcept
+		inline reference at(IN size_type a_index)
 		{
 			return GetArrayPtr()->at(a_index);
 		}
 
-		inline const_reference at(IN size_type a_index) const asd_noexcept
+		inline const_reference at(IN size_type a_index) const
 		{
 			return GetArrayPtr()->at(a_index);
 		}
@@ -141,12 +146,12 @@ namespace asd
 			return GetArrayPtr()->rend();
 		}
 
-		inline reference operator[](IN size_type a_index) asd_noexcept
+		inline reference operator[](IN size_type a_index)
 		{
 			return GetArrayPtr()->at(a_index);
 		}
 
-		inline const_reference operator[](IN size_type a_index) const asd_noexcept
+		inline const_reference operator[](IN size_type a_index) const
 		{
 			return GetArrayPtr()->at(a_index);
 		}

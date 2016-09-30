@@ -1,8 +1,10 @@
 ﻿#pragma once
 #include "asdbase.h"
-#include "string.h"
+#include "filedef.h"
 #include "semaphore.h"
 #include "objpool.h"
+#include "threadpool.h"
+#include "datetime.h"
 #include <thread>
 #include <queue>
 
@@ -10,60 +12,52 @@ namespace asd
 {
 	struct Log
 	{
-		MString		m_message;
-		FILE*		m_console;
-		bool		m_flush;
-		Semaphore*	m_sync;
-		const char*	m_file;
-		int			m_line;
-
-		inline Log(IN const MString& a_message = MString(),
-				   IN FILE* a_console = nullptr,
-				   IN bool a_flush = false,
-				   IN Semaphore* a_sync = nullptr,
-				   IN const char* a_file = nullptr,
-				   IN int a_line = 0)
-			: m_message(a_message)
-			, m_console(a_console)
-			, m_flush(a_flush)
-			, m_sync(a_sync)
-			, m_file(a_file)
-			, m_line(a_line)
+		struct Sync
 		{
-		}
+			Semaphore	m_event;
+			errno_t		m_errno = 0;
+		};
+
+		FString		m_message;
+		FILE*		m_console = nullptr;
+		bool		m_flush = false;
+		Sync*		m_sync = nullptr;
+		const char*	m_file = nullptr;
+		int			m_line = 0;
 	};
 
 
 
 	class Logger
 	{
-		// Windows에서 MString은 유니코드가 아니지만 파일경로는 유니코드가 필수이므로 wide 사용
-		const WString m_outDir;
-		const WString m_logName;
-		FILE* m_logFile = nullptr;
-
 		Mutex m_lock;
-		ObjectPool<Log, false> m_logObjPool;
-		std::queue<Log*> m_queue;
-		bool m_stop = true;
-		std::thread m_writer;
+		const FString m_outDir;
+		const FString m_logName;
+		FILE* m_logFile = nullptr;
+		Date m_today;
 
-		std::function<MString()> m_genHead;
-		std::function<MString()> m_genTail;
+		ThreadPool m_writer = ThreadPool(1);
+		ObjectPool<Log, false> m_logObjPool = ObjectPool<Log, false>(100);
+
+		std::shared_ptr<std::function<FString()>> m_genHead;
+		std::shared_ptr<std::function<FString()>> m_genTail;
 
 		void Init();
+		FILE* RefreshLogFile(IN const Date& a_today) asd_noexcept;
+		void Print(IN Log* a_log) asd_noexcept;
+
 
 	public:
-		Logger(IN const MString& a_outDir,
-			   IN const MString& a_logName);
+		Logger(IN const char* a_outDir,
+			   IN const char* a_logName);
 
-		Logger(IN const WString& a_outDir,
-			   IN const WString& a_logName);
+		Logger(IN const wchar_t* a_outDir,
+			   IN const wchar_t* a_logName);
 
 		virtual ~Logger() asd_noexcept;
 
-		void SetGenHeadDelegate(MOVE std::function<MString()>&& a_delegate) asd_noexcept;
-		void SetGenTailDelegate(MOVE std::function<MString()>&& a_delegate) asd_noexcept;
+		void SetGenHeadDelegate(MOVE std::function<FString()>&& a_delegate) asd_noexcept;
+		void SetGenTailDelegate(MOVE std::function<FString()>&& a_delegate) asd_noexcept;
 		void PushLog(IN const Log& a_log) asd_noexcept;
 	};
 }
