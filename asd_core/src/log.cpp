@@ -6,11 +6,15 @@
 #if defined(asd_Platform_Windows)
 #	include <io.h>
 #
+#else
+#	include <sys/stat.h>
+#
 #endif
 
 namespace asd
 {
 #if defined(asd_Platform_Windows)
+	#define asd_CCS ",ccs=UTF-16LE"
 	inline FILE* fopen(IN const FChar* a_path,
 					   IN const FChar* a_mode)
 	{
@@ -34,6 +38,7 @@ namespace asd
 	}
 
 #else
+	#define asd_CCS
 	inline bool Flush(IN FILE* a_fp)
 	{
 		if (fflush(a_fp) != 0)
@@ -67,7 +72,7 @@ namespace asd
 			FString fn = FString::Format(_F("{}{}_{:04d}-{:02d}-{:02d}.txt"),
 										 m_outDir, m_logName,
 										 a_today.Year(), a_today.Month(), a_today.Day());
-			FILE* fp = fopen(fn, _F("a+,ccs=UTF-8"));
+			FILE* fp = fopen(fn, _F("a" asd_CCS));
 			if (fp != nullptr)
 				m_logFile.reset(fp, [](IN FILE* a_fp) { fclose(a_fp); });
 		}

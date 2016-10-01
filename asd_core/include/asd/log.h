@@ -207,6 +207,10 @@ namespace asd
 			PushLog(std::move(log));
 			return sync->Wait();
 		}
-#define ErrorLog(format, ...) _ErrorLog(__FILE__, __LINE__, format, __VA_ARGS__)
+#if defined(asd_Compiler_MSVC)
+#	define ErrorLog(format, ...) _ErrorLog(__FILE__, __LINE__, format, __VA_ARGS__)
+#else
+#	define ErrorLog(...) _ErrorLog(__FILE__, __LINE__, __VA_ARGS__)
+#endif
 	};
 }
