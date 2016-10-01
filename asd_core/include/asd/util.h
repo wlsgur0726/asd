@@ -13,12 +13,24 @@ namespace asd
 	{
 		return a_1 >= a_2 ? a_1 : a_2;
 	}
+	template <typename T, typename... ARGS>
+	constexpr const T& max(IN const T& a_1,
+						   IN const ARGS&... a_args)
+	{
+		return max(a_1, max(a_args...));
+	}
 
 	template <typename T>
 	constexpr const T& min(IN const T& a_1,
 						   IN const T& a_2)
 	{
 		return a_1 < a_2 ? a_1 : a_2;
+	}
+	template <typename T, typename... ARGS>
+	constexpr const T& min(IN const T& a_1,
+						   IN const ARGS&... a_args)
+	{
+		return min(a_1, min(a_args...));
 	}
 
 

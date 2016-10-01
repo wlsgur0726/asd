@@ -1,6 +1,6 @@
 ﻿#include "asd_pch.h"
 #include "asd/iconvwrap.h"
-#include "asd/classutil.h"
+#include "asd/util.h"
 #include <cwchar>
 
 #if defined(asd_Platform_Windows)
@@ -243,9 +243,7 @@ namespace asd
 		float ratio_min = (float)SizeOfCharUnit_Min(m_after) / SizeOfCharUnit_Min(m_before);
 		float ratio_avg = (float)SizeOfCharUnit_Avg(m_after) / SizeOfCharUnit_Avg(m_before);
 		float ratio_max = (float)SizeOfCharUnit_Max(m_after) / SizeOfCharUnit_Max(m_before);
-		m_ratio = std::max<float>(std::max<float>(ratio_min, 
-												  ratio_avg),
-												  ratio_max);
+		m_ratio = asd::max(ratio_min, ratio_avg, ratio_max);
 		assert(m_ratio > 0);
 		return 0;
 	}
