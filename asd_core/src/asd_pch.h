@@ -7,7 +7,6 @@
 
 #if defined(asd_Platform_Windows)
 #	if defined(asd_Compiler_MSVC)
-#		define NOMINMAX
 #		define _WINSOCK_DEPRECATED_NO_WARNINGS
 #	endif
 #

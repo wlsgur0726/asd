@@ -47,7 +47,7 @@ namespace asd
 
 
 	private:
-		std::unique_ptr<ThreadPoolData> m_data;
+		ThreadPoolData* m_data = nullptr;
 
 
 	};

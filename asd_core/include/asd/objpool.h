@@ -15,26 +15,22 @@ namespace asd
 	> class ObjectPool
 	{
 	public:
-		typedef ObjectPool<ObjectType>		ThisType;
-		typedef ObjectType					Object;
-		typedef MtxCtl<MutexType>			Lock;
+		typedef ObjectType									Object;
+		typedef ObjectPool<ObjectType, Recycle, MutexType>	ThisType;
+		typedef MtxCtl<MutexType>							Lock;
 
 
 		ObjectPool(IN const ThisType&) = delete;
 		ObjectPool& operator=(IN const ThisType&) = delete;
+
+		ObjectPool(MOVE ThisType&& a_mv) = default;
+		ObjectPool& operator=(MOVE ThisType&&) = delete;
 
 		ObjectPool(IN size_t a_limitCount = std::numeric_limits<size_t>::max(),
 				   IN size_t a_initCount = 0)
 			: m_limitCount(a_limitCount)
 		{
 			AddCount(a_initCount);
-		}
-
-		ObjectPool(MOVE ThisType&& a_mv) asd_noexcept
-		{
-			std::swap(m_limitCount, a_mv.m_limitCount);
-			std::swap(m_lock, a_mv.m_lock);
-			std::swap(m_pool, a_mv.m_pool);
 		}
 
 
@@ -172,8 +168,8 @@ namespace asd
 	> class ObjectPool2
 	{
 	public:
-		typedef ObjectPool2<ObjectType>		ThisType;
-		typedef ObjectType					Object;
+		typedef ObjectPool2<ObjectType, Recycle>	ThisType;
+		typedef ObjectType							Object;
 
 		inline static const size_t Sign()
 		{

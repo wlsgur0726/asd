@@ -50,7 +50,8 @@ namespace asd
 
 	ThreadPool& ThreadPool::Reset(IN uint32_t a_threadCount /*= std::thread::hardware_concurrency()*/)
 	{
-		m_data.reset(new ThreadPoolData(a_threadCount));
+		Stop();
+		m_data = new ThreadPoolData(a_threadCount);
 		m_data->threads.resize(m_data->threadCount);
 		return *this;
 	}
@@ -172,33 +173,35 @@ namespace asd
 
 	void ThreadPool::Stop(IN bool a_overtime /*= true*/)
 	{
-		if (m_data != nullptr)
-		{
-			MtxCtl_asdMutex mtx(m_data->tpLock);
-			if (m_data->run == false)
-				return;
+		if (m_data == nullptr)
+			return;
 
-			if (m_data->workers.find(GetCurrentThreadID()) != m_data->workers.end())
-				asd_RaiseException("deadlock");
+		MtxCtl_asdMutex mtx(m_data->tpLock);
+		if (m_data->run == false)
+			return;
 
-			m_data->run = false;
-			m_data->overtime = a_overtime;
+		if (m_data->workers.find(GetCurrentThreadID()) != m_data->workers.end())
+			asd_RaiseException("deadlock");
 
-			while (m_data->waitingList.size() > 0) {
-				m_data->waitingList.front()->Post();
-				m_data->waitingList.pop_front();
-			}
+		m_data->run = false;
+		m_data->overtime = a_overtime;
 
-			while (m_data->threads.size() > 0) {
-				auto thread = std::move(*m_data->threads.rbegin());
-				m_data->threads.resize(m_data->threads.size() - 1);
-				mtx.unlock();
-				thread.join();
-				mtx.lock();
-			}
+		while (m_data->waitingList.size() > 0) {
+			m_data->waitingList.front()->Post();
+			m_data->waitingList.pop_front();
 		}
 
-		m_data.reset();
+		while (m_data->threads.size() > 0) {
+			auto thread = std::move(*m_data->threads.rbegin());
+			m_data->threads.resize(m_data->threads.size() - 1);
+			mtx.unlock();
+			thread.join();
+			mtx.lock();
+		}
+
+		mtx.unlock();
+		delete m_data;
+		m_data = nullptr;
 	}
 
 
@@ -206,8 +209,7 @@ namespace asd
 	ThreadPool::~ThreadPool() asd_noexcept
 	{
 		asd_Destructor_Start;
-		if (m_data != nullptr)
-			Stop();
+		Stop();
 		asd_Destructor_End;
 	}
 

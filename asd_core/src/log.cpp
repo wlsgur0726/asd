@@ -1,6 +1,5 @@
 ﻿#include "asd_pch.h"
 #include "asd/log.h"
-#include "asd/iconvwrap.h"
 #include "asd/datetime.h"
 #include <fcntl.h>
 
@@ -21,16 +20,6 @@ namespace asd
 		return fp;
 	}
 
-	inline FString ConvToF(IN const char* a_str)
-	{
-		return ConvToW(a_str);
-	}
-
-	inline FString ConvToF(IN const wchar_t* a_str)
-	{
-		return a_str;
-	}
-
 	inline bool Flush(IN FILE* a_fp)
 	{
 		if (fflush(a_fp) != 0)
@@ -45,16 +34,6 @@ namespace asd
 	}
 
 #else
-	inline FString ConvToF(IN const char* a_str)
-	{
-		return a_str;
-	}
-
-	inline FString ConvToF(IN const wchar_t* a_str)
-	{
-		return ConvToM(a_str);
-	}
-
 	inline bool Flush(IN FILE* a_fp)
 	{
 		if (fflush(a_fp) != 0)
@@ -67,39 +46,10 @@ namespace asd
 
 #endif
 
-	inline FString AddDelimiter(IN FString&& a_path)
+
+	Logger::Logger()
 	{
-		FString path = std::move(a_path);
-		if (path.empty())
-			return path;
-
-		FChar& c = path[path.size() - 1];
-		if (c != asd_fs_delimiter) {
-			if (c == asd_fs_delimiter2)
-				c = asd_fs_delimiter;
-			else
-				path += asd_fs_delimiter;
-		}
-		return path;
-	}
-
-
-	Logger::Logger(IN const char* a_outDir,
-				   IN const char* a_logName)
-		: m_outDir(AddDelimiter(ConvToF(a_outDir)))
-		, m_logName(ConvToF(a_logName))
-		, m_logObjPool(100)
-	{
-		Init();
-	}
-
-
-	Logger::Logger(IN const wchar_t* a_outDir,
-				   IN const wchar_t* a_logName)
-		: m_outDir(AddDelimiter(ConvToF(a_outDir)))
-		, m_logName(ConvToF(a_logName))
-	{
-		Init();
+		m_writer.Start();
 	}
 
 
@@ -109,60 +59,47 @@ namespace asd
 	}
 
 
-	void Logger::Init()
-	{
-		// 생성자에서만 호출됨
-		MtxCtl_asdMutex lock(m_lock);
-		if (RefreshLogFile(Date::Now()) == nullptr)
-			asd_RaiseException("log file create fail, errno:{}", errno);
-
-		m_writer.Start();
-	}
-
-
-	FILE* Logger::RefreshLogFile(IN const Date& a_today) asd_noexcept
+	std::shared_ptr<FILE> Logger::RefreshLogFile(IN const Date& a_today) asd_noexcept
 	{
 		if (a_today != m_today) {
 			m_today = a_today;
-			FString fn = FString::Format(_F("{}{}_{:04d}{:02d}{:02d}.txt"),
+			asd_mkdir(m_outDir);
+			FString fn = FString::Format(_F("{}{}_{:04d}-{:02d}-{:02d}.txt"),
 										 m_outDir, m_logName,
 										 a_today.Year(), a_today.Month(), a_today.Day());
 			FILE* fp = fopen(fn, _F("a+,ccs=UTF-8"));
-			if (fp != nullptr) {
-				if (m_logFile != nullptr)
-					fclose(m_logFile);
-				m_logFile = fp;
-			}
+			if (fp != nullptr)
+				m_logFile.reset(fp, [](IN FILE* a_fp) { fclose(a_fp); });
 		}
 		return m_logFile;
 	}
 
 
-	void Logger::SetGenHeadDelegate(MOVE std::function<FString()>&& a_delegate) asd_noexcept
+	void Logger::SetGenHeadDelegate(MOVE GenText&& a_delegate) asd_noexcept
 	{
 		MtxCtl_asdMutex lock(m_lock);
 		if (a_delegate == nullptr)
 			m_genHead.reset();
 		else
-			m_genHead.reset(new std::function<FString()>(std::move(a_delegate)));
+			m_genHead.reset(new GenText(std::move(a_delegate)));
 	}
 
 
-	void Logger::SetGenTailDelegate(MOVE std::function<FString()>&& a_delegate) asd_noexcept
+	void Logger::SetGenTailDelegate(MOVE GenText&& a_delegate) asd_noexcept
 	{
 		MtxCtl_asdMutex lock(m_lock);
 		if (a_delegate == nullptr)
 			m_genTail.reset();
 		else
-			m_genTail.reset(new std::function<FString()>(std::move(a_delegate)));
+			m_genTail.reset(new GenText(std::move(a_delegate)));
 	}
 
 
-	void Logger::PushLog(IN const Log& a_log) asd_noexcept
+	void Logger::PushLog(MOVE asd::Log&& a_log) asd_noexcept
 	{
 		MtxCtl_asdMutex lock(m_lock);
-		Log* log = m_logObjPool.Alloc();
-		*log = a_log;
+		asd::Log* log = m_logObjPool.Alloc();
+		*log = std::move(a_log);
 
 		m_writer.PushTask([this, log]()
 		{
@@ -171,37 +108,39 @@ namespace asd
 	}
 
 
-	void Logger::Print(IN Log* a_log) asd_noexcept
+	void Logger::Print(IN asd::Log* a_log) asd_noexcept
 	{
 		MtxCtl_asdMutex lock(m_lock);
 
-		Log log = std::move(*a_log);
+		asd::Log log = std::move(*a_log);
 		m_logObjPool.Free(a_log);
-
+		auto logNumber = ++m_logNumber;
 		auto genHead = m_genHead;
 		auto genTail = m_genTail;
 
 		DateTime now = DateTime::Now();
-		FILE* fp = RefreshLogFile(now.m_date);
-		errno_t e = fp!=nullptr ? 0 : errno;
+		auto fp = RefreshLogFile(now.m_date);
+		int e = fp!=nullptr ? 0 : errno;
 
 		lock.unlock();
 
 		FString msg;
 		if (genHead != nullptr)
-			msg = (*genHead)();
-		msg << log.m_message;
+			msg = (*genHead)(logNumber, now);
+
+		msg << ConvToF(log);
+
 		if (genTail != nullptr)
-			msg << (*genTail)();
+			msg << (*genTail)(logNumber, now);
 		msg << _F('\n');
 		if (log.m_file != nullptr)
-			msg << _F("  (") << ConvToF(log.m_file) << _F(":") << log.m_line << _F(")\n");
+			msg << _F("    (") << ConvToF(log.m_file) << _F(':') << log.m_line << _F(")\n");
 
 		if (fp != nullptr) {
-			if (asd::fputs(msg, fp) < 0)
+			if (asd::fputs(msg, fp.get()) < 0)
 				e = errno;
 			else if (log.m_flush) {
-				if (Flush(fp) == false)
+				if (Flush(fp.get()) == false)
 					e = errno;
 			}
 		}

@@ -10,12 +10,14 @@
 #	define asd_fs_delimiter '\\'
 #	define asd_fs_delimiter2 '/'
 #	define asd_newline L"\r\n"
+#	define asd_mkdir(path) _wmkdir(path)
 #
 #else
 #	define _F(txt) txt
 #	define asd_fs_delimiter '/'
 #	define asd_fs_delimiter2 '\\'
 #	define asd_newline L"\n"
+#	define asd_mkdir(path) mkdir(path, 0777)
 #
 #endif
 

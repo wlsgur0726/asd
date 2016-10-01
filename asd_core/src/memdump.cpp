@@ -22,7 +22,6 @@ namespace asd
 	namespace MemDump
 	{
 #if asd_Platform_Windows
-		#define asd_mkdir(path) _wmkdir(path)
 		const FChar g_dump_pre[] = _F("");
 		const FChar g_dump_ext[] = _F(".dmp");
 
@@ -47,7 +46,6 @@ namespace asd
 		}
 
 #else
-		#define asd_mkdir(path) mkdir(path, 0777)
 		const FChar g_dump_pre[] = _F("core.");
 		const FChar g_dump_ext[] = _F("");
 

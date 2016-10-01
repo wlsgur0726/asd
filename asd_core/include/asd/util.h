@@ -7,6 +7,21 @@
 
 namespace asd
 {
+	template <typename T>
+	constexpr const T& max(IN const T& a_1,
+						   IN const T& a_2)
+	{
+		return a_1 >= a_2 ? a_1 : a_2;
+	}
+
+	template <typename T>
+	constexpr const T& min(IN const T& a_1,
+						   IN const T& a_2)
+	{
+		return a_1 < a_2 ? a_1 : a_2;
+	}
+
+
 	template <typename Task>
 	struct _FinallyTask
 	{
