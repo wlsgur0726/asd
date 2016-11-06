@@ -141,7 +141,7 @@ namespace asd
 		bool Init(const CharType* a_outDir,
 				  const CharType* a_logName)
 		{
-			MtxCtl_asdMutex lock(m_lock);
+			auto lock = GetLock(m_lock);
 			m_outDir = AddDelimiter(ConvToF(a_outDir));
 			m_logName = ConvToF(a_logName);
 			m_today = Date();
@@ -154,6 +154,13 @@ namespace asd
 
 
 		template <typename CharType, typename... Args>
+		inline void Log(IN const BasicString<CharType>& a_format,
+						IN const Args&... a_args) asd_noexcept
+		{
+			Log(a_format.c_str(), a_args...);
+		}
+
+		template <typename CharType, typename... Args>
 		inline void Log(IN const CharType* a_format,
 						IN const Args&... a_args) asd_noexcept
 		{
@@ -162,6 +169,13 @@ namespace asd
 			PushLog(std::move(log));
 		}
 
+
+		template <typename CharType, typename... Args>
+		inline int LogSync(IN const BasicString<CharType>& a_format,
+						   IN const Args&... a_args)
+		{
+			return LogSync(a_format.c_str(), a_args...);
+		}
 
 		template <typename CharType, typename... Args>
 		inline int LogSync(IN const CharType* a_format,
@@ -177,6 +191,13 @@ namespace asd
 
 
 		template <typename CharType, typename... Args>
+		inline int LogFlush(IN const BasicString<CharType> a_format,
+							IN const Args&... a_args)
+		{
+			return LogFlush(a_format.c_str(), a_args...);
+		}
+
+		template <typename CharType, typename... Args>
 		inline int LogFlush(IN const CharType* a_format,
 							IN const Args&... a_args)
 		{
@@ -189,6 +210,15 @@ namespace asd
 			return sync->Wait();
 		}
 
+
+		template <typename CharType, typename... Args>
+		inline int _ErrorLog(IN const char* a_filename,
+							 IN int a_line,
+							 IN const BasicString<CharType>& a_format,
+							 IN const Args&... a_args)
+		{
+			return _ErrorLog(a_filename, a_line, a_format.c_str(), a_args...);
+		}
 
 		template <typename CharType, typename... Args>
 		inline int _ErrorLog(IN const char* a_filename,

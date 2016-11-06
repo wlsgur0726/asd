@@ -66,8 +66,4 @@ namespace asd
 		return _FinallyTask<Task>(std::move(a_task));
 	}
 
-#define asd_RegisterFinallyTask(task) const auto ___asd_finally___ = asd::FinallyTask(task);
-
-
-
 }

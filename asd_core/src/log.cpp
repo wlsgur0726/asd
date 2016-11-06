@@ -55,6 +55,7 @@ namespace asd
 	Logger::Logger()
 	{
 		m_writer.Start();
+		Init(_F(""), _F("log"));
 	}
 
 
@@ -82,7 +83,7 @@ namespace asd
 
 	void Logger::SetGenHeadDelegate(MOVE GenText&& a_delegate) asd_noexcept
 	{
-		MtxCtl_asdMutex lock(m_lock);
+		auto lock = GetLock(m_lock);
 		if (a_delegate == nullptr)
 			m_genHead.reset();
 		else
@@ -92,7 +93,7 @@ namespace asd
 
 	void Logger::SetGenTailDelegate(MOVE GenText&& a_delegate) asd_noexcept
 	{
-		MtxCtl_asdMutex lock(m_lock);
+		auto lock = GetLock(m_lock);
 		if (a_delegate == nullptr)
 			m_genTail.reset();
 		else
@@ -102,7 +103,7 @@ namespace asd
 
 	void Logger::PushLog(MOVE asd::Log&& a_log) asd_noexcept
 	{
-		MtxCtl_asdMutex lock(m_lock);
+		auto lock = GetLock(m_lock);
 		asd::Log* log = m_logObjPool.Alloc();
 		*log = std::move(a_log);
 
@@ -115,7 +116,7 @@ namespace asd
 
 	void Logger::Print(IN asd::Log* a_log) asd_noexcept
 	{
-		MtxCtl_asdMutex lock(m_lock);
+		auto lock = GetLock(m_lock);
 
 		asd::Log log = std::move(*a_log);
 		m_logObjPool.Free(a_log);

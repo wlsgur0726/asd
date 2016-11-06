@@ -60,7 +60,7 @@ namespace asd
 
 	ThreadPool& ThreadPool::Start()
 	{
-		MtxCtl_asdMutex mtx(m_data->tpLock);
+		auto mtx = GetLock(m_data->tpLock);
 		if (m_data->run)
 			asd_RaiseException("already running");
 
@@ -69,7 +69,7 @@ namespace asd
 		for (auto& t : m_data->threads) {
 			t = std::thread([this]()
 			{
-				MtxCtl_asdMutex lock(m_data->tpLock);
+				auto lock = GetLock(m_data->tpLock);
 				m_data->workers.insert(GetCurrentThreadID());
 				lock.unlock();
 
@@ -98,7 +98,7 @@ namespace asd
 
 		thread_local Semaphore t_event;
 		size_t procCount = 0;
-		MtxCtl_asdMutex mtx(m_data->tpLock);
+		auto mtx = GetLock(m_data->tpLock);
 
 		// 이벤트 체크
 		while (m_data->run || (m_data->overtime && !m_data->taskQueue.empty())) {
@@ -149,7 +149,7 @@ namespace asd
 	ThreadPool& ThreadPool::PushTask(MOVE Task&& a_task)
 	{
 		assert(a_task != nullptr);
-		MtxCtl_asdMutex mtx(m_data->tpLock);
+		auto mtx = GetLock(m_data->tpLock);
 		if (m_data->run == false)
 			return *this;
 
@@ -176,7 +176,7 @@ namespace asd
 		if (m_data == nullptr)
 			return;
 
-		MtxCtl_asdMutex mtx(m_data->tpLock);
+		auto mtx = GetLock(m_data->tpLock);
 		if (m_data->run == false)
 			return;
 

@@ -84,7 +84,7 @@ namespace asd
 		virtual uint8_t* GetBuffer() const asd_noexcept = 0;
 		virtual size_t Capacity() const asd_noexcept = 0;
 		virtual size_t GetSize() const asd_noexcept = 0;
-		virtual void SetSize(IN size_t a_bytes) asd_noexcept = 0;
+		virtual bool SetSize(IN size_t a_bytes) asd_noexcept = 0;
 
 		inline size_t GetReserve() const asd_noexcept
 		{
@@ -131,11 +131,12 @@ namespace asd
 			return m_size;
 		}
 
-		virtual void SetSize(IN size_t a_bytes) asd_noexcept override
+		virtual bool SetSize(IN size_t a_bytes) asd_noexcept override
 		{
 			if (a_bytes > Bytes)
-				assert(false);
+				return false;
 			m_size = a_bytes;
+			return true;
 		}
 
 		size_t m_size = 0;
@@ -172,9 +173,9 @@ namespace asd
 			return size() * sizeof(T);
 		}
 
-		virtual void SetSize(IN size_t a_bytes) asd_noexcept override
+		virtual bool SetSize(IN size_t a_bytes) asd_noexcept override
 		{
-			assert(false); // not use
+			return false; // not use
 		}
 	};
 
@@ -216,9 +217,9 @@ namespace asd
 			return m_bytes;
 		}
 
-		virtual void SetSize(IN size_t a_bytes) asd_noexcept override
+		virtual bool SetSize(IN size_t a_bytes) asd_noexcept override
 		{
-			assert(false); // not use
+			return false; // not use
 		}
 	};
 
@@ -269,6 +270,7 @@ namespace asd
 	public:
 		typedef std::deque<Buffer_ptr> BaseType;
 		template<BufOp Operation> friend class Transactional;
+		friend class AsyncSocket;
 		#define asd_BufferList_DefaultWriteBufferSize	( 16 * 1024 )
 		#define asd_BufferList_DefaultReadBufferSize	(  2 * 1024 )
 

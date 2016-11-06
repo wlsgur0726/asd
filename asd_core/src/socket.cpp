@@ -30,8 +30,6 @@
 
 namespace asd
 {
-	// 가독성과 일관성을 위해 
-	// 각 플랫폼 별로 상이한 부분들을 랩핑
 #if defined(asd_Platform_Windows)
 
 	#define asd_RaiseSocketException(e) asd_RaiseException("WSAGetLastError:{}", e);
@@ -45,11 +43,19 @@ namespace asd
 	typedef char* SockBufType;
 
 	inline Socket::Error GetErrorNumber() {
-		return WSAGetLastError();
+		return ::WSAGetLastError();
 	}
 
-	inline int CloseSocket(const Socket::Handle& socket) {
-		return closesocket(socket);
+	inline void CloseSocket(const Socket::Handle& socket) {
+		Retry:
+		if (0 != ::closesocket(socket)) {
+			auto e = GetErrorNumber();
+			if (e == WSAEWOULDBLOCK) {
+				goto Retry;
+				::Sleep(0);
+			}
+			asd_Assert(false, "fail closesocket, WSAGetLastError:{}", e);
+		}
 	}
 
 	// Winsock DLL 초기화를 위한 클래스
@@ -60,14 +66,14 @@ namespace asd
 
 		WSAStartup_Auto() {
 			m_ver = MAKEWORD(2, 0);
-			auto err = WSAStartup(m_ver, &m_wsa);
+			auto err = ::WSAStartup(m_ver, &m_wsa);
 			if ( err != 0 ) {
 				asd_RaiseSocketException(err);
 			}
 		}
 
 		~WSAStartup_Auto() {
-			WSACleanup();
+			::WSACleanup();
 		}
 	};
 	WSAStartup_Auto g_wsa;
@@ -88,8 +94,11 @@ namespace asd
 		return errno;
 	}
 
-	inline int CloseSocket(const Socket::Handle& socket) {
-		return close(socket);
+	inline void CloseSocket(const Socket::Handle& socket) {
+		if (0 != ::close(socket)) {
+			auto e = GetErrorNumber();
+			asd_Assert(false, "fail close, errno:{}", e);
+		}
 	}
 
 #endif
@@ -159,17 +168,22 @@ namespace asd
 	{
 		if (m_handle == InvalidHandle)
 			return;
-
 		CloseSocket(m_handle);
 		m_handle = InvalidHandle;
 	}
 
 
+	Socket::Error
+	Socket::Init(IN bool a_force /*= false*/) asd_noexcept
+	{
+		return Init(m_addressFamily, m_socketType, a_force);
+	}
+
 
 	Socket::Error
 	Socket::Init(IN AddressFamily a_addressFamily,
 				 IN Socket::Type a_socketType,
-				 IN bool a_force) asd_noexcept
+				 IN bool a_force /*= false*/) asd_noexcept
 	{
 		bool need_init =   m_handle == InvalidHandle
 						|| m_socketType != a_socketType
@@ -178,9 +192,9 @@ namespace asd
 		Error ret = 0;
 		if (need_init || a_force) {
 			Close();
-			m_handle = socket(IpAddress::ToNativeCode(a_addressFamily),
-							  Socket::ToNativeCode(a_socketType),
-							  0);
+			m_handle = ::socket(IpAddress::ToNativeCode(a_addressFamily),
+								Socket::ToNativeCode(a_socketType),
+								0);
 			if (m_handle == InvalidHandle) {
 				ret = GetErrorNumber();
 			}
@@ -195,6 +209,20 @@ namespace asd
 
 
 
+	AddressFamily Socket::GetAddressFamily() const asd_noexcept
+	{
+		return m_addressFamily;
+	}
+
+
+
+	Socket::Type Socket::GetSocektType() const asd_noexcept
+	{
+		return m_socketType;
+	}
+
+
+
 	Socket::Error
 	Socket::SetSockOpt(IN int a_level,
 					   IN int a_optname,
@@ -202,11 +230,11 @@ namespace asd
 					   IN uint32_t a_optlen) asd_noexcept
 	{
 		assert(m_handle != InvalidHandle);
-		return setsockopt(m_handle,
-						  a_level,
-						  a_optname,
-						  (const SockOptValType)a_optval,
-						  (socklen_t)a_optlen);
+		return ::setsockopt(m_handle,
+							a_level,
+							a_optname,
+							(const SockOptValType)a_optval,
+							(socklen_t)a_optlen);
 	}
 
 
@@ -218,11 +246,11 @@ namespace asd
 					   INOUT uint32_t& a_optlen) const asd_noexcept
 	{
 		assert(m_handle != InvalidHandle);
-		return getsockopt(m_handle, 
-						  a_level,
-						  a_optname,
-						  (SockOptValType)a_optval,
-						  (socklen_t*)&a_optlen);
+		return ::getsockopt(m_handle,
+							a_level,
+							a_optname,
+							(SockOptValType)a_optval,
+							(socklen_t*)&a_optlen);
 	}
 
 
@@ -297,7 +325,7 @@ namespace asd
 		val.l_onoff = a_use;
 		val.l_linger = a_sec;
 		return SetSockOpt(SOL_SOCKET,
-						  SO_REUSEADDR,
+						  SO_LINGER,
 						  &val,
 						  sizeof(val));
 	}
@@ -311,7 +339,7 @@ namespace asd
 		linger val;
 		uint32_t size = sizeof(val);
 		auto ret = GetSockOpt(SOL_SOCKET,
-							  SO_REUSEADDR,
+							  SO_LINGER,
 							  &val,
 							  size);
 		if (ret == 0) {
@@ -387,14 +415,14 @@ namespace asd
 #if defined(asd_Platform_Windows)
 		Error ret = 0;
 		u_long arg = a_nonblock;
-		if (ioctlsocket(m_handle, FIONBIO, &arg) != 0)
-			ret = WSAGetLastError();
+		if (::ioctlsocket(m_handle, FIONBIO, &arg) != 0)
+			ret = ::WSAGetLastError();
 		else
 			m_nonblock = a_nonblock;
 
 		return ret;
 #else
-		int val = fcntl(m_handle, F_GETFL, 0);
+		int val = ::fcntl(m_handle, F_GETFL, 0);
 		if (val == -1) 
 			return errno;
 
@@ -403,7 +431,7 @@ namespace asd
 		else
 			val &= ~O_NONBLOCK;
 
-		if (fcntl(m_handle, F_SETFL, val) == -1) {
+		if (::fcntl(m_handle, F_SETFL, val) == -1) {
 			return errno;
 		}
 		return 0;
@@ -421,7 +449,7 @@ namespace asd
 		a_result = m_nonblock;
 		return 0;
 #else
-		int val = fcntl(m_handle, F_GETFL, 0);
+		int val = ::fcntl(m_handle, F_GETFL, 0);
 		if (val == -1)
 			return errno;
 
@@ -443,7 +471,7 @@ namespace asd
 		}																					\
 		a_addr = addr;																		\
 	}																						\
-	
+
 #define asd_GetIpAddress_Case(getxxxxname, a_sock, a_addrFam, a_addr)						\
 	{																						\
 		assert(a_sock != Socket::InvalidHandle);											\
@@ -478,7 +506,7 @@ namespace asd
 	Socket::Error 
 	Socket::GetSockName(OUT IpAddress& a_addr) const asd_noexcept
 	{
-		asd_GetIpAddress_Case(getsockname,
+		asd_GetIpAddress_Case(::getsockname,
 							  m_handle,
 							  m_addressFamily,
 							  a_addr);
@@ -489,7 +517,7 @@ namespace asd
 	Socket::Error 
 	Socket::GetPeerName(OUT IpAddress& a_addr) const asd_noexcept
 	{
-		asd_GetIpAddress_Case(getpeername,
+		asd_GetIpAddress_Case(::getpeername,
 							  m_handle,
 							  m_addressFamily,
 							  a_addr);
@@ -505,7 +533,8 @@ namespace asd
 		if (ret != 0)
 			return ret;
 
-		if (bind(m_handle, a_addr, a_addr.GetAddrLen()) == -1)
+		const sockaddr* addr = a_addr;
+		if (::bind(m_handle, a_addr, a_addr.GetAddrLen()) == -1)
 			ret = GetErrorNumber();
 
 		return ret;
@@ -519,7 +548,7 @@ namespace asd
 		assert(m_handle != InvalidHandle);
 
 		Error ret = 0;
-		if (listen(m_handle, a_backlog) == -1)
+		if (::listen(m_handle, a_backlog) == -1)
 			ret = GetErrorNumber();
 
 		return ret;
@@ -538,9 +567,9 @@ namespace asd
 		Socket::Error ret = 0;
 		SockAddrType addr;
 		socklen_t addrLen = sizeof(addr);
-		Socket::Handle h = accept(a_sock,
-								  (sockaddr*)&addr,
-								  &addrLen);
+		Socket::Handle h = ::accept(a_sock,
+									(sockaddr*)&addr,
+									&addrLen);
 		if (h == -1)
 			ret = GetErrorNumber();
 		else {
@@ -597,7 +626,7 @@ namespace asd
 		if (ret != 0)
 			return ret;
 
-		if (connect(m_handle, a_dest, a_dest.GetAddrLen()) == -1)
+		if (::connect(m_handle, a_dest, a_dest.GetAddrLen()) == -1)
 			ret = GetErrorNumber();
 
 		return ret;
@@ -613,10 +642,10 @@ namespace asd
 		assert(m_handle != InvalidHandle);
 
 		IoResult ret;
-		ret.m_bytes = send(m_handle,
-						   (SockBufType)a_buffer,
-						   a_bufferSize,
-						   a_flags);
+		ret.m_bytes = ::send(m_handle,
+							 (SockBufType)a_buffer,
+							 a_bufferSize,
+							 a_flags);
 		if (ret.m_bytes < 0)
 			ret.m_error = GetErrorNumber();
 
@@ -636,12 +665,12 @@ namespace asd
 		if (ret.m_error != 0)
 			return ret;
 
-		ret.m_bytes = sendto(m_handle, 
-							 (SockBufType)a_buffer,
-							 a_bufferSize,
-							 a_flags, 
-							 a_dest, 
-							 a_dest.GetAddrLen());
+		ret.m_bytes = ::sendto(m_handle,
+							   (SockBufType)a_buffer,
+							   a_bufferSize,
+							   a_flags, 
+							   a_dest, 
+							   a_dest.GetAddrLen());
 		if (ret.m_bytes < 0)
 			ret.m_error = GetErrorNumber();
 
@@ -658,10 +687,10 @@ namespace asd
 		assert(m_handle != InvalidHandle);
 
 		IoResult ret;
-		ret.m_bytes = recv(m_handle, 
-						   (SockBufType)a_buffer,
-						   a_bufferSize,
-						   a_flags);
+		ret.m_bytes = ::recv(m_handle,
+							 (SockBufType)a_buffer,
+							 a_bufferSize,
+							 a_flags);
 		if (ret.m_bytes < 0)
 			ret.m_error = GetErrorNumber();
 
@@ -681,12 +710,12 @@ namespace asd
 	{
 		SockAddrType addr;
 		socklen_t addrLen = sizeof(addr);
-		a_result.m_bytes = recvfrom(a_sock,
-									(SockBufType)a_buffer,
-									a_bufferSize,
-									a_flags,
-									(sockaddr*)&addr,
-									&addrLen);
+		a_result.m_bytes = ::recvfrom(a_sock,
+									  (SockBufType)a_buffer,
+									  a_bufferSize,
+									  a_flags,
+									  (sockaddr*)&addr,
+									  &addrLen);
 		if (a_result.m_bytes < 0)
 			a_result.m_error = GetErrorNumber();
 		else

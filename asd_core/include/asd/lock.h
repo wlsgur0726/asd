@@ -47,72 +47,79 @@ namespace asd
 	class SpinMutex final
 	{
 		std::atomic<bool> m_lock;
-		Mutex* m_mtx = nullptr;
 
 	public:
-		SpinMutex();
-
-		~SpinMutex() asd_noexcept;
-
 		asd_DeclareMutexInterface;
 	};
 
 
 
 	template <typename MutexType>
-	class MtxCtl final
+	class Lock final
 	{
-	public:
-		MutexType& m_mutex;
+		MutexType* m_mutex;
 		int m_recursionCount = 0;
-		const int m_recursionLimit;
+		int m_recursionLimit;
 
-		MtxCtl(REF MutexType& a_mutex,
-			   IN bool a_getLock = true,
-			   IN int a_recursionLimit = 1)
-			: m_mutex(a_mutex)
+	public:
+		Lock(REF MutexType& a_mutex,
+			 IN bool a_getLock = true,
+			 IN int a_recursionLimit = 1)
+			: m_mutex(&a_mutex)
 			, m_recursionLimit(a_recursionLimit)
 		{
 			assert(a_recursionLimit > 0);
 			if (a_getLock)
 				lock();
 		}
-		
-		~MtxCtl()
+
+		Lock(MOVE Lock<MutexType>&& a_move) asd_noexcept
 		{
+			m_recursionLimit = a_move.m_recursionLimit;
+			m_recursionCount = a_move.m_recursionCount;
+			m_mutex = a_move.m_mutex;
+			a_move.m_mutex = nullptr;
+		}
+
+		~Lock()
+		{
+			if (m_mutex == nullptr)
+				return;
+
 			assert(m_recursionCount >= 0);
 			for (; m_recursionCount > 0; --m_recursionCount)
-				m_mutex.unlock();
+				m_mutex->unlock();
 		}
 
 		asd_DeclareMutexInterface;
+
+		Lock(IN const Lock<MutexType>& a_copy) = delete;
+		Lock& operator=(IN const Lock<MutexType>& a_copy) = delete;
 	};
 
-
 	template <typename MutexType>
-	void MtxCtl<MutexType>::lock()
+	void Lock<MutexType>::lock()
 	{
 		if (m_recursionLimit > m_recursionCount + 1) {
 			assert(false);
 			throw asd::Exception("락 중첩 한계에 달했습니다.");
 		}
 
-		m_mutex.lock();
+		m_mutex->lock();
 		++m_recursionCount;
 		assert(m_recursionCount > 0);
 		assert(m_recursionCount <= m_recursionLimit);
 	}
 
-
 	template <typename MutexType>
-	bool MtxCtl<MutexType>::try_lock()
+	bool Lock<MutexType>::try_lock()
 	{
 		if (m_recursionLimit > m_recursionCount + 1) {
 			assert(false);
 			throw asd::Exception("락 중첩 한계에 달했습니다.");
 		}
 
-		bool r = m_mutex.try_lock();
+		bool r = m_mutex->try_lock();
 		if (r) {
 			++m_recursionCount;
 			assert(m_recursionCount > 0);
@@ -122,19 +129,23 @@ namespace asd
 		return r;
 	}
 
-
 	template <typename MutexType>
-	void MtxCtl<MutexType>::unlock()
+	void Lock<MutexType>::unlock()
 	{
 		if (m_recursionCount > 0) {
 			--m_recursionCount;
-			m_mutex.unlock();
+			m_mutex->unlock();
 		}
 		assert(m_recursionCount >= 0);
 	}
 
 
-	typedef MtxCtl<std::mutex>	MtxCtl_stdMutex;
-	typedef MtxCtl<Mutex>		MtxCtl_asdMutex;
-	typedef MtxCtl<SpinMutex>	MtxCtl_asdSpinMutex;
+
+	template <typename MutexType>
+	inline Lock<MutexType> GetLock(REF MutexType& a_mutex,
+								   IN bool a_getLock = true,
+								   IN int a_recursionLimit = 1)
+	{
+		return Lock<MutexType>(a_mutex, a_getLock, a_recursionLimit);
+	}
 }

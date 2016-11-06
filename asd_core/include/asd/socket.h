@@ -3,32 +3,30 @@
 #include "address.h"
 #include <vector>
 
-#if defined(asd_Platform_Windows)
-	#define asd_PlatformTypeDef_Socket						\
-		typedef intptr_t Handle;							\
-		typedef int Error;									\
-		static const Handle InvalidHandle = (Handle)~0;		\
-
-#else
-	#define asd_PlatformTypeDef_Socket						\
-		typedef int Handle;									\
-		typedef int Error;									\
-		static const Handle InvalidHandle = -1;				\
-
-#endif
 
 
 namespace asd
 {
-	// 단순한 Socket API 랩핑
+	class AsyncSocketInternal;
+
+
+	// Socket API 랩핑
 	class Socket
 	{
-		friend class Poller;
-
+		friend struct asd::AsyncSocketInternal;
 
 	public:
-		asd_PlatformTypeDef_Socket;
+#if defined(asd_Platform_Windows)
+		typedef intptr_t Handle;
+		typedef int Error;
+		static const Handle InvalidHandle = (Handle)~0;
 
+#else
+		typedef int Handle;
+		typedef int Error;
+		static const Handle InvalidHandle = -1;
+
+#endif
 		enum class Type : uint8_t
 		{
 			TCP,
@@ -88,13 +86,24 @@ namespace asd
 
 
 		// 실제 소켓을 생성하는 함수.
-		// 소켓이 이미 생성되어있고,
-		// AddressFamily와 SocketType이 기존과 동일하고, 
-		// a_force에 false를 주면 아무런 작업도 하지 않는다.
+		// a_force가 true이면 무조건 기존에 열려있던 소켓을 닫고 새로 연다.
+		// a_force가 false이면 소켓이 열려있지 않거나 a_addressFamily와 a_socketType가 기존과 다른 경우에만 새로 연다.
+		Error
+		Init(IN bool a_force = false) asd_noexcept;
+
+
 		Error
 		Init(IN AddressFamily a_addressFamily,
 			 IN Socket::Type a_socketType,
-			 IN bool a_force) asd_noexcept;
+			 IN bool a_force = false) asd_noexcept;
+
+
+		AddressFamily
+		GetAddressFamily() const asd_noexcept;
+
+
+		Type
+		GetSocektType() const asd_noexcept;
 
 
 		Error

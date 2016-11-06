@@ -92,14 +92,14 @@ namespace asd
 
 		void SetOutPath(IN const wchar_t* a_path)
 		{
-			MtxCtl_asdMutex lock(g_lock);
+			auto lock = GetLock(g_lock);
 			asd_CopyToBuf(a_path, g_path);
 		}
 
 
 		void SetDefaultName(IN const wchar_t* a_name)
 		{
-			MtxCtl_asdMutex lock(g_lock);
+			auto lock = GetLock(g_lock);
 			asd_CopyToBuf(a_name, g_name);
 		}
 
@@ -125,7 +125,7 @@ namespace asd
 
 			asd::sprintf(g_path_temp,
 						 LEN_PATH,
-						 //       1 2 3 4     5     6  7    8    9    A    B    C    D
+						 //  1 2 3 4     5     6  7    8    9    A    B    C    D
 						 _F("%s%c%s%s_pid%u_tid%u_%04d-%02d-%02d_%02dh%02dm%02ds%s"),
 						 g_path,                                             // 1
 						 g_path[0] != '\0' ? asd_fs_delimiter : _F('\0'),    // 2
@@ -153,7 +153,7 @@ namespace asd
 
 		long CreateMiniDump(IN void* a_PEXCEPTION_POINTERS)
 		{
-			MtxCtl_asdMutex lock(g_lock);
+			auto lock = GetLock(g_lock);
 			Ready(t_Create_Arg);
 			t_Create_Arg = nullptr;
 
@@ -193,7 +193,7 @@ namespace asd
 #else
 		void Create(IN const wchar_t* a_name /*= nullptr*/)
 		{
-			MtxCtl_asdMutex lock(g_lock);
+			auto lock = GetLock(g_lock);
 			Ready(a_name);
 
 			// gcore가 설치되어 있어야 함

@@ -9,7 +9,7 @@ namespace asd
 {
 	struct DebugInfo 
 	{
-		static const char ToStringFormat[]; // "[{}({}) {}] {}", m_file, m_line, m_function, m_comment)
+		static const char ToStringFormat[]; // "[{}({}):{}] {}", m_file, m_line, m_function, m_comment)
 
 		const char*	m_file;
 		const int	m_line;
@@ -83,11 +83,11 @@ namespace asd
 	// asd_PrintStdErr
 #if defined(asd_Compiler_MSVC)
 	#define asd_PrintStdErr(MsgFormat, ...)											\
-		asd::fputs(asd_MakeDebugInfo(MsgFormat, __VA_ARGS__).ToString(), stderr);	\
+		asd::fputs(asd_MakeDebugInfo(MsgFormat, __VA_ARGS__).ToString(), stderr)	\
 
 #else
 	#define asd_PrintStdErr(...)													\
-		asd::fputs(asd_MakeDebugInfo(__VA_ARGS__).ToString(), stderr);				\
+		asd::fputs(asd_MakeDebugInfo(__VA_ARGS__).ToString(), stderr)				\
 
 #endif
 
@@ -131,19 +131,20 @@ namespace asd
 
 	// asd_RaiseException
 #if asd_Can_not_use_Exception
-	#define asd_RaiseException(MsgFormat, ...) {	\
+	#define asd_RaiseException(MsgFormat, ...)		\
+	do{												\
 		asd_PrintStdErr(MsgFormat, __VA_ARGS__);	\
 		std::terminate();							\
-	}												\
+	}while(false)									\
 
 #else
 	#if defined(asd_Compiler_MSVC)
 		#define asd_RaiseException(MsgFormat, ...)									\
-			throw asd::Exception(asd_MakeDebugInfo(MsgFormat, __VA_ARGS__));		\
+			throw asd::Exception(asd_MakeDebugInfo(MsgFormat, __VA_ARGS__))			\
 
 	#else
 		#define asd_RaiseException(...)												\
-			throw asd::Exception(asd_MakeDebugInfo(__VA_ARGS__));					\
+			throw asd::Exception(asd_MakeDebugInfo(__VA_ARGS__))					\
 
 	#endif
 
@@ -153,15 +154,15 @@ namespace asd
 
 	// 표준 assert와는 다르게 release에서도 Check는 수행된다.
 	// Check가 false인 경우 기본동작
-	//  - 에러메시지를 stderr에 출력
-	//  - debug일 경우 키입력 대기 후 assert(false) 호출
+	//  - 에러메시지를 asd::Logger::GlobalInstance().ErrorLog로 출력
+	//  - debug일 경우 키입력 대기 후 std::terminate 호출
 	//  - release일때는 계속 진행
 #if defined(asd_Compiler_MSVC)
 #	define asd_Assert(Check, MsgFormat, ...)\
-	( (Check) ? (true) : (asd::Assert_Internal(asd_MakeDebugInfo(MsgFormat, __VA_ARGS__))) )
+		( (Check) ? (true) : (asd::Assert_Internal(asd_MakeDebugInfo(MsgFormat, __VA_ARGS__))) )
 #else
 #	define asd_Assert(Check, ...)\
-	( (Check) ? (true) : (asd::Assert_Internal(asd_MakeDebugInfo(__VA_ARGS__))) )
+		( (Check) ? (true) : (asd::Assert_Internal(asd_MakeDebugInfo(__VA_ARGS__))) )
 #endif
 	bool Assert_Internal(IN const DebugInfo& a_info);
 

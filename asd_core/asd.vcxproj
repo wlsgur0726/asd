@@ -146,6 +146,9 @@
     <PreBuildEvent>
       <Command>"$(ProjectDir)..\Copy_ICONV_DLL.bat" "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
     </PreBuildEvent>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -168,6 +171,9 @@
     <PreBuildEvent>
       <Command>"$(ProjectDir)..\Copy_ICONV_DLL.bat" "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
     </PreBuildEvent>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -194,6 +200,9 @@
     <PreBuildEvent>
       <Command>"$(ProjectDir)..\Copy_ICONV_DLL.bat" "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
     </PreBuildEvent>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Profiling|Win32'">
     <ClCompile>
@@ -219,8 +228,11 @@
       <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
-      <Command>"$(ProjectDir)..\Copy_ICONV_DLL.bat" "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
+      <Command>"$(ProjectDir)..\Copy_ICONV_DLL.bat" "$(Platform)" "Release" "$(OutDir)"</Command>
     </PreBuildEvent>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -247,6 +259,9 @@
     <PreBuildEvent>
       <Command>"$(ProjectDir)..\Copy_ICONV_DLL.bat" "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
     </PreBuildEvent>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Profiling|x64'">
     <ClCompile>
@@ -272,8 +287,11 @@
       <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
-      <Command>"$(ProjectDir)..\Copy_ICONV_DLL.bat" "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
+      <Command>"$(ProjectDir)..\Copy_ICONV_DLL.bat" "$(Platform)" "Release" "$(OutDir)"</Command>
     </PreBuildEvent>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\asd\address.h" />
@@ -300,6 +318,7 @@
     <ClInclude Include="include\asd\threadpool.h" />
     <ClInclude Include="include\asd\datetime.h" />
     <ClInclude Include="include\asd\threadutil.h" />
+    <ClInclude Include="include\asd\trace.h" />
     <ClInclude Include="include\asd\util.h" />
     <ClInclude Include="src\asd_pch.h" />
   </ItemGroup>
@@ -328,6 +347,7 @@
     <ClCompile Include="src\threadpool.cpp" />
     <ClCompile Include="src\datetime.cpp" />
     <ClCompile Include="src\threadutil.cpp" />
+    <ClCompile Include="src\trace.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\libiconv\windows\msvc2015\libiconv.vcxproj">

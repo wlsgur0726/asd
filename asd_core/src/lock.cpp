@@ -184,35 +184,13 @@ namespace asd
 
 
 
-	SpinMutex::SpinMutex()
-	{
-		if (Get_HW_Concurrency() <= 1)
-			m_mtx = new Mutex;
-		else
-			m_lock = false;
-	}
-
-
-
-	SpinMutex::~SpinMutex() asd_noexcept
-	{
-		if (m_mtx != nullptr)
-			delete m_mtx;
-	}
-
-
-
 	void SpinMutex::lock()
 	{
-		if (m_mtx != nullptr)
-			m_mtx->lock();
-		else {
-			while (true) {
-				if (m_lock == false) {
-					bool cmp = false;
-					if (m_lock.compare_exchange_weak(cmp, true, std::memory_order_acquire))
-						break;
-				}
+		while (true) {
+			if (m_lock == false) {
+				bool cmp = false;
+				if (m_lock.compare_exchange_weak(cmp, true, std::memory_order_acquire))
+					break;
 			}
 		}
 	}
@@ -221,9 +199,6 @@ namespace asd
 
 	bool SpinMutex::try_lock()
 	{
-		if (m_mtx != nullptr)
-			return m_mtx->try_lock();
-		
 		if (m_lock == false) {
 			bool cmp = false;
 			if (m_lock.compare_exchange_weak(cmp, true, std::memory_order_acquire))
@@ -236,9 +211,6 @@ namespace asd
 
 	void SpinMutex::unlock()
 	{
-		if (m_mtx != nullptr)
-			m_mtx->unlock();
-		else
-			m_lock.store(false, std::memory_order_release);
+		m_lock.store(false, std::memory_order_release);
 	}
 }

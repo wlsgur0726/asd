@@ -27,6 +27,7 @@
     <ClInclude Include="include\asd\log.h" />
     <ClInclude Include="include\asd\memdump.h" />
     <ClInclude Include="include\asd\filedef.h" />
+    <ClInclude Include="include\asd\trace.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\address.cpp" />
@@ -46,5 +47,6 @@
     <ClCompile Include="src\ioevent.cpp" />
     <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\memdump.cpp" />
+    <ClCompile Include="src\trace.cpp" />
   </ItemGroup>
 </Project>

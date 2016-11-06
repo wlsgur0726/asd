@@ -1,6 +1,6 @@
 ﻿#include "asd_pch.h"
 #include "asd/exception.h"
-#include "asd/util.h"
+#include "asd/log.h"
 
 #if __cplusplus >= 201700
 #	include <shared_mutex>
@@ -13,7 +13,7 @@
 
 namespace asd
 {
-	const char DebugInfo::ToStringFormat[] = "[{}({}) {}] {} ";
+	const char DebugInfo::ToStringFormat[] = "[{}({}):{}] {} ";
 
 
 	MString DebugInfo::ToString() const asd_noexcept
@@ -74,11 +74,13 @@ namespace asd
 		std::function<void(IN const DebugInfo&)> m_handler = nullptr;
 		const std::function<void(IN const DebugInfo&)> m_defaultHandler = [](IN const DebugInfo& a_dbginfo)
 		{
-			auto msg = a_dbginfo.ToString();
-			asd::fputs(msg.c_str(), stderr);
+			MString msg;
+			msg << "Assert fail\n" << a_dbginfo.m_comment;
+			Logger::GlobalInstance()._ErrorLog(a_dbginfo.m_file,
+											   a_dbginfo.m_line,
+											   msg);
 #if asd_Debug
-			Pause();
-			assert(false);
+			std::terminate();
 #endif
 		};
 	};

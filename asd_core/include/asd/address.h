@@ -43,13 +43,13 @@ namespace asd
 
 		IpAddress(IN const sockaddr_in6& a_native_ipv6) asd_noexcept;
 
-		IpAddress& operator = (IN const IpAddress& a_cp) asd_noexcept;
+		IpAddress& operator=(IN const IpAddress& a_cp) asd_noexcept;
 
-		IpAddress& operator = (MOVE IpAddress&& a_rval) asd_noexcept;
+		IpAddress& operator=(MOVE IpAddress&& a_rval) asd_noexcept;
 
-		IpAddress& operator = (IN const sockaddr_in& a_native_ipv4) asd_noexcept;
+		IpAddress& operator=(IN const sockaddr_in& a_native_ipv4) asd_noexcept;
 
-		IpAddress& operator = (IN const sockaddr_in6& a_native_ipv6) asd_noexcept;
+		IpAddress& operator=(IN const sockaddr_in6& a_native_ipv6) asd_noexcept;
 
 		operator const sockaddr* () const asd_noexcept;
 
@@ -73,7 +73,7 @@ namespace asd
 		// STL의 해시 기반 컨테이너에서 사용할 Functor
 		struct Hash
 		{
-			size_t operator() (IN const IpAddress& a_addr) const asd_noexcept;
+			size_t operator()(IN const IpAddress& a_addr) const asd_noexcept;
 		};
 	};
 

@@ -78,7 +78,9 @@ namespace asd
 		if (capacity == 0)
 			return;
 
-		a_buffer->SetSize(0);
+		if (a_buffer->SetSize(0) == false)
+			return;
+
 		m_total_capacity += capacity;
 		push_back(std::move(a_buffer));
 	}
@@ -257,19 +259,20 @@ namespace asd
 			const size_t reserve = capacity - sz;
 			uint8_t* dst = buf->GetBuffer() + sz;
 			assert(capacity >= sz);
-			assert(dst != reinterpret_cast<uint8_t*>(sz));
+			assert(dst != reinterpret_cast<uint8_t*>(sz)); // buf->GetBuffer() null check
 
 			const size_t remain = a_bytes - cp;
 			if (reserve >= remain) {
 				std::memcpy(dst, src+cp, remain);
-				buf->SetSize(sz + remain);
+				asd_Assert(buf->SetSize(sz + remain), "fail SetSize({})", sz + remain);
 				break;
 			}
 
 			std::memcpy(dst, src+cp, reserve);
 			cp += reserve;
 
-			buf->SetSize(capacity);
+			asd_Assert(buf->SetSize(capacity), "SetSize({})", capacity);
+
 			++m_writeOffset;
 			assert(size() > m_writeOffset);
 		}
@@ -341,9 +344,11 @@ namespace asd
 			 i <= m_bufferList.m_writeOffset && i < m_bufferList.size();
 			 ++i)
 		{
-			m_bufferList[i]->SetSize(0);
+			asd_Assert(m_bufferList[i]->SetSize(0), "fail SetSize(0)");
 		}
-		m_bufferList[m_rollbackPoint.Row]->SetSize(m_rollbackPoint.Col);
+
+		bool set = m_bufferList[m_rollbackPoint.Row]->SetSize(m_rollbackPoint.Col);
+		asd_Assert(set, "fail SetSize({})", m_rollbackPoint.Col);
 		m_bufferList.m_writeOffset = m_rollbackPoint.Row;
 	}
 

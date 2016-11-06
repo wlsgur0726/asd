@@ -51,6 +51,10 @@ namespace asd
 	IpAddress::IpAddress(IN const char* a_ip,
 						 IN uint16_t a_port /*= 0*/) asd_noexcept
 	{
+		auto list = FindIP(a_ip);
+		if (list.empty())
+			return;
+		*this = std::move(list[0]);
 		SetPort(a_port);
 	}
 
@@ -63,7 +67,28 @@ namespace asd
 
 
 
-	IpAddress& IpAddress::operator = (IN const IpAddress& a_cp) asd_noexcept
+	IpAddress::IpAddress(MOVE IpAddress&& a_rval) asd_noexcept
+	{
+		*this = std::move(a_rval);
+	}
+
+
+
+	IpAddress::IpAddress(IN const sockaddr_in& a_native) asd_noexcept
+	{
+		*this = a_native;
+	}
+
+
+
+	IpAddress::IpAddress(IN const sockaddr_in6& a_native) asd_noexcept
+	{
+		*this = a_native;
+	}
+
+
+
+	IpAddress& IpAddress::operator=(IN const IpAddress& a_cp) asd_noexcept
 	{
 		this->~IpAddress();
 		m_addrFamily = a_cp.m_addrFamily;
@@ -77,45 +102,37 @@ namespace asd
 
 
 
-	IpAddress::IpAddress(MOVE IpAddress&& a_rval) asd_noexcept
+	IpAddress& IpAddress::operator=(MOVE IpAddress&& a_rval) asd_noexcept
 	{
-		*this = std::move(a_rval);
-	}
-
-
-
-	IpAddress& IpAddress::operator = (MOVE IpAddress&& a_rval) asd_noexcept
-	{
-		this->~IpAddress();
-		m_addrFamily = a_rval.m_addrFamily;
-		m_addr = a_rval.m_addr;
-		m_addrlen = a_rval.m_addrlen;
-
-		a_rval.m_addr = nullptr;
+		std::swap(m_addr, a_rval.m_addr);
+		std::swap(m_addrlen, a_rval.m_addrlen);
+		std::swap(m_addrFamily, a_rval.m_addrFamily);
 		return *this;
 	}
 
 
 
-#define asd_IpAddress_Define_Init(NativeType, AddressFamily)							\
-	IpAddress::IpAddress(IN const NativeType& a_native) asd_noexcept					\
-	{																					\
-		*this = a_native;																\
-	}																					\
-																						\
-	IpAddress& IpAddress::operator = (IN const NativeType& a_native) asd_noexcept		\
-	{																					\
-		this->~IpAddress();																\
-		m_addrlen = sizeof(NativeType);													\
-		m_addr = (sockaddr*)new uint8_t[m_addrlen];										\
-		memcpy(m_addr, &a_native, m_addrlen);											\
-		m_addrFamily = AddressFamily;													\
-		return *this;																	\
-	}																					\
+	IpAddress& IpAddress::operator=(IN const sockaddr_in& a_native) asd_noexcept
+	{
+		this->~IpAddress();
+		m_addrlen = sizeof(sockaddr_in);
+		m_addr = (sockaddr*)new uint8_t[m_addrlen];
+		memcpy(m_addr, &a_native, m_addrlen);
+		m_addrFamily = AddressFamily::IPv4;
+		return *this;
+	}
 
-	asd_IpAddress_Define_Init(sockaddr_in, AddressFamily::IPv4);
 
-	asd_IpAddress_Define_Init(sockaddr_in6, AddressFamily::IPv6);
+
+	IpAddress& IpAddress::operator=(IN const sockaddr_in6& a_native) asd_noexcept
+	{
+		this->~IpAddress();
+		m_addrlen = sizeof(sockaddr_in6);
+		m_addr = (sockaddr*)new uint8_t[m_addrlen];
+		memcpy(m_addr, &a_native, m_addrlen);
+		m_addrFamily = AddressFamily::IPv6;
+		return *this;
+	}
 
 
 
@@ -297,7 +314,7 @@ namespace asd
 
 
 
-	size_t IpAddress::Hash::operator () (IN const IpAddress& a_addr) const asd_noexcept
+	size_t IpAddress::Hash::operator()(IN const IpAddress& a_addr) const asd_noexcept
 	{
 		if (a_addr.m_addr == nullptr)
 			return 0;
@@ -346,11 +363,11 @@ namespace asd
 		for (auto p=result; p!=nullptr; p=p->ai_next) {
 			switch (p->ai_family) {
 				case AF_INET:{
-					ret.push_back(*(sockaddr_in*)p->ai_addr);
+					ret.push_back(IpAddress(*(sockaddr_in*)p->ai_addr));
 					break;
 				}
 				case AF_INET6:{
-					ret.push_back(*(sockaddr_in6*)p->ai_addr);
+					ret.push_back(IpAddress(*(sockaddr_in6*)p->ai_addr));
 					break;
 				}
 			}

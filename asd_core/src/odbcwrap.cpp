@@ -719,7 +719,7 @@ namespace asd
 
 		void CloseStatement()
 		{
-			asd_RegisterFinallyTask([this]()
+			auto fin = FinallyTask([this]()
 			{
 				Close();
 			});
