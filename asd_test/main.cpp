@@ -22,11 +22,11 @@
 int main(int argc, char** argv)
 {
 	Test();
-#if 0
+#if 1
 	std::vector<char*> args;
 	args.push_back(argv[0]);
 
-	args.push_back("--gtest_filter=ODBC.MSSQL");
+	args.push_back("--gtest_filter=Socket.*");
 
 	argc = args.size();
 	argv = args.data();

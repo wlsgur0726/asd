@@ -4,6 +4,7 @@
 #include <memory>
 #include <atomic>
 #include <cassert>
+#include <mutex>
 
 
 namespace asd
@@ -26,44 +27,14 @@ namespace asd
 	public:
 		static T& GlobalInstance()
 		{
-			enum class InitState : int
-			{
-				Need = 0,
-				Progress,
-				Complete,
-			};
-			static std::atomic<InitState> g_initState(InitState::Need);
 			static std::unique_ptr<T> g_globalObject = nullptr;
-
-			do {
-				const InitState state = g_initState.load(std::memory_order_relaxed);
-				switch (state) {
-					case InitState::Need: {
-						InitState cmp = InitState::Need;
-						if (false == g_initState.compare_exchange_strong(cmp, InitState::Progress))
-							continue;
-
-						assert(g_globalObject == nullptr);
-						g_globalObject.reset(new T);
-
-						cmp = InitState::Progress;
-						if (false == g_initState.compare_exchange_strong(cmp, InitState::Complete))
-							asd_RaiseException("fail init, {}", __FUNCTION__);
-					}
-					case InitState::Complete: {
-						return *g_globalObject;
-					}
-					case InitState::Progress: {
-						continue;
-					}
-					default: {
-						asd_RaiseException("invalid InitState : {}, {}",
-										   (int)state,
-										   __FUNCTION__);
-					}
-				}
-			} while (true);
-			assert(false);
+			static std::once_flag init;
+			std::call_once(init, []()
+			{
+				g_globalObject.reset(new T);
+			});
+			assert(g_globalObject != nullptr);
+			return *g_globalObject;
 		}
 	};
 

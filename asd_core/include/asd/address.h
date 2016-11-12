@@ -1,5 +1,4 @@
 ﻿#pragma once
-
 #include "asdbase.h"
 #include "string.h"
 #include "exception.h"

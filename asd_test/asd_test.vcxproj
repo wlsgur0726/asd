@@ -184,6 +184,7 @@
     <ClCompile Include="test_odbc.cpp" />
     <ClCompile Include="test_semaphore.cpp" />
     <ClCompile Include="test_serialize.cpp" />
+    <ClCompile Include="test_socket.cpp" />
     <ClCompile Include="test_string.cpp" />
     <ClCompile Include="test_template.cpp" />
     <ClCompile Include="test_threadpool.cpp" />
