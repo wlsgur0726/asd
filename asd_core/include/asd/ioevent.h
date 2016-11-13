@@ -35,8 +35,8 @@ namespace asd
 
 
 	public:
-		AsyncSocket(IN AddressFamily a_addressFamily = AddressFamily::IPv4,
-					IN Socket::Type a_socketType = Socket::Type::TCP) asd_noexcept;
+		AsyncSocket(IN Socket::Type a_socketType = Socket::Type::TCP,
+					IN AddressFamily a_addressFamily = AddressFamily::IPv4) asd_noexcept;
 
 
 		inline AsyncSocket(MOVE AsyncSocket&& a_move) asd_noexcept

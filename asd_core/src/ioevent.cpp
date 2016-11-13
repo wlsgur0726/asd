@@ -51,9 +51,9 @@ namespace asd
 	class AsyncSocketInternal : public Socket
 	{
 	public:
-		inline AsyncSocketInternal(IN AddressFamily a_addressFamily,
-								   IN Socket::Type a_socketType)
-			: Socket(a_addressFamily, a_socketType) {}
+		inline AsyncSocketInternal(IN Socket::Type a_socketType,
+								   IN AddressFamily a_addressFamily)
+			: Socket(a_socketType, a_addressFamily) {}
 
 		// 이 소켓의 데이터들을 보호하는 락
 		mutable Mutex m_sockLock;
@@ -112,7 +112,7 @@ namespace asd
 
 		Socket AcceptNewSocket() asd_noexcept
 		{
-			Socket s(m_addressFamily, m_socketType);
+			Socket s(m_socketType, m_addressFamily);
 			s.m_handle = m_listening->m_acceptSock;
 			m_listening->m_acceptSock = INVALID_SOCKET;
 			return s;
@@ -1291,10 +1291,10 @@ namespace asd
 
 
 
-	AsyncSocket::AsyncSocket(IN AddressFamily a_addressFamily /*= AddressFamily::IPv4*/,
-							 IN Socket::Type a_socketType /*= Socket::Type::TCP*/) asd_noexcept
+	AsyncSocket::AsyncSocket(IN Socket::Type a_socketType /*= Socket::Type::TCP*/,
+							 IN AddressFamily a_addressFamily /*= AddressFamily::IPv4*/) asd_noexcept
 	{
-		m_internal.reset(new AsyncSocketInternal(a_addressFamily, a_socketType));
+		m_internal.reset(new AsyncSocketInternal(a_socketType, a_addressFamily));
 		m_internal->m_interface = this;
 	}
 

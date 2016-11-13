@@ -62,8 +62,8 @@ namespace asd
 #endif
 
 	public:
-		Socket(IN AddressFamily a_addressFamily = AddressFamily::IPv4,
-			   IN Socket::Type a_socketType = Type::TCP) asd_noexcept;
+		Socket(IN Socket::Type a_socketType = Type::TCP,
+			   IN AddressFamily a_addressFamily = AddressFamily::IPv4) asd_noexcept;
 
 
 		Socket(MOVE Socket&& a_rval) asd_noexcept;
@@ -93,8 +93,8 @@ namespace asd
 
 
 		Error
-		Init(IN AddressFamily a_addressFamily,
-			 IN Socket::Type a_socketType,
+		Init(IN Socket::Type a_socketType,
+			 IN AddressFamily a_addressFamily,
 			 IN bool a_force = false) asd_noexcept;
 
 
@@ -104,78 +104,6 @@ namespace asd
 
 		Type
 		GetSocektType() const asd_noexcept;
-
-
-		Error
-		SetSockOpt(IN int a_level,
-				   IN int a_optname,
-				   IN const void* a_optval,
-				   IN uint32_t a_optlen) asd_noexcept;
-
-
-		Error
-		GetSockOpt(IN int a_level,
-				   IN int a_optname,
-				   OUT void* a_optval,
-				   INOUT uint32_t& a_optlen) const asd_noexcept;
-
-
-		Error
-		SetSockOpt_ReuseAddr(IN bool a_set) asd_noexcept;
-
-
-		Error
-		GetSockOpt_ReuseAddr(OUT bool& a_result) const asd_noexcept;
-
-
-		Error
-		SetSockOpt_UseNagle(IN bool a_set) asd_noexcept;
-
-
-		Error
-		GetSockOpt_UseNagle(OUT bool& a_result) const asd_noexcept;
-
-
-		Error
-		SetSockOpt_Linger(IN bool a_use,
-						  IN uint16_t a_sec) asd_noexcept;
-
-
-		Error
-		GetSockOpt_Linger(OUT bool& a_use,
-						  OUT uint16_t& a_sec) const asd_noexcept;
-
-
-		Error
-		SetSockOpt_RecvBufSize(IN int a_byte) asd_noexcept;
-
-
-		Error
-		GetSockOpt_RecvBufSize(OUT int& a_byte) const asd_noexcept;
-
-
-		Error
-		SetSockOpt_SendBufSize(IN int a_byte) asd_noexcept;
-
-
-		Error
-		GetSockOpt_SendBufSize(OUT int& a_byte) const asd_noexcept;
-
-
-		Error
-		SetNonblock(IN bool a_nonblock) asd_noexcept;
-
-
-		Error
-		CheckNonblock(OUT bool& a_result) const asd_noexcept;
-
-
-		Error
-		GetSockName(OUT IpAddress& a_addr) const asd_noexcept;
-
-
-		Error
-		GetPeerName(OUT IpAddress& a_addr) const asd_noexcept;
 
 
 		// a_addr의 AddressFamily를 적용하여 초기화한다.
@@ -280,6 +208,78 @@ namespace asd
 		}
 
 
+		Error
+		SetSockOpt(IN int a_level,
+				   IN int a_optname,
+				   IN const void* a_optval,
+				   IN uint32_t a_optlen) asd_noexcept;
+
+
+		Error
+		GetSockOpt(IN int a_level,
+				   IN int a_optname,
+				   OUT void* a_optval,
+				   INOUT uint32_t& a_optlen) const asd_noexcept;
+
+
+		Error
+		SetSockOpt_ReuseAddr(IN bool a_set) asd_noexcept;
+
+
+		Error
+		GetSockOpt_ReuseAddr(OUT bool& a_result) const asd_noexcept;
+
+
+		Error
+		SetSockOpt_UseNagle(IN bool a_set) asd_noexcept;
+
+
+		Error
+		GetSockOpt_UseNagle(OUT bool& a_result) const asd_noexcept;
+
+
+		Error
+		SetSockOpt_Linger(IN bool a_use,
+						  IN uint16_t a_sec) asd_noexcept;
+
+
+		Error
+		GetSockOpt_Linger(OUT bool& a_use,
+						  OUT uint16_t& a_sec) const asd_noexcept;
+
+
+		Error
+		SetSockOpt_RecvBufSize(IN int a_byte) asd_noexcept;
+
+
+		Error
+		GetSockOpt_RecvBufSize(OUT int& a_byte) const asd_noexcept;
+
+
+		Error
+		SetSockOpt_SendBufSize(IN int a_byte) asd_noexcept;
+
+
+		Error
+		GetSockOpt_SendBufSize(OUT int& a_byte) const asd_noexcept;
+
+
+		Error
+		SetNonblock(IN bool a_nonblock) asd_noexcept;
+
+
+		Error
+		CheckNonblock(OUT bool& a_result) const asd_noexcept;
+
+
+		Error
+		GetSockName(OUT IpAddress& a_addr) const asd_noexcept;
+
+
+		Error
+		GetPeerName(OUT IpAddress& a_addr) const asd_noexcept;
+
+
 
 	private:
 		Socket(IN const Socket&) = delete;
@@ -304,8 +304,8 @@ namespace asd
 		uint8_t m_recvBuffer[BufferSize];
 		uint8_t m_sendBuffer[BufferSize];
 
-		EasySocket(IN AddressFamily a_addressFamily = AddressFamily::IPv4,
-				   IN Socket::Type a_socketType = Socket::Type::TCP);
+		EasySocket(IN Socket::Type a_socketType = Socket::Type::TCP,
+				   IN AddressFamily a_addressFamily = AddressFamily::IPv4);
 
 		void Bind(IN const IpAddress& a_addr);
 

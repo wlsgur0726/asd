@@ -119,11 +119,11 @@ namespace asd
 
 
 
-	Socket::Socket(IN AddressFamily a_addressFamily /*= AddressFamily::IPv4*/,
-				   IN Socket::Type a_socketType /*=Type::TCP*/) asd_noexcept
+	Socket::Socket(IN Socket::Type a_socketType /*=Type::TCP*/,
+				   IN AddressFamily a_addressFamily /*= AddressFamily::IPv4*/) asd_noexcept
 	{
-		m_addressFamily = a_addressFamily;
 		m_socketType = a_socketType;
+		m_addressFamily = a_addressFamily;
 		asd_SetNonblockFlag(*this, false);
 	}
 
@@ -140,8 +140,8 @@ namespace asd
 	Socket::operator = (MOVE Socket&& a_rval) asd_noexcept
 	{
 		std::swap(m_handle, a_rval.m_handle);
-		std::swap(m_addressFamily, a_rval.m_addressFamily);
 		std::swap(m_socketType, a_rval.m_socketType);
+		std::swap(m_addressFamily, a_rval.m_addressFamily);
 		asd_SwapNonblockFlag(*this, a_rval);
 		return *this;
 	}
@@ -176,13 +176,13 @@ namespace asd
 	Socket::Error
 	Socket::Init(IN bool a_force /*= false*/) asd_noexcept
 	{
-		return Init(m_addressFamily, m_socketType, a_force);
+		return Init(m_socketType, m_addressFamily, a_force);
 	}
 
 
 	Socket::Error
-	Socket::Init(IN AddressFamily a_addressFamily,
-				 IN Socket::Type a_socketType,
+	Socket::Init(IN Socket::Type a_socketType,
+				 IN AddressFamily a_addressFamily,
 				 IN bool a_force /*= false*/) asd_noexcept
 	{
 		bool need_init =   m_handle == InvalidHandle
@@ -223,6 +223,245 @@ namespace asd
 
 
 
+	Socket::Error 
+	Socket::Bind(IN const IpAddress& a_addr)  asd_noexcept
+	{
+		Error ret = 0;
+		ret = Init(m_socketType, a_addr.GetAddressFamily(), false);
+		if (ret != 0)
+			return ret;
+
+		const sockaddr* addr = a_addr;
+		if (::bind(m_handle, a_addr, a_addr.GetAddrLen()) == -1)
+			ret = GetErrorNumber();
+
+		return ret;
+	}
+
+
+
+	Socket::Error 
+	Socket::Listen(IN int a_backlog /*=1024*/) asd_noexcept
+	{
+		assert(m_handle != InvalidHandle);
+
+		Error ret = 0;
+		if (::listen(m_handle, a_backlog) == -1)
+			ret = GetErrorNumber();
+
+		return ret;
+	}
+
+
+
+	template <typename SockAddrType>
+	inline Socket::Error 
+	Accept_Internal(IN Socket::Handle a_sock,
+					IN AddressFamily a_addrFam,
+					OUT Socket& a_newbe,
+					OUT Socket::Handle& a_newSocket,
+					OUT IpAddress& a_address)
+	{
+		Socket::Error ret = 0;
+		SockAddrType addr;
+		socklen_t addrLen = sizeof(addr);
+		Socket::Handle h = ::accept(a_sock,
+									(sockaddr*)&addr,
+									&addrLen);
+		if (h == -1)
+			ret = GetErrorNumber();
+		else {
+			Socket newSock(Socket::Type::TCP, a_addrFam);
+			a_newbe = std::move(newSock);
+			a_newSocket = h;
+			a_address = addr;
+		}
+
+		return ret;
+	}
+
+
+
+	Socket::Error 
+	Socket::Accept(OUT Socket& a_newbe,
+				   OUT IpAddress& a_address) asd_noexcept
+	{
+		assert(m_handle != InvalidHandle);
+
+		Error ret = 0;
+		switch (m_addressFamily) {
+			case AddressFamily::IPv4: {
+				ret = Accept_Internal<sockaddr_in>(m_handle,
+												   m_addressFamily,
+												   a_newbe,
+												   a_newbe.m_handle,
+												   a_address);
+				break;
+			}
+			case AddressFamily::IPv6: {
+				ret = Accept_Internal<sockaddr_in6>(m_handle,
+													m_addressFamily,
+													a_newbe,
+													a_newbe.m_handle,
+													a_address);
+				break;
+			}
+			default:
+				assert(false);
+				break;
+		}
+
+		return ret;
+	}
+
+
+
+	Socket::Error
+	Socket::Connect(IN const IpAddress& a_dest) asd_noexcept
+	{
+		Error ret = 0;
+		ret = Init(m_socketType, a_dest.GetAddressFamily(), false);
+		if (ret != 0)
+			return ret;
+
+		if (::connect(m_handle, a_dest, a_dest.GetAddrLen()) == -1)
+			ret = GetErrorNumber();
+
+		return ret;
+	}
+
+
+
+	Socket::IoResult
+	Socket::Send(IN const void* a_buffer,
+				 IN int a_bufferSize,
+				 IN int a_flags /*= 0*/) asd_noexcept
+	{
+		assert(m_handle != InvalidHandle);
+
+		IoResult ret;
+		ret.m_bytes = ::send(m_handle,
+							 (SockBufType)a_buffer,
+							 a_bufferSize,
+							 a_flags);
+		if (ret.m_bytes < 0)
+			ret.m_error = GetErrorNumber();
+
+		return ret;
+	}
+
+
+
+	Socket::IoResult
+	Socket::SendTo(IN const void* a_buffer,
+				   IN int a_bufferSize,
+				   IN const IpAddress& a_dest,
+				   IN int a_flags /*= 0*/) asd_noexcept
+	{
+		IoResult ret;
+		ret.m_error = Init(m_socketType, a_dest.GetAddressFamily(), false);
+		if (ret.m_error != 0)
+			return ret;
+
+		ret.m_bytes = ::sendto(m_handle,
+							   (SockBufType)a_buffer,
+							   a_bufferSize,
+							   a_flags, 
+							   a_dest, 
+							   a_dest.GetAddrLen());
+		if (ret.m_bytes < 0)
+			ret.m_error = GetErrorNumber();
+
+		return ret;
+	}
+
+
+
+	Socket::IoResult
+	Socket::Recv(OUT void* a_buffer,
+				 IN int a_bufferSize,
+				 IN int a_flags /*= 0*/) asd_noexcept
+	{
+		assert(m_handle != InvalidHandle);
+
+		IoResult ret;
+		ret.m_bytes = ::recv(m_handle,
+							 (SockBufType)a_buffer,
+							 a_bufferSize,
+							 a_flags);
+		if (ret.m_bytes < 0)
+			ret.m_error = GetErrorNumber();
+
+		return ret;
+	}
+
+
+
+	template <typename SockAddrType>
+	inline void
+	RecvFrom_Internal(OUT Socket::IoResult& a_result,
+					  IN Socket::Handle a_sock,
+					  OUT void* a_buffer,
+					  IN int a_bufferSize,
+					  OUT IpAddress& a_src,
+					  IN int a_flags)
+	{
+		SockAddrType addr;
+		socklen_t addrLen = sizeof(addr);
+		a_result.m_bytes = ::recvfrom(a_sock,
+									  (SockBufType)a_buffer,
+									  a_bufferSize,
+									  a_flags,
+									  (sockaddr*)&addr,
+									  &addrLen);
+		if (a_result.m_bytes < 0)
+			a_result.m_error = GetErrorNumber();
+		else
+			a_src = addr;
+	}
+
+
+
+	Socket::IoResult
+	Socket::RecvFrom(OUT void* a_buffer,
+					 IN int a_bufferSize,
+					 OUT IpAddress& a_src,
+					 IN int a_flags /*= 0*/) asd_noexcept
+	{
+		IoResult ret;
+		ret.m_error = Init(m_socketType, m_addressFamily, false);
+		if (ret.m_error != 0)
+			return ret;
+
+		switch (m_addressFamily) {
+			case asd::AddressFamily::IPv4: {
+				RecvFrom_Internal<sockaddr_in>(ret,
+											   m_handle,
+											   a_buffer,
+											   a_bufferSize,
+											   a_src,
+											   a_flags);
+				break;
+			}
+			case asd::AddressFamily::IPv6: {
+				RecvFrom_Internal<sockaddr_in6>(ret,
+												m_handle,
+												a_buffer,
+												a_bufferSize,
+												a_src,
+												a_flags);
+				break;
+			}
+			default:
+				assert(false);
+				break;
+		}
+
+		return ret;
+	}
+
+
+
 	Socket::Error
 	Socket::SetSockOpt(IN int a_level,
 					   IN int a_optname,
@@ -230,11 +469,14 @@ namespace asd
 					   IN uint32_t a_optlen) asd_noexcept
 	{
 		assert(m_handle != InvalidHandle);
-		return ::setsockopt(m_handle,
-							a_level,
-							a_optname,
-							(const SockOptValType)a_optval,
-							(socklen_t)a_optlen);
+		auto r = ::setsockopt(m_handle,
+							  a_level,
+							  a_optname,
+							  (const SockOptValType)a_optval,
+							  (socklen_t)a_optlen);
+		if (r != 0)
+			return GetErrorNumber();
+		return 0;
 	}
 
 
@@ -246,11 +488,14 @@ namespace asd
 					   INOUT uint32_t& a_optlen) const asd_noexcept
 	{
 		assert(m_handle != InvalidHandle);
-		return ::getsockopt(m_handle,
-							a_level,
-							a_optname,
-							(SockOptValType)a_optval,
-							(socklen_t*)&a_optlen);
+		auto r = ::getsockopt(m_handle,
+							  a_level,
+							  a_optname,
+							  (SockOptValType)a_optval,
+							  (socklen_t*)&a_optlen);
+		if (r != 0)
+			return GetErrorNumber();
+		return 0;
 	}
 
 
@@ -525,250 +770,11 @@ namespace asd
 
 
 
-	Socket::Error 
-	Socket::Bind(IN const IpAddress& a_addr)  asd_noexcept
-	{
-		Error ret = 0;
-		ret = Init(a_addr.GetAddressFamily(), m_socketType, false);
-		if (ret != 0)
-			return ret;
-
-		const sockaddr* addr = a_addr;
-		if (::bind(m_handle, a_addr, a_addr.GetAddrLen()) == -1)
-			ret = GetErrorNumber();
-
-		return ret;
-	}
-
-
-
-	Socket::Error 
-	Socket::Listen(IN int a_backlog /*=1024*/) asd_noexcept
-	{
-		assert(m_handle != InvalidHandle);
-
-		Error ret = 0;
-		if (::listen(m_handle, a_backlog) == -1)
-			ret = GetErrorNumber();
-
-		return ret;
-	}
-
-
-
-	template <typename SockAddrType>
-	inline Socket::Error 
-	Accept_Internal(IN Socket::Handle a_sock,
-					IN AddressFamily a_addrFam,
-					OUT Socket& a_newbe,
-					OUT Socket::Handle& a_newSocket,
-					OUT IpAddress& a_address)
-	{
-		Socket::Error ret = 0;
-		SockAddrType addr;
-		socklen_t addrLen = sizeof(addr);
-		Socket::Handle h = ::accept(a_sock,
-									(sockaddr*)&addr,
-									&addrLen);
-		if (h == -1)
-			ret = GetErrorNumber();
-		else {
-			Socket newSock(a_addrFam, Socket::Type::TCP);
-			a_newbe = std::move(newSock);
-			a_newSocket = h;
-			a_address = addr;
-		}
-
-		return ret;
-	}
-
-
-
-	Socket::Error 
-	Socket::Accept(OUT Socket& a_newbe,
-				   OUT IpAddress& a_address) asd_noexcept
-	{
-		assert(m_handle != InvalidHandle);
-
-		Error ret = 0;
-		switch (m_addressFamily) {
-			case AddressFamily::IPv4: {
-				ret = Accept_Internal<sockaddr_in>(m_handle,
-												   m_addressFamily,
-												   a_newbe,
-												   a_newbe.m_handle,
-												   a_address);
-				break;
-			}
-			case AddressFamily::IPv6: {
-				ret = Accept_Internal<sockaddr_in6>(m_handle,
-													m_addressFamily,
-													a_newbe,
-													a_newbe.m_handle,
-													a_address);
-				break;
-			}
-			default:
-				assert(false);
-				break;
-		}
-
-		return ret;
-	}
-
-
-
-	Socket::Error
-	Socket::Connect(IN const IpAddress& a_dest) asd_noexcept
-	{
-		Error ret = 0;
-		ret = Init(a_dest.GetAddressFamily(), m_socketType, false);
-		if (ret != 0)
-			return ret;
-
-		if (::connect(m_handle, a_dest, a_dest.GetAddrLen()) == -1)
-			ret = GetErrorNumber();
-
-		return ret;
-	}
-
-
-
-	Socket::IoResult
-	Socket::Send(IN const void* a_buffer,
-				 IN int a_bufferSize,
-				 IN int a_flags /*= 0*/) asd_noexcept
-	{
-		assert(m_handle != InvalidHandle);
-
-		IoResult ret;
-		ret.m_bytes = ::send(m_handle,
-							 (SockBufType)a_buffer,
-							 a_bufferSize,
-							 a_flags);
-		if (ret.m_bytes < 0)
-			ret.m_error = GetErrorNumber();
-
-		return ret;
-	}
-
-
-
-	Socket::IoResult
-	Socket::SendTo(IN const void* a_buffer,
-				   IN int a_bufferSize,
-				   IN const IpAddress& a_dest,
-				   IN int a_flags /*= 0*/) asd_noexcept
-	{
-		IoResult ret;
-		ret.m_error = Init(m_addressFamily, m_socketType, false);
-		if (ret.m_error != 0)
-			return ret;
-
-		ret.m_bytes = ::sendto(m_handle,
-							   (SockBufType)a_buffer,
-							   a_bufferSize,
-							   a_flags, 
-							   a_dest, 
-							   a_dest.GetAddrLen());
-		if (ret.m_bytes < 0)
-			ret.m_error = GetErrorNumber();
-
-		return ret;
-	}
-
-
-
-	Socket::IoResult
-	Socket::Recv(OUT void* a_buffer,
-				 IN int a_bufferSize,
-				 IN int a_flags /*= 0*/) asd_noexcept
-	{
-		assert(m_handle != InvalidHandle);
-
-		IoResult ret;
-		ret.m_bytes = ::recv(m_handle,
-							 (SockBufType)a_buffer,
-							 a_bufferSize,
-							 a_flags);
-		if (ret.m_bytes < 0)
-			ret.m_error = GetErrorNumber();
-
-		return ret;
-	}
-
-
-
-	template <typename SockAddrType>
-	inline void
-	RecvFrom_Internal(OUT Socket::IoResult& a_result,
-					  IN Socket::Handle a_sock,
-					  OUT void* a_buffer,
-					  IN int a_bufferSize,
-					  OUT IpAddress& a_src,
-					  IN int a_flags)
-	{
-		SockAddrType addr;
-		socklen_t addrLen = sizeof(addr);
-		a_result.m_bytes = ::recvfrom(a_sock,
-									  (SockBufType)a_buffer,
-									  a_bufferSize,
-									  a_flags,
-									  (sockaddr*)&addr,
-									  &addrLen);
-		if (a_result.m_bytes < 0)
-			a_result.m_error = GetErrorNumber();
-		else
-			a_src = addr;
-	}
-
-
-
-	Socket::IoResult
-	Socket::RecvFrom(OUT void* a_buffer,
-					 IN int a_bufferSize,
-					 OUT IpAddress& a_src,
-					 IN int a_flags /*= 0*/) asd_noexcept
-	{
-		IoResult ret;
-		ret.m_error = Init(m_addressFamily, m_socketType, false);
-		if (ret.m_error != 0)
-			return ret;
-
-		switch (m_addressFamily) {
-			case asd::AddressFamily::IPv4: {
-				RecvFrom_Internal<sockaddr_in>(ret,
-											   m_handle,
-											   a_buffer,
-											   a_bufferSize,
-											   a_src,
-											   a_flags);
-				break;
-			}
-			case asd::AddressFamily::IPv6: {
-				RecvFrom_Internal<sockaddr_in6>(ret,
-												m_handle,
-												a_buffer,
-												a_bufferSize,
-												a_src,
-												a_flags);
-				break;
-			}
-			default:
-				assert(false);
-				break;
-		}
-
-		return ret;
-	}
-
-
-
-	EasySocket::EasySocket(IN AddressFamily a_addressFamily /*= AddressFamily::IPv4*/,
-						   IN Socket::Type a_socketType /*= Socket::Type::TCP*/)
+	EasySocket::EasySocket(IN Socket::Type a_socketType /*= Socket::Type::TCP*/,
+						   IN AddressFamily a_addressFamily /*= AddressFamily::IPv4*/)
 	{
 		m_socketType = a_socketType;
-		m_socket = Socket_ptr(new Socket(a_addressFamily, m_socketType));
+		m_socket = Socket_ptr(new Socket(m_socketType, a_addressFamily));
 		memset(m_recvBuffer, 0, BufferSize);
 		memset(m_sendBuffer, 0, BufferSize);
 	}
