@@ -318,6 +318,7 @@
     <ClInclude Include="include\asd\threadpool.h" />
     <ClInclude Include="include\asd\datetime.h" />
     <ClInclude Include="include\asd\threadutil.h" />
+    <ClInclude Include="include\asd\timer.h" />
     <ClInclude Include="include\asd\trace.h" />
     <ClInclude Include="include\asd\util.h" />
     <ClInclude Include="src\asd_pch.h" />
@@ -347,6 +348,7 @@
     <ClCompile Include="src\threadpool.cpp" />
     <ClCompile Include="src\datetime.cpp" />
     <ClCompile Include="src\threadutil.cpp" />
+    <ClCompile Include="src\timer.cpp" />
     <ClCompile Include="src\trace.cpp" />
   </ItemGroup>
   <ItemGroup>

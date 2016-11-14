@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 	std::vector<char*> args;
 	args.push_back(argv[0]);
 
-	args.push_back("--gtest_filter=Socket.*");
+	args.push_back("--gtest_filter=Timer.*");
 
 	argc = args.size();
 	argv = args.data();

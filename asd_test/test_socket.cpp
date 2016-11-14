@@ -82,8 +82,8 @@ namespace asdtest_socket
 		std::thread client([&]()
 		{
 			ASSERT_TRUE(sync.Wait(1000));
-
 			asd::Socket sock;
+
 			ASSERT_EQ(0, sock.Connect(asd::IpAddress(Addr_Loopback(af), addr.GetPort())));
 			for (size_t len=2; len<=(1*1024*1024); len*=2) {
 				std::vector<uint8_t> sendbuf;
@@ -166,28 +166,27 @@ namespace asdtest_socket
 			ASSERT_TRUE(sync.Wait(1000));
 			asd::Socket sock(asd::Socket::Type::UDP);
 			asd::IpAddress dst(Addr_Loopback(af), addr.GetPort());
-			for (size_t i=2; i<=0x10000; i*=2) {
-				size_t len = i;
-				if (len > Payload_Limit)
-					len = Payload_Limit;
+
+			for (size_t len=2; len<=0x10000; len*=2) {
+				const size_t len2 = len<=Payload_Limit ? len : Payload_Limit;
 				std::vector<uint8_t> sendbuf;
 				std::vector<uint8_t> recvbuf;
-				sendbuf.resize(len);
-				recvbuf.resize(len);
+				sendbuf.resize(len2);
+				recvbuf.resize(len2);
 
-				for (size_t i=0; i<len; ++i)
+				for (size_t i=0; i<len2; ++i)
 					sendbuf[i] = i;
 
 				auto s = sock.SendTo(sendbuf.data(), sendbuf.size(), dst);
 				ASSERT_EQ(s.m_error, 0);
-				ASSERT_EQ(s.m_bytes, len);
+				ASSERT_EQ(s.m_bytes, len2);
 
 				asd::IpAddress peer;
 				auto r = sock.RecvFrom(recvbuf.data(), recvbuf.size(), peer);
 				ASSERT_EQ(r.m_error, 0);
-				ASSERT_EQ(r.m_bytes, len);
+				ASSERT_EQ(r.m_bytes, len2);
 				ASSERT_EQ(peer, dst);
-				ASSERT_EQ(0, std::memcmp(sendbuf.data(), recvbuf.data(), len));
+				ASSERT_EQ(0, std::memcmp(sendbuf.data(), recvbuf.data(), len2));
 			}
 			auto s = sock.SendTo("", 0, dst);
 			ASSERT_EQ(s.m_error, 0);

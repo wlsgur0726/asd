@@ -94,7 +94,7 @@ namespace asd
 	{
 		asd_Destructor_Start
 			assert(GetCount() >= 0);
-			m_data.release();
+			m_data.reset();
 		asd_Destructor_End
 	}
 

@@ -188,6 +188,7 @@
     <ClCompile Include="test_string.cpp" />
     <ClCompile Include="test_template.cpp" />
     <ClCompile Include="test_threadpool.cpp" />
+    <ClCompile Include="test_timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\googletest\googletest\msvc2015\gtest-md.vcxproj">
