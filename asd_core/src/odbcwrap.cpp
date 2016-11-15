@@ -53,7 +53,7 @@ namespace asd
 		m_what.Format("DBException({}:{})", a_lastFileName, a_lastFileLine);
 		int index = 1;
 		for (auto& diagInfo : a_diagInfoList) {
-			m_diagInfoList.push_back(diagInfo);
+			m_diagInfoList.emplace_back(diagInfo);
 			m_what << "\n [" << (index++) << "] " << diagInfo.ToString();
 		}
 	}
@@ -250,7 +250,7 @@ namespace asd
 					   sizeof(diagInfo.m_state));
 				diagInfo.m_nativeError = nativeError;
 				diagInfo.m_message = (const char*)errMsg;
-				m_diagInfoList.push_back(diagInfo);
+				m_diagInfoList.emplace_back(diagInfo);
 			}
 		}
 

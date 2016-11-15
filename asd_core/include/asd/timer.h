@@ -27,7 +27,7 @@ namespace asd
 		uint64_t PushAt(IN TimePoint a_timepoint,
 						MOVE Callback&& a_task) asd_noexcept;
 
-		// a_ms 후에 수행할 task를 큐잉
+		// a_afterMs 후에 수행할 task를 큐잉
 		inline uint64_t PushAfter(IN uint32_t a_afterMs,
 								  MOVE Callback&& a_task) asd_noexcept
 		{

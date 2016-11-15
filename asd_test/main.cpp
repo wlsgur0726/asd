@@ -24,9 +24,9 @@ int main(int argc, char** argv)
 	Test();
 #if 0
 	std::vector<char*> args;
-	args.push_back(argv[0]);
+	args.emplace_back(argv[0]);
 
-	args.push_back("--gtest_filter=Timer.*");
+	args.emplace_back("--gtest_filter=Timer.*");
 
 	argc = args.size();
 	argv = args.data();

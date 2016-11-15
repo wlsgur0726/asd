@@ -47,7 +47,7 @@ namespace asd
 		auto lock = asd::GetLock(a_tracer.m_lock);
 		if (a_tracer.size() >= a_tracer.m_limit)
 			a_tracer.pop_front();
-		a_tracer.push_back(a_trace);
+		a_tracer.emplace_back(a_trace);
 	}
 }
 

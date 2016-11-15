@@ -363,11 +363,11 @@ namespace asd
 		for (auto p=result; p!=nullptr; p=p->ai_next) {
 			switch (p->ai_family) {
 				case AF_INET:{
-					ret.push_back(IpAddress(*(sockaddr_in*)p->ai_addr));
+					ret.emplace_back(IpAddress(*(sockaddr_in*)p->ai_addr));
 					break;
 				}
 				case AF_INET6:{
-					ret.push_back(IpAddress(*(sockaddr_in6*)p->ai_addr));
+					ret.emplace_back(IpAddress(*(sockaddr_in6*)p->ai_addr));
 					break;
 				}
 			}

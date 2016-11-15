@@ -70,11 +70,11 @@ namespace asd
 	// asd_DebugTrace
 #if defined(asd_Compiler_MSVC)
 	#define asd_DebugTrace(TRACE, COMMENT, ...)										\
-		TRACE.push_back( asd_MakeDebugInfo(COMMENT, __VA_ARGS__) )					\
+		TRACE.emplace_back(asd_MakeDebugInfo(COMMENT, __VA_ARGS__))					\
 
 #else
 	#define asd_DebugTrace(TRACE, ...)												\
-		TRACE.push_back( asd_MakeDebugInfo(__VA_ARGS__) )							\
+		TRACE.emplace_back(asd_MakeDebugInfo(__VA_ARGS__))							\
 
 #endif
 

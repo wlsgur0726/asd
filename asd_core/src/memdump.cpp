@@ -33,9 +33,9 @@ namespace asd
 		}
 
 		void GetProcessName_Internal(OUT FChar* a_dst,
-									 IN size_t a_dstBufCnt)
+									 IN DWORD a_dstBufCnt)
 		{
-			auto len = GetModuleFileNameW(NULL, a_dst, a_dstBufCnt);
+			auto len = ::GetModuleFileNameW(NULL, a_dst, a_dstBufCnt);
 			for (auto i=len; i>0;) {
 				if (a_dst[--i] == asd_fs_delimiter) {
 					for (auto j=++i; j<=len; ++j)

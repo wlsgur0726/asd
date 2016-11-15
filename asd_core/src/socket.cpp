@@ -888,7 +888,7 @@ namespace asd
 			}
 
 			for (int i=0; i<r.m_bytes; ++i) {
-				a_buffer.push_back(m_recvBuffer[i]);
+				a_buffer.emplace_back(m_recvBuffer[i]);
 			}
 
 		} while (0 <= a_recvComplete && r.m_bytes < a_recvComplete);
@@ -915,7 +915,7 @@ namespace asd
 		}
 
 		for (int i=0; i<r.m_bytes; ++i) {
-			a_buffer.push_back(m_recvBuffer[i]);
+			a_buffer.emplace_back(m_recvBuffer[i]);
 		}
 	}
 

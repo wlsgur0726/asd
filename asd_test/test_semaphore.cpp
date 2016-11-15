@@ -206,7 +206,7 @@ TEST(Semaphore, Example3)
 	// 2. 작업 포스팅
 	for (int i=1; i<=JobCount; ++i) {
 		mtx.Lock();
-		jobQueue.push_back( i - 1 );
+		jobQueue.emplace_back( i - 1 );
 		mtx.Unlock();
 		if ( i % PostCount == 0 )
 			ev.Post(PostCount);

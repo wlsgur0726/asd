@@ -540,7 +540,7 @@ namespace asd
 		typedef typename std::set<Args...>::value_type T;
 		const auto OrgCount = a_data.size();
 		for (DefaultCountType i=0; i<count; ++i) {
-			a_data.push_back(T());
+			a_data.emplace_back(T());
 			T& data = *a_data.rbegin();
 			size_t r = Read(a_buffer, data);
 			if (r == 0) {

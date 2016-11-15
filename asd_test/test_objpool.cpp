@@ -84,7 +84,7 @@ namespace asdtest_objpool
 			//      기본생성자로 Alloc을 하면서 풀에 남아있는 객체 수를 검사
 			const int FirstGetCount = objPool.GetCount();
 			for (int i=1; i<=FirstGetCount; ++i) {
-				objs.push_back(objPool.Alloc());
+				objs.emplace_back(objPool.Alloc());
 				EXPECT_EQ(g_objCount, i);
 				EXPECT_EQ(g_conCount_default, i);
 				EXPECT_EQ(g_conCount_param, 0);
@@ -95,7 +95,7 @@ namespace asdtest_objpool
 			//      더불어 생성하는 객체의 다른 생성자가 동작하는지 여부도 테스트
 			const int SecondGetCount = TestCount;
 			for (int i=1; i<=SecondGetCount; ++i) {
-				objs.push_back(objPool.Alloc(123, &objPool));
+				objs.emplace_back(objPool.Alloc(123, &objPool));
 				EXPECT_EQ(g_objCount, FirstGetCount + i);
 				EXPECT_EQ(g_conCount_default, FirstGetCount);
 				EXPECT_EQ(g_conCount_param, i);

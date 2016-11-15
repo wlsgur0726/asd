@@ -30,11 +30,11 @@ namespace asdtest_testtemplate
 		for (int i=TestTimeMs; i>10; --i) {
 			uint64_t handle = asd::Timer::PushAfter(i, [i, &eventHistory]()
 			{
-				eventHistory[Tick()].push_back(i);
+				eventHistory[Tick()].emplace_back(i);
 			});
 			ASSERT_NE(handle, 0);
 			if (i % 2 == 0)
-				cancel.push_back(handle);
+				cancel.emplace_back(handle);
 			else
 				expect_events.emplace(i);
 		}
@@ -44,7 +44,7 @@ namespace asdtest_testtemplate
 
 		asd::Timer::PushAt(Start - asd::Timer::Milliseconds(1), [&eventHistory]()
 		{
-			eventHistory[Tick()].push_back(-1);
+			eventHistory[Tick()].emplace_back(-1);
 		});
 
 		const auto Wait = asd::Timer::Now() + asd::Timer::Milliseconds(TestTimeMs);
@@ -74,7 +74,7 @@ namespace asdtest_testtemplate
 #if !asd_Debug
 				EXPECT_EQ(expect, value);
 				auto diff = term - expect;
-				// 0 <= diff <= 2
+				// 0 <= diff <= Tolerance
 				EXPECT_LE(0, diff);
 				EXPECT_GE(Tolerance, diff);
 #endif

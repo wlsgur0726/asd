@@ -61,7 +61,7 @@ namespace asd
 
 		while (m_total_capacity - m_total_write < a_bytes) {
 			m_total_capacity += asd_BufferList_DefaultWriteBufferSize;
-			push_back(NewWriteBuffer());
+			emplace_back(NewWriteBuffer());
 		}
 	}
 
@@ -82,7 +82,7 @@ namespace asd
 			return;
 
 		m_total_capacity += capacity;
-		push_back(std::move(a_buffer));
+		emplace_back(std::move(a_buffer));
 	}
 
 
@@ -98,7 +98,7 @@ namespace asd
 		assert(capacity > 0);
 		assert(capacity >= sz);
 		m_total_capacity += capacity;
-		push_back(std::move(a_buffer));
+		emplace_back(std::move(a_buffer));
 
 		if (sz == 0)
 			return; // 새로 추가하는 버퍼가 빈 버퍼이므로 여유버퍼로 취급
@@ -166,7 +166,7 @@ namespace asd
 
 		if (sz == 0) {
 			// 새로 추가하는 버퍼가 빈 버퍼이므로 여유버퍼로 취급
-			push_back(std::move(a_buffer));
+			emplace_back(std::move(a_buffer));
 			return;
 		}
 
@@ -185,7 +185,7 @@ namespace asd
 			m_total_capacity -= remain;
 		}
 		m_total_write += sz;
-		push_front(std::move(a_buffer));
+		emplace_front(std::move(a_buffer));
 	}
 
 

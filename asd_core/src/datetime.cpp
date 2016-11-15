@@ -1029,7 +1029,7 @@ namespace asd
 	{																\
 		UnitTest_ ## TestName()										\
 		{															\
-			UnitTest::TestList.push_back(this);						\
+			UnitTest::TestList.emplace_back(this);						\
 		}															\
 		virtual void Run() override;								\
 	};																\

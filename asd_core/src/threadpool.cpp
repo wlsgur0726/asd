@@ -74,7 +74,7 @@ namespace asd
 		while (a_data->run || (a_data->overtime && !a_data->taskQueue.empty())) {
 			if (a_data->taskQueue.empty()) {
 				// 대기
-				a_data->waitingList.push_back(&t_event);
+				a_data->waitingList.emplace_back(&t_event);
 				lock.unlock();
 				bool ev = t_event.Wait(a_timeoutMs);
 				lock.lock();

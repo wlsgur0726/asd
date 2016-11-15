@@ -130,7 +130,7 @@ namespace asd
 				if (emplace_result.second == false) {
 					// 동일한 작업이 이미 수행중인 경우
 					// 해당 작업을 수행중인 쓰레드가 처리하도록 큐잉하고 종료
-					emplace_result.first->second->push(std::move(taskObj));
+					emplace_result.first->second->emplace(std::move(taskObj));
 					++m_report.conflictCount;
 					mtx.unlock();
 					return;

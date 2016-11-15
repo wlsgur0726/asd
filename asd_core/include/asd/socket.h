@@ -13,7 +13,7 @@ namespace asd
 	// Socket API 랩핑
 	class Socket
 	{
-		friend struct asd::AsyncSocketInternal;
+		friend class asd::AsyncSocketInternal;
 
 	public:
 #if defined(asd_Platform_Windows)

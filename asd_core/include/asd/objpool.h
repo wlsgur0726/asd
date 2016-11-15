@@ -139,7 +139,7 @@ namespace asd
 
 			auto lock = GetLock(m_lock, true);
 			if (m_pool.size() < m_limitCount) {
-				m_pool.push(a_obj);
+				m_pool.emplace(a_obj);
 				return true;
 			}
 			lock.unlock();

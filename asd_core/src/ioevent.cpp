@@ -775,7 +775,7 @@ namespace asd
 						case WSAEWOULDBLOCK:
 							// 과도한 send로 버퍼 부족
 							a_sock->m_sendSignal = true;
-							a_sock->m_sendQueue.push_front(std::move(*progress.rbegin()));
+							a_sock->m_sendQueue.emplace_front(std::move(*progress.rbegin()));
 							progress.pop_back();
 							t_wsabufs.pop_back();
 							if (t_wsabufs.empty()) {
@@ -1423,7 +1423,7 @@ namespace asd
 			return false;
 
 		for (auto& it : a_data)
-			m_internal->m_sendQueue.push_back(std::move(it));
+			m_internal->m_sendQueue.emplace_back(std::move(it));
 		a_data.clear();
 
 		if (m_internal->m_sendSignal == false) {
