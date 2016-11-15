@@ -1,34 +1,13 @@
 ﻿#include "stdafx.h"
 #include "asd/string.h"
 #include "asd/timer.h"
+#include "asd/lock.h"
 #include <atomic>
 #include <map>
 
 
 namespace asdtest_testtemplate
 {
-	typedef std::map<
-		int64_t,
-		std::vector<int>
-	> History;
-
-	asd::Mutex g_lock;
-	History g_eventHistory;
-
-	struct EventHistory : public History
-	{
-		virtual ~EventHistory()
-		{
-			auto lock = asd::GetLock(g_lock);
-			for (auto& it : *this) {
-				for (int value : it.second)
-					g_eventHistory[it.first].push_back(value);
-			}
-		}
-	};
-	thread_local EventHistory t_eventHistory;
-
-
 	inline int64_t Tick(asd::Timer::TimePoint now = asd::Timer::Now())
 	{
 		const asd::Timer::TimePoint tp;
@@ -39,21 +18,9 @@ namespace asdtest_testtemplate
 
 	TEST(Timer, Event)
 	{
-		asd::Timer timer;
-		std::atomic<bool> run;
-
-		run = true;
-		std::vector<std::thread> threads;
-		for (auto t=std::thread::hardware_concurrency(); t>0; --t) {
-			threads.emplace_back(std::thread([&]()
-			{
-				while (run) {
-					timer.Poll(1);
-				}
-			}));
-		}
-
 		const int TestTimeMs = 1000;
+
+		std::map<int64_t, std::vector<int>> eventHistory;
 		std::set<int> expect_events;
 		std::vector<uint64_t> cancel;
 		cancel.reserve(TestTimeMs);
@@ -61,9 +28,9 @@ namespace asdtest_testtemplate
 		const auto Start = asd::Timer::Now();
 
 		for (int i=TestTimeMs; i>10; --i) {
-			uint64_t handle = timer.PushAfter(i, [i]()
+			uint64_t handle = asd::Timer::PushAfter(i, [i, &eventHistory]()
 			{
-				t_eventHistory[Tick()].push_back(i);
+				eventHistory[Tick()].push_back(i);
 			});
 			ASSERT_NE(handle, 0);
 			if (i % 2 == 0)
@@ -73,23 +40,20 @@ namespace asdtest_testtemplate
 		}
 
 		for (auto handle : cancel)
-			EXPECT_TRUE(timer.Cancel(handle));
+			EXPECT_TRUE(asd::Timer::Cancel(handle));
 
-		timer.PushAt(Start - asd::Timer::Milliseconds(1), []()
+		asd::Timer::PushAt(Start - asd::Timer::Milliseconds(1), [&eventHistory]()
 		{
-			t_eventHistory[Tick()].push_back(-1);
+			eventHistory[Tick()].push_back(-1);
 		});
 
-		std::this_thread::sleep_until(Start + std::chrono::milliseconds(TestTimeMs*2));
-
-		run = false;
-		for (auto& t : threads)
-			t.join();
+		const auto Wait = asd::Timer::Now() + asd::Timer::Milliseconds(TestTimeMs);
+		while (Wait >= asd::Timer::CurrentOffset())
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
 		const int64_t Tolerance = 2;
-		auto lock = asd::GetLock(g_lock);
 		bool first = true;
-		for (auto& it : g_eventHistory) {
+		for (auto& it : eventHistory) {
 #if !asd_Debug
 			EXPECT_GE(Tolerance, it.second.size());
 #endif

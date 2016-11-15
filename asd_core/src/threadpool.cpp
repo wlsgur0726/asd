@@ -2,6 +2,7 @@
 #include "asd/threadpool.h"
 #include "asd/threadutil.h"
 #include "asd/semaphore.h"
+#include <atomic>
 #include <queue>
 #include <deque>
 #include <vector>
@@ -34,9 +35,6 @@ namespace asd
 		std::vector<std::thread>		threads;
 		std::unordered_set<uint32_t>	workers;
 		std::deque<Semaphore*>			waitingList;
-
-		// 사용자가 입력한 작업에서 발생한 예외를 처리하는 핸들러
-		std::shared_ptr<ThreadPool::ExceptionHandler> exceptionHandler;
 	};
 
 
@@ -51,30 +49,87 @@ namespace asd
 	ThreadPool& ThreadPool::Reset(IN uint32_t a_threadCount /*= std::thread::hardware_concurrency()*/)
 	{
 		Stop();
-		m_data = new ThreadPoolData(a_threadCount);
+		m_data.reset(new ThreadPoolData(a_threadCount));
 		m_data->threads.resize(m_data->threadCount);
 		return *this;
 	}
 
 
 
+	inline size_t Poll(REF std::shared_ptr<ThreadPoolData>& a_data,
+					   IN uint32_t a_timeoutMs,
+					   IN size_t a_procCountLimit) asd_noexcept
+	{
+		if (a_data == nullptr)
+			return 0;
+
+		if (a_procCountLimit <= 0)
+			return 0;
+
+		thread_local Semaphore t_event;
+		size_t procCount = 0;
+		auto lock = GetLock(a_data->tpLock);
+
+		// 이벤트 체크
+		while (a_data->run || (a_data->overtime && !a_data->taskQueue.empty())) {
+			if (a_data->taskQueue.empty()) {
+				// 대기
+				a_data->waitingList.push_back(&t_event);
+				lock.unlock();
+				bool ev = t_event.Wait(a_timeoutMs);
+				lock.lock();
+				if (ev)
+					continue;
+
+				// 타임아웃
+				auto it = std::find(a_data->waitingList.begin(), a_data->waitingList.end(), &t_event);
+				if (it != a_data->waitingList.end())
+					a_data->waitingList.erase(it);
+				break;
+			}
+
+			// 작업을 접수
+			assert(a_data->taskQueue.empty() == false);
+			ThreadPool::Task task(std::move(a_data->taskQueue.front()));
+			a_data->taskQueue.pop();
+
+			// 작업 수행
+			lock.unlock();
+			assert(task != nullptr);
+			task();
+			if (++procCount >= a_procCountLimit)
+				break;
+
+			lock.lock();
+		}
+		return procCount;
+	}
+
+
+
 	ThreadPool& ThreadPool::Start()
 	{
-		auto mtx = GetLock(m_data->tpLock);
-		if (m_data->run)
+		auto data = std::atomic_load(&m_data);
+		if (data == nullptr)
+			asd_RaiseException("stoped thread pool");
+
+		auto lock = GetLock(data->tpLock);
+		if (data->run)
 			asd_RaiseException("already running");
 
-		m_data->run = true;
-		assert(m_data->threads.size() == m_data->threadCount);
-		for (auto& t : m_data->threads) {
-			t = std::thread([this]()
+		data->run = true;
+		assert(data->threads.size() == data->threadCount);
+		for (auto& t : data->threads) {
+			t = std::thread([data]() mutable
 			{
-				auto lock = GetLock(m_data->tpLock);
-				m_data->workers.insert(GetCurrentThreadID());
+				auto lock = GetLock(data->tpLock);
+				data->workers.emplace(GetCurrentThreadID());
 				lock.unlock();
-
-				while (m_data->run)
-					Poll();
+				while (data->run) {
+					asd::Poll(data,
+							  100,
+							  std::numeric_limits<size_t>::max());
+				}
 			});
 		}
 		return *this;
@@ -82,126 +137,137 @@ namespace asd
 
 
 
-	ThreadPool& ThreadPool::SetExceptionHandler(IN const ExceptionHandler& a_eh)
+	size_t ThreadPool::Poll(IN uint32_t a_timeoutMs /*= std::numeric_limits<uint32_t>::max()*/,
+							IN size_t a_procCountLimit /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
 	{
-		m_data->exceptionHandler.reset(new ExceptionHandler(a_eh));
+		auto data = std::atomic_load(&m_data);
+		return asd::Poll(data,
+						 a_timeoutMs,
+						 a_procCountLimit);
+	}
+
+
+
+	inline void PushTask(REF std::shared_ptr<ThreadPoolData>& a_data,
+						 MOVE ThreadPool::Task&& a_task) asd_noexcept
+	{
+		if (a_data == nullptr)
+			return;
+
+		assert(a_task != nullptr);
+		auto lock = GetLock(a_data->tpLock);
+		if (a_data->run == false)
+			return;
+
+		a_data->taskQueue.emplace(std::move(a_task));
+
+		if (a_data->waitingList.size() > 0) {
+			a_data->waitingList.front()->Post();
+			a_data->waitingList.pop_front();
+		}
+	}
+
+
+
+	ThreadPool& ThreadPool::PushTask(MOVE Task&& a_task) asd_noexcept
+	{
+		auto data = std::atomic_load(&m_data);
+		asd::PushTask(data, std::move(a_task));
 		return *this;
 	}
 
 
 
-	size_t ThreadPool::Poll(IN uint32_t a_timeoutMs /*= std::numeric_limits<uint32_t>::max()*/,
-							IN size_t a_procCountLimit /*= std::numeric_limits<size_t>::max()*/)
+	ThreadPool& ThreadPool::PushTask(IN const Task& a_task) asd_noexcept
 	{
-		if (a_procCountLimit <= 0)
+		auto data = std::atomic_load(&m_data);
+		asd::PushTask(data, Task(a_task));
+		return *this;
+	}
+
+
+
+	inline uint64_t PushTaskAt(REF std::shared_ptr<ThreadPoolData>& a_data,
+							   IN Timer::TimePoint a_timePoint,
+							   MOVE ThreadPool::Task&& a_task) asd_noexcept
+	{
+		if (a_data == nullptr)
 			return 0;
 
-		thread_local Semaphore t_event;
-		size_t procCount = 0;
-		auto mtx = GetLock(m_data->tpLock);
-
-		// 이벤트 체크
-		while (m_data->run || (m_data->overtime && !m_data->taskQueue.empty())) {
-			if (m_data->taskQueue.empty()) {
-				// 대기
-				m_data->waitingList.push_back(&t_event);
-				mtx.unlock();
-				bool ev = t_event.Wait(a_timeoutMs);
-				mtx.lock();
-				if (ev)
-					continue;
-
-				// 타임아웃
-				auto it = std::find(m_data->waitingList.begin(), m_data->waitingList.end(), &t_event);
-				if (it != m_data->waitingList.end())
-					m_data->waitingList.erase(it);
-				break;
-			}
-
-			// 작업을 접수
-			assert(m_data->taskQueue.empty() == false);
-			Task task(std::move(m_data->taskQueue.front()));
-			m_data->taskQueue.pop();
-
-			// 작업 수행
-			mtx.unlock();
-			try {
-				assert(task != nullptr);
-				task();
-			}
-			catch (std::exception& e) {
-				auto eh = std::atomic_load(&m_data->exceptionHandler);
-				if (eh != nullptr)
-					(*eh)(e);
-				else
-					throw e;
-			}
-			if (++procCount >= a_procCountLimit)
-				break;
-
-			mtx.lock();
-		}
-		return procCount;
+		return Timer::PushAt(a_timePoint, [a_data, task=std::move(a_task)]() mutable
+		{
+			asd::PushTask(a_data, std::move(task));
+		});
 	}
 
 
 
-	ThreadPool& ThreadPool::PushTask(MOVE Task&& a_task)
+	uint64_t ThreadPool::PushTaskAt(IN Timer::TimePoint a_timePoint,
+									MOVE Task&& a_task) asd_noexcept
 	{
-		assert(a_task != nullptr);
-		auto mtx = GetLock(m_data->tpLock);
-		if (m_data->run == false)
-			return *this;
-
-		m_data->taskQueue.push(std::move(a_task));
-
-		if (m_data->waitingList.size() > 0) {
-			m_data->waitingList.front()->Post();
-			m_data->waitingList.pop_front();
-		}
-		return *this;
+		auto data = std::atomic_load(&m_data);
+		return asd::PushTaskAt(data, a_timePoint, std::move(a_task));
 	}
 
 
 
-	ThreadPool& ThreadPool::PushTask(IN const Task& a_task)
+	uint64_t ThreadPool::PushTaskAt(IN Timer::TimePoint a_timePoint,
+									IN const Task& a_task) asd_noexcept
 	{
-		return PushTask(std::move(Task(a_task)));
+		auto data = std::atomic_load(&m_data);
+		return asd::PushTaskAt(data, a_timePoint, Task(a_task));
+	}
+
+
+
+	uint64_t ThreadPool::PushTaskAfter(IN uint32_t a_afterMs,
+									   MOVE Task&& a_task) asd_noexcept
+	{
+		return PushTaskAt(Timer::Now() + Timer::Milliseconds(a_afterMs),
+						  std::move(a_task));
+	}
+
+
+
+	uint64_t ThreadPool::PushTaskAfter(IN uint32_t a_afterMs,
+									   IN const Task& a_task) asd_noexcept
+	{
+		return PushTaskAt(Timer::Now() + Timer::Milliseconds(a_afterMs),
+						  Task(a_task));
 	}
 
 
 
 	void ThreadPool::Stop(IN bool a_overtime /*= true*/)
 	{
-		if (m_data == nullptr)
+		auto data = std::atomic_exchange(&m_data, std::shared_ptr<ThreadPoolData>());
+		if (data == nullptr)
 			return;
 
-		auto mtx = GetLock(m_data->tpLock);
-		if (m_data->run == false)
+		auto lock = GetLock(data->tpLock);
+		if (data->run == false)
 			return;
 
-		if (m_data->workers.find(GetCurrentThreadID()) != m_data->workers.end())
+		if (data->workers.find(GetCurrentThreadID()) != data->workers.end())
 			asd_RaiseException("deadlock");
 
-		m_data->run = false;
-		m_data->overtime = a_overtime;
+		data->run = false;
+		data->overtime = a_overtime;
 
-		while (m_data->waitingList.size() > 0) {
-			m_data->waitingList.front()->Post();
-			m_data->waitingList.pop_front();
+		while (data->waitingList.size() > 0) {
+			data->waitingList.front()->Post();
+			data->waitingList.pop_front();
 		}
 
-		while (m_data->threads.size() > 0) {
-			auto thread = std::move(*m_data->threads.rbegin());
-			m_data->threads.resize(m_data->threads.size() - 1);
-			mtx.unlock();
+		while (data->threads.size() > 0) {
+			auto thread = std::move(*data->threads.rbegin());
+			data->threads.resize(data->threads.size() - 1);
+			lock.unlock();
 			thread.join();
-			mtx.lock();
+			lock.lock();
 		}
 
-		mtx.unlock();
-		delete m_data;
-		m_data = nullptr;
+		lock.unlock();
 	}
 
 

@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "asdbase.h"
 #include "lock.h"
+#include "timer.h"
 #include <functional>
 #include <thread>
 #include <queue>
@@ -21,18 +22,28 @@ namespace asd
 		// 초기화
 		ThreadPool(IN uint32_t a_threadCount = std::thread::hardware_concurrency());
 		ThreadPool& Reset(IN uint32_t a_threadCount = std::thread::hardware_concurrency());
-		ThreadPool&	SetExceptionHandler(IN const ExceptionHandler& a_eh);
 		ThreadPool&	Start();
 
 		// 작업을 기다리고 처리하는 함수
 		//   a_timeoutMs       :  작업이 없을 때 최대로 대기하는 시간 (밀리초)
 		//   a_procCountLimit  :  처리할 작업의 개수 제한. starvation 방지에 활용
 		size_t Poll(IN uint32_t a_timeoutMs = std::numeric_limits<uint32_t>::max(),
-					IN size_t a_procCountLimit = std::numeric_limits<size_t>::max());
+					IN size_t a_procCountLimit = std::numeric_limits<size_t>::max()) asd_noexcept;
 
 		// 작업 등록
-		ThreadPool& PushTask(MOVE Task&& a_task);
-		ThreadPool& PushTask(IN const Task& a_task);
+		ThreadPool& PushTask(MOVE Task&& a_task) asd_noexcept;
+		ThreadPool& PushTask(IN const Task& a_task) asd_noexcept;
+
+		// 타이머 등록
+		// Timer::Cancel 함수로 실행 전에 취소 가능
+		uint64_t PushTaskAt(IN Timer::TimePoint a_timePoint,
+							MOVE Task&& a_task) asd_noexcept;
+		uint64_t PushTaskAt(IN Timer::TimePoint a_timePoint,
+							IN const Task& a_task) asd_noexcept;
+		uint64_t PushTaskAfter(IN uint32_t a_afterMs,
+							   MOVE Task&& a_task) asd_noexcept;
+		uint64_t PushTaskAfter(IN uint32_t a_afterMs,
+							   IN const Task& a_task) asd_noexcept;
 
 		// 종료
 		// a_overtime이 true이면 남은 작업을 모두 처리할 때까지 기다린다.
@@ -47,8 +58,7 @@ namespace asd
 
 
 	private:
-		ThreadPoolData* m_data = nullptr;
-
+		std::shared_ptr<ThreadPoolData> m_data;
 
 	};
 
@@ -155,8 +165,8 @@ namespace asd
 
 		struct Report
 		{
-			uint64_t	totalProcCount = 0;
-			uint64_t	conflictCount = 0;
+			uint64_t totalProcCount = 0;
+			uint64_t conflictCount = 0;
 			double GetConflictRate() const
 			{
 				if (totalProcCount == 0)

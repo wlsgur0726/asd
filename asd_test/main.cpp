@@ -22,7 +22,7 @@
 int main(int argc, char** argv)
 {
 	Test();
-#if 1
+#if 0
 	std::vector<char*> args;
 	args.push_back(argv[0]);
 
