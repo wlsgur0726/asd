@@ -2,9 +2,193 @@
 #include "asd/trace.h"
 #include "asd/threadutil.h"
 
+#if asd_Compiler_MSVC
+#	include "asd/iconvwrap.h"
+#	include <DbgHelp.h>
+#
+#elif asd_Compiler_GCC
+#	include <execinfo.h>
+#
+#endif
+
 
 namespace asd
 {
+	MString g_unknown = "?";
+
+#if asd_Compiler_MSVC
+	MString g_currentFileName;
+
+	struct Init
+	{
+		Init()
+		{
+			// 실행파일과 pdb파일이 같은 경로에 있다고 가정
+			wchar_t buf[4096];
+			::GetModuleFileNameW(NULL, buf, sizeof(buf)/sizeof(buf[0]));
+			g_currentFileName = ConvToM(buf);
+
+			WString path = buf;
+			size_t del = 0;
+			for (auto it=path.rbegin(); it!=path.rend(); ++it) {
+				auto c = *it;
+				if (c=='/' || c=='\\' || c==':')
+					break;
+				++del;
+			}
+			size_t cut = path.size() - del;
+			path.resize(cut);
+
+
+			if (FALSE == ::SymInitializeW(::GetCurrentProcess(), path.c_str(), TRUE)) {
+				auto e = ::GetLastError();
+				std::terminate();
+			}
+			::SymSetOptions(SYMOPT_LOAD_LINES);
+		}
+	} g_init;
+
+	StackTrace::StackTrace(IN uint32_t a_skip /*= 0*/,
+						   IN uint32_t a_count /*= 10*/) asd_noexcept
+	{
+		thread_local std::vector<void*> frames;
+		frames.resize(a_count);
+		auto process = ::GetCurrentProcess();
+		auto frameCount = ::CaptureStackBackTrace(a_skip+1, a_count, frames.data(), NULL);
+
+		for (int i=0; i<frameCount; ++i) {
+			StackFrame frame;
+			uint8_t symbol_buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME];
+			SYMBOL_INFO* symbol = (SYMBOL_INFO*)symbol_buffer;
+
+			symbol->MaxNameLen = MAX_SYM_NAME;
+			symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+			if (FALSE == ::SymFromAddr(process, (DWORD64)(frames[i]), 0, symbol)) {
+				auto e = ::GetLastError();
+				frame.Function = g_unknown;
+				frame.Module = g_unknown;
+			}
+			else {
+				frame.Function = symbol->Name;
+				frame.Module = g_currentFileName;
+			}
+
+			DWORD d;
+			IMAGEHLP_LINE64 line;
+			if (FALSE == ::SymGetLineFromAddr64(process, (DWORD64)(frames[i]), &d, &line)) {
+				auto e = ::GetLastError();
+				frame.File = g_unknown;
+				frame.Line = 0;
+			}
+			else {
+				frame.File = line.FileName;
+				frame.Line = line.LineNumber;
+			}
+			emplace_back(std::move(frame));
+		}
+	}
+
+#elif asd_Compiler_GCC
+	StackTrace::StackTrace(IN uint32_t a_skip /*= 0*/,
+						   IN uint32_t a_count /*= 10*/) asd_noexcept
+	{
+		std::vector<void*> trace;
+		trace.resize(a_skip + a_count + 1);
+		int count = ::backtrace(trace.data(), trace.size());
+
+		std::vector<MString> symbols;
+		{
+			char** s = backtrace_symbols(trace.data(), count);
+			if (s == NULL) {
+				// ...
+				return;
+			}
+			for (int i=1; i<count; ++i)
+				symbols.emplace_back(s[i]);
+			::free(s);
+		}
+
+		auto execute = [](const char* cmd, MString& out)
+		{
+			FILE* fp = ::popen(cmd, "r");
+			if (!fp)
+				return errno;
+			const size_t BUFSIZE = 1023;
+			char buf[BUFSIZE+1];
+			size_t sz;
+			do {
+				sz = ::fread(buf, sizeof(char), BUFSIZE, fp);
+				if (sz > 0) {
+					buf[sz] = '\0';
+					out += buf;
+				}
+			} while (sz == BUFSIZE);
+			pclose(fp);
+			return 0;
+		};
+
+		for (int i=1; i<count; ++i) {
+			StackFrame frame;
+			size_t cut1;
+			size_t cut2;
+			auto& symbol = symbols[i-1];
+
+			cut1 = symbol.find('(');
+			frame.Module = symbol;
+			frame.Module.resize(cut1);
+
+			MString addr;
+			if (symbol[++cut1] == '+') {
+				cut2 = symbol.find(')', ++cut1);
+				addr = symbol.substr(cut1, cut2-cut1);
+			}
+			else {
+				addr = trace[i];
+			}
+			auto cmd = MString::Format("addr2line -Cfe \"{}\" {}",
+									   frame.Module,
+									   addr);
+			MString out;
+			if (0 != execute(cmd.c_str(), out)) {
+				frame.Function = g_unknown;
+				frame.File = g_unknown;
+				continue;
+			}
+
+			cut1 = out.find('\n');
+			cut2 = out.find(':', cut1);
+			frame.Function = out.substr(0, cut1++);
+			frame.File = out.substr(cut1, cut2-cut1);
+
+			++cut2;
+			auto line = out.substr(cut2, out.size()-cut2);
+			frame.Line = std::atoi(line);
+
+			emplace_back(std::move(frame));
+		}
+	}
+
+#endif
+
+	MString StackFrame::ToString() const asd_noexcept
+	{
+		return MString::Format("{}@{} ({}:{})", Module, Function, File, Line);
+	}
+
+	MString StackTrace::ToString(IN uint32_t a_indent /*= 4*/) const asd_noexcept
+	{
+		MString indent;
+		indent.resize(a_indent);
+		std::memset(indent.data(), ' ', a_indent);
+
+		MString ret;
+		for (auto& stack : *this)
+			ret << indent << stack.ToString() << '\n';
+		return ret;
+	}
+
+
+
 	Trace::Trace(IN const char* a_file,
 				 IN int a_line,
 				 IN const char* a_function) asd_noexcept

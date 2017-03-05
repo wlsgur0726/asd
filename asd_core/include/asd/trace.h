@@ -8,6 +8,26 @@
 
 namespace asd
 {
+	struct StackFrame
+	{
+		MString Module;
+		MString Function;
+		MString	File;
+		int		Line = 0;
+
+		MString ToString() const asd_noexcept;
+	};
+
+
+	class StackTrace : public std::deque<StackFrame>
+	{
+	public:
+		StackTrace(IN uint32_t a_skip = 0,
+				   IN uint32_t a_count = 10) asd_noexcept;
+		MString ToString(IN uint32_t a_indent = 4) const asd_noexcept;
+	};
+
+
 	struct Trace
 	{
 		std::chrono::system_clock::time_point	Time;

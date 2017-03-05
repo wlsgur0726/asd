@@ -13,6 +13,17 @@
 
 namespace asd
 {
+	void DebugBreak()
+	{
+#if asd_Debug
+#if asd_Compiler_MSVC
+		::DebugBreak();
+
+#endif
+#endif
+	}
+
+
 	const char DebugInfo::ToStringFormat[] = "[{}({}):{}] {} ";
 
 
@@ -54,6 +65,11 @@ namespace asd
 		return m_what;
 	}
 
+	const StackTrace& Exception::GetStackTrace() const asd_noexcept
+	{
+		return m_stackTrace;
+	}
+
 
 
 #if __cplusplus >= 201700
@@ -76,12 +92,14 @@ namespace asd
 		{
 			MString msg;
 			msg << "Assert fail\n" << a_dbginfo.m_comment;
+#if !asd_Debug
+			StackTrace st(2);
+			msg << '\n' << st.ToString();
+#endif
 			Logger::GlobalInstance()._ErrorLog(a_dbginfo.m_file,
 											   a_dbginfo.m_line,
 											   msg);
-#if asd_Debug
-			std::terminate();
-#endif
+			DebugBreak();
 		};
 	};
 

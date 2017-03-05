@@ -412,6 +412,18 @@ namespace asd
 			return append(a_str, asd::strlen(a_str));
 		}
 
+		inline ThisType substr(IN size_type a_pos = 0,
+							   IN size_type a_count = StdStrType::npos) const asd_noexcept
+		{
+			return BaseType::GetArrayPtr()->substr(a_pos, a_count);
+		}
+
+		template<typename... ARGS>
+		inline size_type find(IN ARGS... args) const asd_noexcept
+		{
+			return BaseType::GetArrayPtr()->find(args...);
+		}
+
 
 
 		// 비교

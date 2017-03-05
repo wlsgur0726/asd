@@ -82,6 +82,12 @@ namespace asd
 			}
 			return false;
 		}
+		inline bool Send(MOVE Buffer_ptr&& a_data) asd_noexcept
+		{
+			std::deque<Buffer_ptr> list;
+			list.emplace_back(std::move(a_data));
+			return Send(std::move(list));
+		}
 		virtual void OnRecv(MOVE Buffer_ptr&& a_data) asd_noexcept
 		{
 			// Sample

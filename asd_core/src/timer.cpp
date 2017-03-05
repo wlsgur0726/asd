@@ -32,7 +32,7 @@ namespace asd
 				uint64_t									m_lastHandle = 0;
 				std::deque<Task_ptr>						m_pool;
 
-				std::atomic<TimePoint>						m_offset = Now();
+				TimePoint									m_offset = Now();
 			};
 			typedef std::shared_ptr<SchedulerData> SchedulerData_ptr;
 

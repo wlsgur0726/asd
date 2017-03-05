@@ -11,15 +11,15 @@
 					</externalSetting>
 				</externalSettings>
 				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="a" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.staticLib" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.staticLib" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.cross.exe.debug.908670506" name="Debug" parent="cdt.managedbuild.config.gnu.cross.exe.debug" postbuildStep="../PostBuildEvent.sh &quot;${BuildArtifactFilePrefix}${BuildArtifactFileName}&quot; ../lib/linux/${ConfigName}" prebuildStep="../PreBuildEvent.sh">
+				<configuration artifactExtension="a" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.staticLib" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.staticLib,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.cross.exe.debug.908670506" name="Debug" parent="cdt.managedbuild.config.gnu.cross.exe.debug" postbuildStep="../PostBuildEvent.sh &quot;${BuildArtifactFilePrefix}${BuildArtifactFileName}&quot; ../lib/linux/${ConfigName}" prebuildStep="../PreBuildEvent.sh">
 					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.908670506." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1359018705" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.341595058" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
@@ -33,6 +33,7 @@
 								<option id="gnu.cpp.compiler.option.include.paths.1361845725" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/built-in/cppformat}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/src}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.667382166" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_DEBUG"/>
@@ -47,6 +48,7 @@
 								<option id="gnu.c.compiler.option.include.paths.305772811" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/built-in/cppformat}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/src}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1537225907" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_DEBUG"/>
@@ -74,15 +76,15 @@
 					</externalSetting>
 				</externalSettings>
 				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="a" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.staticLib" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.staticLib" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.cross.exe.release.215518828" name="Release" parent="cdt.managedbuild.config.gnu.cross.exe.release" postbuildStep="../PostBuildEvent.sh &quot;${BuildArtifactFilePrefix}${BuildArtifactFileName}&quot; ../lib/linux/${ConfigName}" prebuildStep="../PreBuildEvent.sh">
+				<configuration artifactExtension="a" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.staticLib" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.staticLib,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.cross.exe.release.215518828" name="Release" parent="cdt.managedbuild.config.gnu.cross.exe.release" postbuildStep="../PostBuildEvent.sh &quot;${BuildArtifactFilePrefix}${BuildArtifactFileName}&quot; ../lib/linux/${ConfigName}" prebuildStep="../PreBuildEvent.sh">
 					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.release.215518828." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.exe.release.1598432176" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.exe.release">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross.730183576" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
@@ -94,6 +96,7 @@
 								<option id="gnu.c.compiler.option.include.paths.630055926" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/built-in/cppformat}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/src}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1141808340" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -104,6 +107,7 @@
 								<option id="gnu.cpp.compiler.option.include.paths.637615954" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/built-in/cppformat}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/src}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1908259152" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -130,10 +134,10 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration configurationName="Release">
+		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/asd"/>
 		</configuration>
-		<configuration configurationName="Debug">
+		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/asd"/>
 		</configuration>
 	</storageModule>
@@ -158,4 +162,5 @@
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 </cproject>

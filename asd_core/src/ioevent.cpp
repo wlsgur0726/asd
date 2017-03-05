@@ -1422,9 +1422,17 @@ namespace asd
 		if (m_internal->m_state != SockState::Connected)
 			return false;
 
-		for (auto& it : a_data)
+		size_t count = 0;
+		for (auto& it : a_data) {
+			if (it == nullptr)
+				continue;
 			m_internal->m_sendQueue.emplace_back(std::move(it));
+			++count;
+		}
 		a_data.clear();
+
+		if (count == 0)
+			return true;
 
 		if (m_internal->m_sendSignal == false) {
 			if (ev->PostSignal(m_internal.get()))

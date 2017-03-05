@@ -108,7 +108,8 @@ namespace asdtest_threadpool
 
 		const uint64_t TestCount = 12345;
 		const auto ThreadCount = std::thread::hardware_concurrency();
-		Counter* counter = new Counter[ThreadCount];
+		std::vector<Counter> counter;
+		counter.resize(ThreadCount);
 
 		for (auto i=TestCount; i>0; --i) {
 			for (auto j=ThreadCount; j>0; --j) {

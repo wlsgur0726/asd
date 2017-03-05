@@ -131,9 +131,25 @@ struct TestServer
 	}
 
 };
+#include "asd/trace.h"
+void PrintStackTrace()
+{
+	asd::StackTrace st(0, 4);
+	printf("%s", st.ToString().c_str());
+}
+void StackTraceTest()
+{
+	std::thread t([]
+	{
+		PrintStackTrace();
+	});
+	t.join();
+	exit(0);
+}
 
 void Test()
 {
+	StackTraceTest();
 	return;
 	{
 		g_ev.Init();

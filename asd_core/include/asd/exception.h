@@ -1,12 +1,16 @@
 ﻿#pragma once
 #include "asdbase.h"
 #include "string.h"
+#include "trace.h"
 #include <vector>
 #include <functional>
 
 
 namespace asd
 {
+	void DebugBreak();
+
+
 	struct DebugInfo 
 	{
 		static const char ToStringFormat[]; // "[{}({}):{}] {}", m_file, m_line, m_function, m_comment)
@@ -41,8 +45,6 @@ namespace asd
 	class Exception : public std::exception
 	{
 	public:
-		MString m_what;
-
 		Exception() asd_noexcept;
 		Exception(IN const char* a_what) asd_noexcept;
 		Exception(IN const MString& a_what) asd_noexcept;
@@ -50,6 +52,11 @@ namespace asd
 		virtual ~Exception() asd_noexcept;
 
 		virtual const char* what() const asd_noexcept override;
+		const StackTrace& GetStackTrace() const asd_noexcept;
+
+	protected:
+		MString m_what;
+		const StackTrace m_stackTrace = StackTrace(1);
 	};
 
 
@@ -149,7 +156,6 @@ namespace asd
 	#endif
 
 #endif
-
 
 
 	// 표준 assert와는 다르게 release에서도 Check는 수행된다.

@@ -9,8 +9,13 @@
     <ClInclude Include="include\asd\classutil.h" />
     <ClInclude Include="include\asd\datetime.h" />
     <ClInclude Include="include\asd\exception.h" />
+    <ClInclude Include="include\asd\file.h" />
+    <ClInclude Include="include\asd\filedef.h" />
     <ClInclude Include="include\asd\iconvwrap.h" />
+    <ClInclude Include="include\asd\ioevent.h" />
     <ClInclude Include="include\asd\lock.h" />
+    <ClInclude Include="include\asd\log.h" />
+    <ClInclude Include="include\asd\memdump.h" />
     <ClInclude Include="include\asd\objpool.h" />
     <ClInclude Include="include\asd\odbcwrap.h" />
     <ClInclude Include="include\asd\semaphore.h" />
@@ -22,13 +27,9 @@
     <ClInclude Include="include\asd\tempbuffer.h" />
     <ClInclude Include="include\asd\threadpool.h" />
     <ClInclude Include="include\asd\threadutil.h" />
-    <ClInclude Include="include\asd\util.h" />
-    <ClInclude Include="include\asd\ioevent.h" />
-    <ClInclude Include="include\asd\log.h" />
-    <ClInclude Include="include\asd\memdump.h" />
-    <ClInclude Include="include\asd\filedef.h" />
-    <ClInclude Include="include\asd\trace.h" />
     <ClInclude Include="include\asd\timer.h" />
+    <ClInclude Include="include\asd\trace.h" />
+    <ClInclude Include="include\asd\util.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\address.cpp" />
@@ -36,8 +37,12 @@
     <ClCompile Include="src\buffer.cpp" />
     <ClCompile Include="src\datetime.cpp" />
     <ClCompile Include="src\exception.cpp" />
+    <ClCompile Include="src\file.cpp" />
     <ClCompile Include="src\iconvwrap.cpp" />
+    <ClCompile Include="src\ioevent.cpp" />
     <ClCompile Include="src\lock.cpp" />
+    <ClCompile Include="src\log.cpp" />
+    <ClCompile Include="src\memdump.cpp" />
     <ClCompile Include="src\odbcwrap.cpp" />
     <ClCompile Include="src\semaphore.cpp" />
     <ClCompile Include="src\socket.cpp" />
@@ -45,10 +50,7 @@
     <ClCompile Include="src\sysutil.cpp" />
     <ClCompile Include="src\threadpool.cpp" />
     <ClCompile Include="src\threadutil.cpp" />
-    <ClCompile Include="src\ioevent.cpp" />
-    <ClCompile Include="src\log.cpp" />
-    <ClCompile Include="src\memdump.cpp" />
-    <ClCompile Include="src\trace.cpp" />
     <ClCompile Include="src\timer.cpp" />
+    <ClCompile Include="src\trace.cpp" />
   </ItemGroup>
 </Project>
