@@ -1,27 +1,30 @@
 ﻿#include "asd_pch.h"
 #include "asd/exception.h"
 #include "asd/log.h"
-
-#if __cplusplus >= 201700
-#	include <shared_mutex>
-#
-#else
-#	include <mutex>
-#
-#endif
+#include <atomic>
 
 
 namespace asd
 {
-	void DebugBreak()
-	{
 #if asd_Debug
-#if asd_Compiler_MSVC
-		::DebugBreak();
+	#if asd_Compiler_MSVC
+		void DebugBreak()
+		{
+			::DebugBreak();
+		}
+
+	#else
+		void DebugBreak()
+		{
+			assert(false);
+		}
+
+	#endif
+
+#else
+	void DebugBreak() {}
 
 #endif
-#endif
-	}
 
 
 	const char DebugInfo::ToStringFormat[] = "[{}({}):{}] {} ";
@@ -30,10 +33,10 @@ namespace asd
 	MString DebugInfo::ToString() const asd_noexcept
 	{
 		return MString::Format(ToStringFormat,
-							   m_file, 
-							   m_line, 
-							   m_function, 
-							   m_comment);
+							   File, 
+							   Line, 
+							   Function, 
+							   Comment);
 	}
 
 	Exception::Exception()  asd_noexcept
@@ -72,54 +75,82 @@ namespace asd
 
 
 
-#if __cplusplus >= 201700
-	typedef std::shared_mutex						AssertHandler_Lock;
-	typedef std::shared_lock<AssertHandler_Lock>	AssertHandler_SLock;
-	typedef std::unique_lock<AssertHandler_Lock>	AssertHandler_ULock;
-
-#else
-	typedef std::mutex	AssertHandler_Lock;
-	typedef std::unique_lock<AssertHandler_Lock>	AssertHandler_SLock;
-	typedef std::unique_lock<AssertHandler_Lock>	AssertHandler_ULock;
-
-#endif
-
-	struct AssertHandler : public Global<AssertHandler>
+	void DefaultExceptionHandler::operator()(IN ExceptionInterface* a_ei,
+											 IN const DebugInfo& a_catchPosInfo) const asd_noexcept
 	{
-		AssertHandler_Lock m_lock;
-		std::function<void(IN const DebugInfo&)> m_handler = nullptr;
-		const std::function<void(IN const DebugInfo&)> m_defaultHandler = [](IN const DebugInfo& a_dbginfo)
-		{
-			MString msg;
-			msg << "Assert fail\n" << a_dbginfo.m_comment;
+		static const char* MsgFormat =
+			"on exception({}), {}\n"
+			"    birthplace : {}\n"
+			"    caught : {}";
+
+		StackTrace::ToStrOpt opt;
+		opt.IgnoreFirstIndent = true;
+		opt.Indent = 8;
+		auto msg = MString::Format(MsgFormat,
+								   a_ei->GetType().name(),
+								   a_ei->what(),
+								   a_ei->GetStackTrace().ToString(opt),
+								   StackTrace(2).ToString(opt));
+
+		Logger::GlobalInstance()._ErrorLog(a_catchPosInfo.File,
+										   a_catchPosInfo.Line,
+										   msg);
+		asd::DebugBreak();
+	}
+
+
+
+	std::shared_ptr<AssertHandler> g_defaultAssertHandler = std::make_shared<AssertHandler>();
+	std::shared_ptr<AssertHandler> g_currentAssertHandler = nullptr;
+
+
+	void AssertHandler::OnError(IN const DebugInfo& a_info) asd_noexcept
+	{
+		MString msg;
+		msg << "assert fail, " << a_info.Comment;
 #if !asd_Debug
-			StackTrace st(2);
-			msg << '\n' << st.ToString();
+		StackTrace::ToStrOpt opt;
+		opt.Indent = 8;
+		msg << "\n    stack trace\n" << StackTrace(1).ToString(opt);
 #endif
-			Logger::GlobalInstance()._ErrorLog(a_dbginfo.m_file,
-											   a_dbginfo.m_line,
-											   msg);
-			DebugBreak();
-		};
-	};
-
-
-	bool Assert_Internal(IN const DebugInfo& a_info)
-	{
-		auto& ah = AssertHandler::GlobalInstance();
-		AssertHandler_SLock lock(ah.m_lock);
-		if (ah.m_handler != nullptr)
-			ah.m_handler(a_info);
-		else
-			ah.m_defaultHandler(a_info);
-		return false;
+		Logger::GlobalInstance()._ErrorLog(a_info.File,
+										   a_info.Line,
+										   msg);
+		asd::DebugBreak();
 	}
 
 
-	void SetAssertHandler(IN const std::function<void(IN const DebugInfo&)>& a_handler) asd_noexcept
+	std::shared_ptr<AssertHandler> GetAssertHandler() asd_noexcept
 	{
-		auto& ah = AssertHandler::GlobalInstance();
-		AssertHandler_ULock lock(ah.m_lock);
-		ah.m_handler = a_handler;
+		auto ret = std::atomic_load(&g_currentAssertHandler);
+		if (ret != nullptr)
+			return ret;
+		return g_defaultAssertHandler;
 	}
+
+	void SetAssertHandler(IN std::shared_ptr<AssertHandler> a_handler) asd_noexcept
+	{
+		std::atomic_exchange(&g_currentAssertHandler, a_handler);
+	}
+
+
+
+	void OnDestructorException(IN const DebugInfo& a_di,
+							   IN ExceptionInterface* a_ei) asd_noexcept
+	{
+		MString msg = a_di.Comment;
+#if !asd_Debug
+		MString st;
+		if (a_ei->GetStackTrace().size() > 0)
+			st = a_ei->GetStackTrace().ToString(8);
+		if (st.empty())
+			st = StackTrace(1).ToString(8);
+		msg << "\n    StackTrace\n" << st;
+#endif
+		Logger::GlobalInstance()._ErrorLog(a_di.File,
+										   a_di.Line,
+										   msg);
+		asd::DebugBreak();
+	}
+
 }

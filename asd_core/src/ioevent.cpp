@@ -230,56 +230,56 @@ namespace asd
 
 		virtual bool Register(REF AsyncSocketInternal* a_sock) asd_noexcept
 		{
-			asd_Assert(false, "not impl");
+			asd_RAssert(false, "not impl");
 			return false;
 		}
 
 		virtual bool PostSignal(IN AsyncSocketInternal* a_sock) asd_noexcept
 		{
-			asd_Assert(false, "not impl");
+			asd_RAssert(false, "not impl");
 			return false;
 		}
 
 		virtual bool Wait(IN uint32_t a_timeoutMs,
 						  OUT EventInfo& a_event) asd_noexcept
 		{
-			asd_Assert(false, "not impl");
+			asd_RAssert(false, "not impl");
 			return false;
 		}
 
 		virtual void ProcEvent(REF EventInfo& a_event) asd_noexcept
 		{
-			asd_Assert(false, "not impl");
+			asd_RAssert(false, "not impl");
 		}
 
 		virtual int Connect(REF AsyncSocketInternal* a_sock,
 							IN const IpAddress& a_dest) asd_noexcept
 		{
-			asd_Assert(false, "not impl");
+			asd_RAssert(false, "not impl");
 			return -1;
 		}
 
 		virtual int Listen(REF AsyncSocketInternal* a_sock) asd_noexcept
 		{
-			asd_Assert(false, "not impl");
+			asd_RAssert(false, "not impl");
 			return -1;
 		}
 
 		virtual int Send(REF AsyncSocketInternal* a_sock) asd_noexcept
 		{
-			asd_Assert(false, "not impl");
+			asd_RAssert(false, "not impl");
 			return -1;
 		}
 
 		virtual void CloseSocket(REF AsyncSocketInternal* a_sock,
 								 IN bool a_hard = false) asd_noexcept
 		{
-			asd_Assert(false, "not impl");
+			asd_RAssert(false, "not impl");
 		}
 
 		virtual void Poll_Finally(REF AsyncSocketInternal* a_sock) asd_noexcept
 		{
-			asd_Assert(false, "not impl");
+			asd_RAssert(false, "not impl");
 		}
 	};
 
@@ -326,7 +326,7 @@ namespace asd
 											  0);
 			if (r == NULL) {
 				a_sock->m_lastError = (Socket::Error)::GetLastError();
-				asd_Assert(false, "fail CreateIoCompletionPort(Register), GetLastError:{}", a_sock->m_lastError);
+				asd_RAssert(false, "fail CreateIoCompletionPort(Register), GetLastError:{}", a_sock->m_lastError);
 				return false;
 			}
 			if (a_sock->m_state == SockState::Connected) {
@@ -349,7 +349,7 @@ namespace asd
 												  nullptr);
 			if (r == FALSE) {
 				auto e = GetLastError();
-				asd_Assert(false, "fail PostQueuedCompletionStatus, GetLastError:{}", e);
+				asd_RAssert(false, "fail PostQueuedCompletionStatus, GetLastError:{}", e);
 				return false;
 			}
 			return true;
@@ -359,7 +359,7 @@ namespace asd
 
 		int WSARecv(REF AsyncSocketInternal* a_sock) asd_noexcept
 		{
-			asd_Assert(a_sock->m_recvBuffer == nullptr, "unknown logic error");
+			asd_RAssert(a_sock->m_recvBuffer == nullptr, "unknown logic error");
 			a_sock->m_recvBuffer = NewBuffer<asd_BufferList_DefaultReadBufferSize>();
 
 			WSABUF wsabuf;
@@ -388,7 +388,7 @@ namespace asd
 					case WSAECONNRESET:
 						return e; // 소켓 닫힘, assert 까지 할 필요는 없음
 					default:
-						asd_Assert(false, "fail WSARecv, WSAGetLastError:{}", e);
+						asd_RAssert(false, "fail WSARecv, WSAGetLastError:{}", e);
 						return e;
 				}
 			}
@@ -418,7 +418,7 @@ namespace asd
 						if (id!=0 && a_event.m_overlapped!=nullptr)
 							break; // socket error
 					default:
-						asd_Assert(false, "polling error, GetLastError:{}", a_event.m_error);
+						asd_RAssert(false, "polling error, GetLastError:{}", a_event.m_error);
 						return false;
 				}
 			}
@@ -460,7 +460,7 @@ namespace asd
 							case WSAECONNREFUSED: // 서버에서 connection 거부 (listen backlog 부족)
 								if (sock->m_state == SockState::Closing)
 									break;
-								asd_Assert(sock->m_state == SockState::Connecting,
+								asd_RAssert(sock->m_state == SockState::Connecting,
 										   "invaild socket state : {}",
 										   (uint8_t)sock->m_state);
 								sock->m_lastError = e;
@@ -475,14 +475,14 @@ namespace asd
 									sock->m_lastError = e;
 								break;
 							default:
-								asd_Assert(false, "unknown socket error : {}", e);
+								asd_RAssert(false, "unknown socket error : {}", e);
 								sock->m_lastError = e;
 								break;
 						}
 						break;
 					}
 					default:
-						asd_Assert(false, "unknown error : {}", a_event.m_error);
+						asd_RAssert(false, "unknown error : {}", a_event.m_error);
 						sock->m_lastError = a_event.m_error;
 						break;
 				}
@@ -510,7 +510,7 @@ namespace asd
 						}
 						else {
 							auto recvedData = std::move(sock->m_recvBuffer);
-							asd_Assert(recvedData->SetSize(a_event.m_transBytes),
+							asd_RAssert(recvedData->SetSize(a_event.m_transBytes),
 									   "fail recvedData->SetSize({})",
 									   a_event.m_transBytes);
 							if (sock->m_interface != nullptr)
@@ -541,7 +541,7 @@ namespace asd
 						sock->m_lastError = AcceptEx(sock);
 						if (sock->m_lastError != 0) {
 							CloseSocket(sock);
-							asd_Assert(false, "Fatal Error : listening socket had closed!");
+							asd_RAssert(false, "Fatal Error : listening socket had closed!");
 						}
 						break;
 				}
@@ -563,7 +563,7 @@ namespace asd
 				SOCKET sock = ::WSASocket(AF_INET, SOCK_STREAM, 0, NULL, NULL, WSA_FLAG_OVERLAPPED);
 				if (sock == INVALID_SOCKET) {
 					auto e = ::WSAGetLastError();
-					asd_Assert(false, "fail WSASocket, WSAGetLastError:{}", e);
+					asd_RAssert(false, "fail WSASocket, WSAGetLastError:{}", e);
 					return e;
 				}
 				GUID  guid = WSAID_CONNECTEX;
@@ -579,13 +579,13 @@ namespace asd
 								   NULL);
 				if (r != 0) {
 					auto e = ::WSAGetLastError();
-					asd_Assert(false, "fail WSAIoctl, WSAGetLastError:{}", e);
+					asd_RAssert(false, "fail WSAIoctl, WSAGetLastError:{}", e);
 					::closesocket(sock);
 					return e;
 				}
 				::closesocket(sock);
 				if (ConnectEx == nullptr) {
-					asd_Assert(false, "ConnectEx pointer is null");
+					asd_RAssert(false, "ConnectEx pointer is null");
 					return -1;
 				}
 			}
@@ -610,12 +610,12 @@ namespace asd
 					break;
 				}
 				default:
-					asd_Assert(false, "invalid a_dest:{}", a_dest.ToString());
+					asd_RAssert(false, "invalid a_dest:{}", a_dest.ToString());
 					return -1;
 			}
 			auto e = a_sock->Bind(bindAddr);
 			if (e != 0) {
-				asd_Assert(false, "fail Bind, WSAGetLastError:{}", e);
+				asd_RAssert(false, "fail Bind, WSAGetLastError:{}", e);
 				return e;
 			}
 
@@ -634,7 +634,7 @@ namespace asd
 					case WSA_IO_PENDING:
 						break; // 정상
 					default:
-						asd_Assert(false, "fail WSASend, WSAGetLastError:{}", e);
+						asd_RAssert(false, "fail WSASend, WSAGetLastError:{}", e);
 						return e;
 				}
 			}
@@ -646,7 +646,7 @@ namespace asd
 		virtual int Listen(REF AsyncSocketInternal* a_sock) asd_noexcept override
 		{
 			if (a_sock->m_listening != nullptr) {
-				asd_Assert(false, "already listenig");
+				asd_RAssert(false, "already listenig");
 				return -1;
 			}
 			a_sock->m_listening.reset(new AsyncSocketInternal::Listening);
@@ -662,7 +662,7 @@ namespace asd
 				SOCKET sock = ::WSASocket(AF_INET, SOCK_STREAM, 0, NULL, NULL, WSA_FLAG_OVERLAPPED);
 				if (sock == INVALID_SOCKET) {
 					auto e = ::WSAGetLastError();
-					asd_Assert(false, "fail WSASocket, WSAGetLastError:{}", e);
+					asd_RAssert(false, "fail WSASocket, WSAGetLastError:{}", e);
 					return e;
 				}
 
@@ -680,20 +680,20 @@ namespace asd
 								   NULL);
 				if (r != 0) {
 					auto e = ::WSAGetLastError();
-					asd_Assert(false, "fail WSAIoctl, WSAGetLastError:{}", e);
+					asd_RAssert(false, "fail WSAIoctl, WSAGetLastError:{}", e);
 					::closesocket(sock);
 					return e;
 				}
 				::closesocket(sock);
 				if (AcceptEx == nullptr) {
-					asd_Assert(false, "AcceptEx pointer is null");
+					asd_RAssert(false, "AcceptEx pointer is null");
 					return -1;
 				}
 			}
 
 			if (a_sock->ReadyAcceptSocket() == false) {
 				auto e = ::WSAGetLastError();
-				asd_Assert(false, "fail ReadyAcceptSocket, WSAGetLastError:{}", e);
+				asd_RAssert(false, "fail ReadyAcceptSocket, WSAGetLastError:{}", e);
 				return e;
 			}
 
@@ -712,7 +712,7 @@ namespace asd
 					case WSA_IO_PENDING:
 						break; // 정상
 					default:
-						asd_Assert(false, "fail AcceptEx, WSAGetLastError:{}", e);
+						asd_RAssert(false, "fail AcceptEx, WSAGetLastError:{}", e);
 						return e;
 				}
 			}
@@ -730,7 +730,7 @@ namespace asd
 			memset(ov, 0, sizeof(*ov));
 			auto& progress = a_sock->m_sendProgress[ov];
 			if (progress.empty() == false) {
-				asd_Assert(false, "unknown logic error");
+				asd_RAssert(false, "unknown logic error");
 				return -1;
 			}
 			progress = std::move(a_sock->m_sendQueue);
@@ -743,13 +743,13 @@ namespace asd
 				const auto sz = buf->GetSize();
 				wsabuf.buf = (CHAR*)buf->GetBuffer();
 				wsabuf.len = (ULONG)sz;
-				asd_Assert(wsabuf.len == sz,
+				asd_RAssert(wsabuf.len == sz,
 						   "overflow error {}->{}",
 						   sz,
 						   wsabuf.len);
 			}
 			const DWORD wsaBufCount = (DWORD)t_wsabufs.size();
-			asd_Assert(wsaBufCount == t_wsabufs.size(),
+			asd_RAssert(wsaBufCount == t_wsabufs.size(),
 					   "overflow error {}->{}",
 					   t_wsabufs.size(),
 					   wsaBufCount);
@@ -786,7 +786,7 @@ namespace asd
 							}
 							continue;
 						default:
-							asd_Assert(false, "fail WSASend, WSAGetLastError:{}", e);
+							asd_RAssert(false, "fail WSASend, WSAGetLastError:{}", e);
 							break;
 					}
 					a_sock->m_sendProgress.erase(ov);
@@ -887,14 +887,14 @@ namespace asd
 								 &ev);
 			if (r != 0) {
 				auto e = errno;
-				asd_Assert(false, "fail epoll_ctl, errno:{}", e);
+				asd_RAssert(false, "fail epoll_ctl, errno:{}", e);
 				a_sock->m_lastError = e;
 				return false;
 			}
 
 			int e = a_sock->SetNonblock(true);
 			if (e != 0) {
-				asd_Assert(false, "fail SetNonblock, errno:{}", e);
+				asd_RAssert(false, "fail SetNonblock, errno:{}", e);
 				a_sock->m_lastError = e;
 				return false;
 			}
@@ -918,7 +918,7 @@ namespace asd
 								 &ev);
 			if (r != 0) {
 				auto e = errno;
-				asd_Assert(false, "fail epoll_ctl, errno:{}", e);
+				asd_RAssert(false, "fail epoll_ctl, errno:{}", e);
 				return false;
 			}
 			return true;
@@ -957,7 +957,7 @@ namespace asd
 			a_event.m_error = errno;
 			if (a_event.m_error == EINTR)
 				return true;
-			asd_Assert(false, "polling error, errno:{}", a_event.m_error);
+			asd_RAssert(false, "polling error, errno:{}", a_event.m_error);
 			return false;
 		}
 
@@ -990,7 +990,7 @@ namespace asd
 				bool r = GetSocketError(sock, e);
 				switch (e) {
 					default:
-						asd_Assert(false, "unknown socket error, errno:{}", e);
+						asd_RAssert(false, "unknown socket error, errno:{}", e);
 						break;
 				}
 				if (sock->m_state != SockState::Closing)
@@ -1001,7 +1001,7 @@ namespace asd
 
 			// connected
 			if (a_event.m_socket->m_state == SockState::Connecting) {
-				asd_Assert(EPOLLOUT & a_event.m_epollEvent.events, "unknown logic error");
+				asd_RAssert(EPOLLOUT & a_event.m_epollEvent.events, "unknown logic error");
 				int e;
 				bool r = GetSocketError(sock, e);
 				if (e == 0) {
@@ -1013,7 +1013,7 @@ namespace asd
 				else {
 					switch (e) {
 						default:
-							asd_Assert(false, "unknown socket error, errno:{}", e);
+							asd_RAssert(false, "unknown socket error, errno:{}", e);
 							break;
 					}
 					sock->m_lastError = e;
@@ -1034,7 +1034,7 @@ namespace asd
 				if (r > 0) {
 					// success
 					auto recvedData = std::move(sock->m_recvBuffer);
-					asd_Assert(recvedData->SetSize(r), "fail recvedData->SetSize({})", r);
+					asd_RAssert(recvedData->SetSize(r), "fail recvedData->SetSize({})", r);
 					if (sock->m_interface != nullptr)
 						sock->m_interface->OnRecv(std::move(recvedData));
 					// 유저 콜백 호출 후
@@ -1060,7 +1060,7 @@ namespace asd
 							CloseSocket(sock, true);
 							return;
 						default:
-							asd_Assert(false, "fail recv, errno:{}", e);
+							asd_RAssert(false, "fail recv, errno:{}", e);
 							sock->m_lastError = e;
 							CloseSocket(sock);
 							return;
@@ -1086,7 +1086,7 @@ namespace asd
 					case EINTR: // 인터럽트
 						continue;
 					default:
-						asd_Assert(false, "fail Accept, errno:{}", e);
+						asd_RAssert(false, "fail Accept, errno:{}", e);
 						sock->m_lastError = e;
 						CloseSocket(sock);
 						return;
@@ -1107,11 +1107,11 @@ namespace asd
 			int e = a_sock->Connect(a_dest);
 			switch (e) {
 				case 0:
-					asd_Assert(false, "??");
+					asd_RAssert(false, "??");
 				case EINPROGRESS:
 					return 0;
 			}
-			asd_Assert(false, "fail Connect, errno:{}", e);
+			asd_RAssert(false, "fail Connect, errno:{}", e);
 			return e;
 		}
 
@@ -1153,7 +1153,7 @@ namespace asd
 						case EPIPE: // 상대방 연결 끊김
 							break;
 						default:
-							asd_Assert(false, "fail writev, errno:{}", e);
+							asd_RAssert(false, "fail writev, errno:{}", e);
 							break;
 					}
 					return e;
@@ -1216,7 +1216,7 @@ namespace asd
 									 &ev);
 				if (r != 0) {
 					auto e  = errno;
-					asd_Assert(false, "fail epoll_ctl, errno:{}", e);
+					asd_RAssert(false, "fail epoll_ctl, errno:{}", e);
 					a_sock->m_lastError = e;
 				}
 			}
@@ -1254,7 +1254,7 @@ namespace asd
 
 		auto e = a_sock.m_internal->Init();
 		if (e != 0) {
-			asd_Assert(false, "fail socket init, e:{}", e);
+			asd_RAssert(false, "fail socket init, e:{}", e);
 			return false;
 		}
 
@@ -1267,7 +1267,7 @@ namespace asd
 		auto emplace = internal->m_sockets.emplace(a_sock.m_internal->m_id,
 												   a_sock.m_internal);
 		if (emplace.second == false) {
-			asd_Assert(false, "duplicate socket id : {}", a_sock.m_internal->m_id);
+			asd_RAssert(false, "duplicate socket id : {}", a_sock.m_internal->m_id);
 			return false;
 		}
 		ioLock.unlock();
@@ -1352,7 +1352,7 @@ namespace asd
 	{
 		auto ev = std::atomic_load(&m_internal->m_event);
 		if (ev == nullptr) {
-			asd_Assert(false, "not registered socket");
+			asd_RAssert(false, "not registered socket");
 			OnConnect(-1);
 			return;
 		}
@@ -1360,7 +1360,7 @@ namespace asd
 		auto sockLock = GetLock(m_internal->m_sockLock);
 
 		if (m_internal->m_state != SockState::None) {
-			asd_Assert(false, "invalid socket state : {}", (uint8_t)m_internal->m_state);
+			asd_RAssert(false, "invalid socket state : {}", (uint8_t)m_internal->m_state);
 			OnConnect(-1);
 			return;
 		}
@@ -1379,26 +1379,26 @@ namespace asd
 	{
 		auto ev = std::atomic_load(&m_internal->m_event);
 		if (ev == nullptr) {
-			asd_Assert(false, "not registered socket");
+			asd_RAssert(false, "not registered socket");
 			return false;
 		}
 
 		auto sockLock = GetLock(m_internal->m_sockLock);
 
 		if (m_internal->m_state != SockState::None) {
-			asd_Assert(false, "invalid socket state : {}", (uint8_t)m_internal->m_state);
+			asd_RAssert(false, "invalid socket state : {}", (uint8_t)m_internal->m_state);
 			return false;
 		}
 
 		auto e = m_internal->Bind(a_bind);
 		if (e != 0) {
-			asd_Assert(false, "fail Bind({}), e:{}", a_bind.ToString(), e);
+			asd_RAssert(false, "fail Bind({}), e:{}", a_bind.ToString(), e);
 			return false;
 		}
 
 		e = m_internal->Listen(a_backlog);
 		if (e != 0) {
-			asd_Assert(false, "fail Listen({}), e:{}", a_backlog, e);
+			asd_RAssert(false, "fail Listen({}), e:{}", a_backlog, e);
 			return false;
 		}
 
@@ -1414,7 +1414,7 @@ namespace asd
 	{
 		auto ev = std::atomic_load(&m_internal->m_event);
 		if (ev == nullptr) {
-			asd_Assert(false, "not registered socket");
+			asd_RAssert(false, "not registered socket");
 			return false;
 		}
 
@@ -1438,7 +1438,7 @@ namespace asd
 			if (ev->PostSignal(m_internal.get()))
 				m_internal->m_sendSignal = true;
 			else
-				asd_Assert(false, "fail PostSignal, ID:{}", m_internal->m_id);
+				asd_RAssert(false, "fail PostSignal, ID:{}", m_internal->m_id);
 		}
 		return true;
 	}

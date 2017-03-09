@@ -274,9 +274,9 @@ namespace asd
 
 	ThreadPool::~ThreadPool() asd_noexcept
 	{
-		asd_Destructor_Start;
+		asd_BeginDestructor();
 		Stop();
-		asd_Destructor_End;
+		asd_EndDestructor();
 	}
 
 }

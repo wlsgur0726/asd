@@ -175,15 +175,33 @@ namespace asd
 		return MString::Format("{}@{} ({}:{})", Module, Function, File, Line);
 	}
 
-	MString StackTrace::ToString(IN uint32_t a_indent /*= 4*/) const asd_noexcept
+	MString StackTrace::ToString(IN const ToStrOpt& a_opt /*= ToStrOpt()*/) const asd_noexcept
 	{
 		MString indent;
-		indent.resize(a_indent);
-		std::memset(indent.data(), ' ', a_indent);
+		indent.resize(a_opt.Indent);
+		std::memset(indent.data(), ' ', a_opt.Indent);
 
 		MString ret;
-		for (auto& stack : *this)
+		if (a_opt.NewlineHead)
+			ret << '\n';
+
+		bool flag = false;
+		for (auto& stack : *this) {
+			if (!flag) {
+				flag = true;
+				if (a_opt.IgnoreFirstIndent) {
+					ret << stack.ToString() << '\n';
+					continue;
+				}
+			}
 			ret << indent << stack.ToString() << '\n';
+		}
+
+		if (flag && !a_opt.NewlineTail)
+			ret.resize(ret.size() - 1);
+		else if (!flag && a_opt.NewlineTail)
+			ret << '\n';
+
 		return ret;
 	}
 

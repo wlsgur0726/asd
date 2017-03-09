@@ -54,7 +54,7 @@ namespace asd
 				goto Retry;
 				::Sleep(0);
 			}
-			asd_Assert(false, "fail closesocket, WSAGetLastError:{}", e);
+			asd_RAssert(false, "fail closesocket, WSAGetLastError:{}", e);
 		}
 	}
 
@@ -97,7 +97,7 @@ namespace asd
 	inline void CloseSocket(const Socket::Handle& socket) {
 		if (0 != ::close(socket)) {
 			auto e = GetErrorNumber();
-			asd_Assert(false, "fail close, errno:{}", e);
+			asd_RAssert(false, "fail close, errno:{}", e);
 		}
 	}
 

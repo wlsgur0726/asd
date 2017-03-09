@@ -138,9 +138,9 @@ namespace asd
 
 		if (genTail != nullptr)
 			msg << (*genTail)(logNumber, now);
-		msg << _F('\n');
 		if (log.m_file != nullptr)
-			msg << _F("    (") << ConvToF(log.m_file) << _F(':') << log.m_line << _F(")\n");
+			msg << _F(" (") << ConvToF(log.m_file) << _F(':') << log.m_line << _F(")\n");
+		msg << _F('\n');
 
 		if (fp != nullptr) {
 			if (asd::fputs(msg, fp.get()) < 0)

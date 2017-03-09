@@ -22,7 +22,7 @@ namespace asd
 			case AddressFamily::IPv6:
 				return AF_INET6;
 		}
-		asd_Assert(false, "invalid AddressFamily");
+		asd_RAssert(false, "invalid AddressFamily");
 		return -1;
 	}
 
@@ -179,7 +179,7 @@ namespace asd
 				break;
 			}
 			default:
-				asd_Assert(false, "invalid AddressFamily");
+				asd_RAssert(false, "invalid AddressFamily");
 				break;
 		}
 		
@@ -206,7 +206,7 @@ namespace asd
 				return ntohs(cast->sin6_port);
 			}
 			default:
-				asd_Assert(false, "invalid AddressFamily");
+				asd_RAssert(false, "invalid AddressFamily");
 				break;
 		}
 		return 0;
@@ -231,7 +231,7 @@ namespace asd
 				break;
 			}
 			default:
-				asd_Assert(false, "invalid AddressFamily");
+				asd_RAssert(false, "invalid AddressFamily");
 				break;
 		}
 	}
@@ -258,7 +258,7 @@ namespace asd
 			case AddressFamily::IPv6:
 				return MString::Format("[{}]:{}", ip, GetPort());
 			default:
-				asd_Assert(false, "invalid AddressFamily");
+				asd_RAssert(false, "invalid AddressFamily");
 				break;
 		}
 		return "";

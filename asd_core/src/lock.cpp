@@ -102,9 +102,9 @@ namespace asd
 
 	Mutex::~Mutex() asd_noexcept
 	{
-		asd_Destructor_Start;
+		asd_BeginDestructor();
 		m_data.reset();
-		asd_Destructor_End;
+		asd_EndDestructor();
 	}
 
 

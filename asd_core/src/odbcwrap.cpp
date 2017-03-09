@@ -268,9 +268,9 @@ namespace asd
 
 		virtual ~OdbcHandle()
 		{
-			asd_Destructor_Start
-				Close();
-			asd_Destructor_End
+			asd_BeginDestructor();
+			Close();
+			asd_EndDestructor();
 		}
 
 
@@ -354,9 +354,9 @@ namespace asd
 
 		virtual ~DBConnectionHandle()
 		{
-			asd_Destructor_Start
-				CloseConnectoin();
-			asd_Destructor_End
+			asd_BeginDestructor();
+			CloseConnectoin();
+			asd_EndDestructor();
 		}
 	};
 
@@ -398,9 +398,9 @@ namespace asd
 
 	DBConnection::~DBConnection() asd_noexcept
 	{
-		asd_Destructor_Start
-			Close();
-		asd_Destructor_End
+		asd_BeginDestructor();
+		Close();
+		asd_EndDestructor();
 	}
 
 
@@ -745,9 +745,9 @@ namespace asd
 
 		virtual ~DBStatementHandle()
 		{
-			asd_Destructor_Start
-				CloseStatement();
-			asd_Destructor_End
+			asd_BeginDestructor();
+			CloseStatement();
+			asd_EndDestructor();
 		}
 	};
 
@@ -822,12 +822,11 @@ namespace asd
 	}
 
 
-	DBStatement::~DBStatement()
-		noexcept
+	DBStatement::~DBStatement() asd_noexcept
 	{
-		asd_Destructor_Start
-			Close();
-		asd_Destructor_End
+		asd_BeginDestructor();
+		Close();
+		asd_EndDestructor();
 	}
 
 

@@ -70,7 +70,7 @@ namespace asd
 							// 핸들을 반납하면서 task 객체를 가져온다.
 							auto handleLock = GetLock(data->m_handleLock);
 							auto handle_iter = data->m_handles.find(handle);
-							asd_Assert(handle_iter != data->m_handles.end(), "unknown logic error");
+							asd_RAssert(handle_iter != data->m_handles.end(), "unknown logic error");
 							auto task = std::move(handle_iter->second);
 							data->m_handles.erase(handle_iter);
 

@@ -24,7 +24,16 @@ namespace asd
 	public:
 		StackTrace(IN uint32_t a_skip = 0,
 				   IN uint32_t a_count = 10) asd_noexcept;
-		MString ToString(IN uint32_t a_indent = 4) const asd_noexcept;
+
+		struct ToStrOpt
+		{
+			ToStrOpt() asd_noexcept {}
+			uint32_t	Indent = 4;
+			bool		IgnoreFirstIndent = false;
+			bool		NewlineHead = false;
+			bool		NewlineTail = false;
+		};
+		MString ToString(IN const ToStrOpt& a_opt = ToStrOpt()) const asd_noexcept;
 	};
 
 

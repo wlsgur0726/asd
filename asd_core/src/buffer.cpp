@@ -264,14 +264,14 @@ namespace asd
 			const size_t remain = a_bytes - cp;
 			if (reserve >= remain) {
 				std::memcpy(dst, src+cp, remain);
-				asd_Assert(buf->SetSize(sz + remain), "fail SetSize({})", sz + remain);
+				asd_RAssert(buf->SetSize(sz + remain), "fail SetSize({})", sz + remain);
 				break;
 			}
 
 			std::memcpy(dst, src+cp, reserve);
 			cp += reserve;
 
-			asd_Assert(buf->SetSize(capacity), "SetSize({})", capacity);
+			asd_RAssert(buf->SetSize(capacity), "SetSize({})", capacity);
 
 			++m_writeOffset;
 			assert(size() > m_writeOffset);
@@ -344,11 +344,11 @@ namespace asd
 			 i <= m_bufferList.m_writeOffset && i < m_bufferList.size();
 			 ++i)
 		{
-			asd_Assert(m_bufferList[i]->SetSize(0), "fail SetSize(0)");
+			asd_RAssert(m_bufferList[i]->SetSize(0), "fail SetSize(0)");
 		}
 
 		bool set = m_bufferList[m_rollbackPoint.Row]->SetSize(m_rollbackPoint.Col);
-		asd_Assert(set, "fail SetSize({})", m_rollbackPoint.Col);
+		asd_RAssert(set, "fail SetSize({})", m_rollbackPoint.Col);
 		m_bufferList.m_writeOffset = m_rollbackPoint.Row;
 	}
 
