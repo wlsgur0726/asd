@@ -76,7 +76,7 @@ namespace asd
 			a_move.m_mutex = nullptr;
 		}
 
-		~Lock()
+		~Lock() asd_noexcept
 		{
 			if (m_mutex == nullptr)
 				return;

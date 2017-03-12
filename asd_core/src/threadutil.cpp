@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <ctime>
 #include <unordered_map>
+#include <mutex>
+
 
 #if !asd_Platform_Windows
 #	include <sys/types.h>
@@ -82,8 +84,15 @@ namespace asd
 
 	uint32_t Get_HW_Concurrency() asd_noexcept
 	{
-		static uint32_t t_HW_Concurrency = std::thread::hardware_concurrency();
-		return t_HW_Concurrency;
+		static uint32_t s_HW_Concurrency;
+		static std::once_flag s_init;
+		std::call_once(s_init, []()
+		{
+			s_HW_Concurrency = std::thread::hardware_concurrency();
+			if (s_HW_Concurrency == 0)
+				s_HW_Concurrency = 1;
+		});
+		return s_HW_Concurrency;
 	}
 
 

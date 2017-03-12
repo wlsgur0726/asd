@@ -161,6 +161,7 @@
     <ClInclude Include="include\asd\exception.h" />
     <ClInclude Include="include\asd\file.h" />
     <ClInclude Include="include\asd\filedef.h" />
+    <ClInclude Include="include\asd\handle.h" />
     <ClInclude Include="include\asd\iconvwrap.h" />
     <ClInclude Include="include\asd\buffer.h" />
     <ClInclude Include="include\asd\ioevent.h" />
@@ -169,6 +170,7 @@
     <ClInclude Include="include\asd\memdump.h" />
     <ClInclude Include="include\asd\objpool.h" />
     <ClInclude Include="include\asd\odbcwrap.h" />
+    <ClInclude Include="include\asd\random.h" />
     <ClInclude Include="include\asd\semaphore.h" />
     <ClInclude Include="include\asd\serialize.h" />
     <ClInclude Include="include\asd\sharedarray.h" />

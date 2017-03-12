@@ -190,7 +190,7 @@ namespace asdtest_objpool
 	void ShardSetTest()
 	{
 		std::thread threads[ThreadCount];
-		ObjPoolShardSet shardSet(ThreadCount);
+		ObjPoolShardSet shardSet;
 
 		// 해시 분포가 고른지 확인하기 위한 맵
 		struct Count
@@ -214,14 +214,16 @@ namespace asdtest_objpool
 
 					// 3-1. 풀에서부터 할당
 					for (int i=0; i<TestCount; ++i) {
-						t_Counter[&shardSet.GetShard()].Alloc++;
-						objs[i] = shardSet.Alloc();
+						auto shard = &shardSet.GetShard();
+						t_Counter[shard].Alloc++;
+						objs[i] = shard->Alloc();
 					}
 
 					// 3-2. 할당받았던 것들을 풀에 반납
 					for (int i=0; i<TestCount; ++i) {
-						t_Counter[&shardSet.GetShard(objs[i])].Free++;
-						shardSet.Free(objs[i]);
+						auto shard = &shardSet.GetShard(objs[i]);
+						t_Counter[shard].Free++;
+						shard->Free(objs[i]);
 					}
 				} while (run);
 

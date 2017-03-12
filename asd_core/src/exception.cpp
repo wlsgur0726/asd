@@ -75,7 +75,7 @@ namespace asd
 
 
 
-	void DefaultExceptionHandler::operator()(IN ExceptionInterface* a_ei,
+	void DefaultExceptionHandler::operator()(IN ExceptionPtrInterface* a_exception,
 											 IN const DebugInfo& a_catchPosInfo) const asd_noexcept
 	{
 		static const char* MsgFormat =
@@ -87,9 +87,9 @@ namespace asd
 		opt.IgnoreFirstIndent = true;
 		opt.Indent = 8;
 		auto msg = MString::Format(MsgFormat,
-								   a_ei->GetType().name(),
-								   a_ei->what(),
-								   a_ei->GetStackTrace().ToString(opt),
+								   a_exception->GetType().name(),
+								   a_exception->what(),
+								   a_exception->GetStackTrace().ToString(opt),
 								   StackTrace(2).ToString(opt));
 
 		Logger::GlobalInstance()._ErrorLog(a_catchPosInfo.File,
@@ -131,26 +131,6 @@ namespace asd
 	void SetAssertHandler(IN std::shared_ptr<AssertHandler> a_handler) asd_noexcept
 	{
 		std::atomic_exchange(&g_currentAssertHandler, a_handler);
-	}
-
-
-
-	void OnDestructorException(IN const DebugInfo& a_di,
-							   IN ExceptionInterface* a_ei) asd_noexcept
-	{
-		MString msg = a_di.Comment;
-#if !asd_Debug
-		MString st;
-		if (a_ei->GetStackTrace().size() > 0)
-			st = a_ei->GetStackTrace().ToString(8);
-		if (st.empty())
-			st = StackTrace(1).ToString(8);
-		msg << "\n    StackTrace\n" << st;
-#endif
-		Logger::GlobalInstance()._ErrorLog(a_di.File,
-										   a_di.Line,
-										   msg);
-		asd::DebugBreak();
 	}
 
 }

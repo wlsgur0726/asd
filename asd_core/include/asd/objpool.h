@@ -8,6 +8,14 @@
 
 namespace asd
 {
+	template<typename LOCK> struct IsThreadSafeMutex			{ static constexpr bool Value = false; };
+	template<> struct IsThreadSafeMutex<asd::Mutex>				{ static constexpr bool Value = true; };
+	template<> struct IsThreadSafeMutex<asd::SpinMutex>			{ static constexpr bool Value = true; };
+	template<> struct IsThreadSafeMutex<std::mutex>				{ static constexpr bool Value = true; };
+	template<> struct IsThreadSafeMutex<std::recursive_mutex>	{ static constexpr bool Value = true; };
+
+
+
 	template<
 		typename ObjectType,
 		bool Recycle = false,
@@ -15,15 +23,16 @@ namespace asd
 	> class ObjectPool
 	{
 	public:
-		typedef ObjectType									Object;
-		typedef ObjectPool<ObjectType, Recycle, MutexType>	ThisType;
+		static constexpr bool IsThreadSafe = IsThreadSafeMutex<MutexType>::Value;
 
+		typedef ObjectType								Object;
+		typedef ObjectPool<Object, Recycle, MutexType>	ThisType;
 
 		ObjectPool(IN const ThisType&) = delete;
 		ObjectPool& operator=(IN const ThisType&) = delete;
 
 		ObjectPool(MOVE ThisType&& a_mv) = default;
-		ObjectPool& operator=(MOVE ThisType&&) = delete;
+		ObjectPool& operator=(MOVE ThisType&&) = default;
 
 		ObjectPool(IN size_t a_limitCount = std::numeric_limits<size_t>::max(),
 				   IN size_t a_initCount = 0)
@@ -42,7 +51,7 @@ namespace asd
 
 
 		template<typename... ARGS>
-		Object* Alloc(MOVE ARGS&&... a_constructorArgs)
+		Object* Alloc(ARGS&&... a_constructorArgs)
 		{
 			Object* ret = nullptr;
 
@@ -53,12 +62,13 @@ namespace asd
 			}
 			lock.unlock();
 
-			if (ret == nullptr)
-				ret = new Object(std::move(a_constructorArgs)...);
-			else if (Recycle == false)
-				new(ret) Object(std::move(a_constructorArgs)...);
-
-			assert(ret != nullptr);
+			if (ret == nullptr) {
+				ret = (Object*) ::operator new(sizeof(Object));
+				new(ret) Object(std::forward<ARGS>(a_constructorArgs)...);
+			}
+			else if (Recycle == false) {
+				new(ret) Object(std::forward<ARGS>(a_constructorArgs)...);
+			}
 			return ret;
 		}
 
@@ -71,8 +81,19 @@ namespace asd
 				return true;
 
 			if (Recycle == false)
-				a_obj->~Object();
-			return FreeMemory(a_obj);
+				a_obj->~ObjectType();
+
+			auto lock = GetLock(m_lock, true);
+			if (m_pool.size() < m_limitCount) {
+				m_pool.push(a_obj);
+				return true;
+			}
+			lock.unlock();
+
+			if (Recycle)
+				a_obj->~ObjectType();
+			::operator delete(a_obj);
+			return false;
 		}
 
 
@@ -95,9 +116,8 @@ namespace asd
 
 				for (int j=0; j<i; ++j) {
 					if (Recycle)
-						delete buf[j];
-					else
-						::operator delete(buf[j]);
+						buf[j]->~Object();
+					::operator delete(buf[j]);
 				}
 			} while (loop);
 		}
@@ -106,18 +126,15 @@ namespace asd
 
 		void AddCount(IN size_t a_count)
 		{
-			if (a_count <= 0)
-				return;
-
 			while (a_count > 0) {
 				--a_count;
-				Object* p;
-				if (Recycle)
-					p = new Object;
-				else
-					p = (Object*) ::operator new(sizeof(Object));;
-				if (FreeMemory(p) == false)
-					break;
+
+				auto lock = GetLock(m_lock, true);
+				if (m_pool.size() >= m_limitCount)
+					return;
+
+				Object* p = (Object*) ::operator new(sizeof(Object));
+				m_pool.push(p);
 			}
 		}
 
@@ -131,27 +148,6 @@ namespace asd
 
 
 	private:
-		// 풀링되면 true, 풀이 꽉 차면 false 리턴
-		bool FreeMemory(IN Object* a_obj) asd_noexcept
-		{
-			if (a_obj == nullptr)
-				return true;
-
-			auto lock = GetLock(m_lock, true);
-			if (m_pool.size() < m_limitCount) {
-				m_pool.emplace(a_obj);
-				return true;
-			}
-			lock.unlock();
-			if (Recycle)
-				delete a_obj;
-			else
-				::operator delete(a_obj);
-			return false;
-		}
-
-
-
 		const size_t m_limitCount;
 		std::stack<Object*> m_pool;
 		MutexType m_lock;
@@ -167,8 +163,11 @@ namespace asd
 	> class ObjectPool2
 	{
 	public:
-		typedef ObjectPool2<ObjectType, Recycle>	ThisType;
-		typedef ObjectType							Object;
+		static constexpr bool IsThreadSafe = true;
+
+		typedef ObjectType						Object;
+		typedef ObjectPool2<Object, Recycle>	ThisType;
+
 
 		inline static const size_t Sign()
 		{
@@ -226,7 +225,7 @@ namespace asd
 
 
 		template<typename... ARGS>
-		Object* Alloc(MOVE ARGS&&... a_constructorArgs)
+		Object* Alloc(ARGS&&... a_constructorArgs)
 		{
 			Node* node = PopNode();
 			if (node == nullptr)
@@ -235,9 +234,8 @@ namespace asd
 			Object* ret = (Object*)node->m_data;
 			if (Recycle == false || node->m_init == false) {
 				node->m_init = true;
-				new(ret) Object(a_constructorArgs...);
+				new(ret) Object(std::forward<ARGS>(a_constructorArgs)...);
 			}
-
 			return ret;
 		}
 
@@ -251,6 +249,7 @@ namespace asd
 
 			const size_t offset = offsetof(Node, m_data);
 			Node* node = (Node*)((uint8_t*)a_obj - offset);
+
 			if (Recycle == false && node->m_init)
 				a_obj->~Object();
 
@@ -282,7 +281,7 @@ namespace asd
 			} while (false == m_head.compare_exchange_strong(snapshot, nullptr));
 
 			size_t chkCnt = m_popContention--;
-			assert(chkCnt > 0);
+			asd_DAssert(chkCnt > 0);
 			if (snapshot != nullptr && chkCnt > 1)
 				while (m_popContention > 0);
 
@@ -298,7 +297,7 @@ namespace asd
 				delete del;
 
 				size_t sz = m_pooledCount--;
-				assert(sz > 0);
+				asd_DAssert(sz > 0);
 			}
 		}
 
@@ -315,12 +314,8 @@ namespace asd
 		Node* PopNode() asd_noexcept
 		{
 			++m_popContention;
-			Node* snapshot;
-			while (true) {
-				snapshot = m_head;
-				if (snapshot == nullptr)
-					break;
-
+			Node* snapshot = m_head;
+			while (snapshot != nullptr) {
 				Node* next = snapshot->m_next;
 				if (false == m_head.compare_exchange_strong(snapshot, next))
 					continue;
@@ -329,14 +324,14 @@ namespace asd
 			}
 
 			size_t chkCnt = m_popContention--;
-			assert(chkCnt > 0);
+			asd_DAssert(chkCnt > 0);
 			if (snapshot != nullptr) {
 				if (chkCnt > 1)
 					snapshot->m_popContention = &m_popContention;
 				else
 					snapshot->m_popContention = nullptr;
 				chkCnt = m_pooledCount--;
-				assert(chkCnt > 0);
+				asd_DAssert(chkCnt > 0);
 			}
 			return snapshot;
 		}
@@ -345,7 +340,7 @@ namespace asd
 
 		bool PushNode(IN Node* a_node)
 		{
-			assert(a_node != nullptr);
+			asd_DAssert(a_node != nullptr);
 			if (a_node->m_sign != Sign())
 				asd_RaiseException("invaild Node pointer");
 
@@ -356,9 +351,8 @@ namespace asd
 				return false;
 			}
 
-			Node* snapshot;
+			Node* snapshot = m_head;
 			do {
-				snapshot = m_head;
 				a_node->m_next = snapshot;
 			} while (false == m_head.compare_exchange_strong(snapshot, a_node));
 			return true;
@@ -373,79 +367,10 @@ namespace asd
 
 
 
-
-	template <typename PoolType>
-	struct IsThreadSafePool
-	{
-		static constexpr bool Value = false;
-	};
-
-	template<typename ObjectType>
-	struct IsThreadSafePool<ObjectPool2<ObjectType, true>>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<typename ObjectType>
-	struct IsThreadSafePool<ObjectPool2<ObjectType, false>>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<typename ObjectType>
-	struct IsThreadSafePool<ObjectPool<ObjectType, true, asd::Mutex>>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<typename ObjectType>
-	struct IsThreadSafePool<ObjectPool<ObjectType, false, asd::Mutex>>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<typename ObjectType>
-	struct IsThreadSafePool<ObjectPool<ObjectType, true, asd::SpinMutex>>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<typename ObjectType>
-	struct IsThreadSafePool<ObjectPool<ObjectType, false, asd::SpinMutex>>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<typename ObjectType>
-	struct IsThreadSafePool<ObjectPool<ObjectType, true, std::mutex>>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<typename ObjectType>
-	struct IsThreadSafePool<ObjectPool<ObjectType, false, std::mutex>>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<typename ObjectType>
-	struct IsThreadSafePool<ObjectPool<ObjectType, true, std::recursive_mutex>>
-	{
-		static constexpr bool Value = true;
-	};
-
-	template<typename ObjectType>
-	struct IsThreadSafePool<ObjectPool<ObjectType, false, std::recursive_mutex>>
-	{
-		static constexpr bool Value = true;
-	};
-
-
-
 	template <typename ObjectPoolType>
 	class ObjectPoolShardSet
 	{
-		static_assert(IsThreadSafePool<ObjectPoolType>::Value, "thread unsafe pool");
+		static_assert(ObjectPoolType::IsThreadSafe, "thread unsafe pool");
 
 
 	public:
@@ -455,17 +380,19 @@ namespace asd
 
 
 
-		ObjectPoolShardSet(IN uint32_t a_shardCount = std::thread::hardware_concurrency(),
+		ObjectPoolShardSet(IN uint32_t a_shardCount = Get_HW_Concurrency(),
 						   IN size_t a_totalLimitCount = std::numeric_limits<size_t>::max(),
 						   IN size_t a_initCount = 0)
 			: m_shardCount(a_shardCount)
 		{
-			assert(m_shardCount > 0 && m_shardCount <= Prime);
+			if (m_shardCount == 0)
+				asd_RaiseException("invalid shardCount");
+			asd_DAssert(m_shardCount <= Prime);
 			m_memory.resize(m_shardCount * sizeof(ObjectPool));
 			m_shards = (ObjectPool*)m_memory.data();
 
 			const size_t limitCount = a_totalLimitCount / m_shardCount;
-			for (uint32_t i=0; i<m_shardCount; ++i)
+			for (size_t i=0; i<m_shardCount; ++i)
 				new(&m_shards[i]) ObjectPool(limitCount, a_initCount);
 		}
 
@@ -473,19 +400,26 @@ namespace asd
 
 		virtual ~ObjectPoolShardSet() asd_noexcept
 		{
-			for (uint32_t i=0; i<m_shardCount; ++i)
+			for (size_t i=0; i<m_shardCount; ++i)
 				m_shards[i].~ObjectPool();
 		}
 
 
 
-		inline ObjectPool& GetShard(IN void* a_key = nullptr) asd_noexcept
+		inline ObjectPool& GetShard(IN void* a_obj = nullptr) asd_noexcept
 		{
-			uint32_t index;
-			if (a_key == nullptr)
-				index = GetCurrentThreadSequence() % m_shardCount;
+			size_t index;
+#if 1
+			// 컨텐션이 적지만
+			// 샤드개수가 쓰레드개수보다 많을 경우 누수의 여지가 있음
+			if (a_obj == nullptr)
+				index = GetCurrentThreadSequence() % m_shardCount; // alloc
 			else
-				index = (((uint64_t)a_key) % Prime) % m_shardCount;
+				index = (((size_t)a_obj) % Prime) % m_shardCount; // free
+#elif 0
+			thread_local size_t t_idx = GetCurrentThreadSequence();
+			index = ++t_idx % m_shardCount;
+#endif
 			return m_shards[index];
 		}
 
@@ -510,10 +444,10 @@ namespace asd
 
 
 		template<typename... ARGS>
-		inline Object* Alloc(MOVE ARGS&&... a_constructorArgs)
+		inline Object* Alloc(ARGS&&... a_constructorArgs)
 		{
 			auto& pool = GetShard();
-			return pool.Alloc(std::move(a_constructorArgs)...);
+			return pool.Alloc(std::forward<ARGS>(a_constructorArgs)...);
 		}
 
 
@@ -527,8 +461,8 @@ namespace asd
 
 
 	private:
-		const static uint32_t	Prime = 997;
-		const uint32_t			m_shardCount;
+		const static size_t		Prime = 997;
+		const size_t			m_shardCount;
 		std::vector<uint8_t>	m_memory;
 		ObjectPool*				m_shards;
 	};

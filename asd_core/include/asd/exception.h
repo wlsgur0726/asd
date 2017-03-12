@@ -135,9 +135,9 @@ namespace asd
 #endif
 
 	// for asd_try - asd_catch
-	struct ExceptionInterface
+	struct ExceptionPtrInterface
 	{
-		virtual ~ExceptionInterface() asd_noexcept {}
+		virtual ~ExceptionPtrInterface() asd_noexcept {}
 		virtual const char* what() const asd_noexcept = 0;
 		virtual const std::type_info& GetType() const asd_noexcept = 0;
 		virtual const StackTrace& GetStackTrace() const asd_noexcept
@@ -148,67 +148,67 @@ namespace asd
 	};
 
 	template<typename ExceptionType>
-	struct ExceptionPtrTemplate : public ExceptionInterface
+	struct ExceptionPtrTemplate : public ExceptionPtrInterface
 	{
-		const ExceptionType* m_eip;
+		const ExceptionType* m_ptr;
 
-		ExceptionPtrTemplate(IN const ExceptionType* a_eip) asd_noexcept
-			: m_eip(a_eip)
+		ExceptionPtrTemplate(IN const ExceptionType* a_ptr) asd_noexcept
+			: m_ptr(a_ptr)
 		{
 		}
 
 		virtual const char* what() const asd_noexcept override
 		{
-			return m_eip->what();
+			return m_ptr->what();
 		}
 
 		virtual const std::type_info& GetType() const asd_noexcept
 		{
-			return typeid(*m_eip);
+			return typeid(*m_ptr);
 		}
 	};
 
 	template<>
-	struct ExceptionPtrTemplate<Exception> : public ExceptionInterface
+	struct ExceptionPtrTemplate<Exception> : public ExceptionPtrInterface
 	{
-		const Exception* m_eip;
+		const Exception* m_ptr;
 
-		ExceptionPtrTemplate(IN const Exception* a_eip) asd_noexcept
-			: m_eip(a_eip)
+		ExceptionPtrTemplate(IN const Exception* a_ptr) asd_noexcept
+			: m_ptr(a_ptr)
 		{
 		}
 
 		virtual const char* what() const asd_noexcept override
 		{
-			return m_eip->what();
+			return m_ptr->what();
 		}
 
 		virtual const std::type_info& GetType() const asd_noexcept
 		{
-			return typeid(*m_eip);
+			return typeid(*m_ptr);
 		}
 
 		virtual const StackTrace& GetStackTrace() const asd_noexcept override
 		{
-			return m_eip->GetStackTrace();
+			return m_ptr->GetStackTrace();
 		}
 	};
 
 	template<>
-	struct ExceptionPtrTemplate<const char*> : public ExceptionInterface
+	struct ExceptionPtrTemplate<const char*> : public ExceptionPtrInterface
 	{
-		const char* m_eip;
+		const char* m_ptr;
 
-		ExceptionPtrTemplate(IN const char*const* a_eip) asd_noexcept
-			: m_eip(*a_eip)
+		ExceptionPtrTemplate(IN const char*const* a_ptr) asd_noexcept
+			: m_ptr(*a_ptr)
 		{
-			if (m_eip == nullptr)
-				m_eip = "";
+			if (m_ptr == nullptr)
+				m_ptr = "";
 		}
 
 		virtual const char* what() const asd_noexcept override
 		{
-			return m_eip;
+			return m_ptr;
 		}
 
 		virtual const std::type_info& GetType() const asd_noexcept
@@ -224,16 +224,16 @@ namespace asd
 					 IN const int a_line,
 					 IN const char* a_function)
 	{
-		ExceptionPtrTemplate<ExceptionType> ei(&a_exception);
-		ExceptionInterface* eip = &ei;
-		a_handler(eip,
+		ExceptionPtrTemplate<ExceptionType> exception(&a_exception);
+		ExceptionPtrInterface* ptr = &exception;
+		a_handler(ptr,
 				  DebugInfo(a_file, a_line, a_function));
 	}
 
 	// for asd_Catch_Default, asd_CatchUnknown_Default
 	struct DefaultExceptionHandler
 	{
-		void operator () (IN ExceptionInterface* a_ei,
+		void operator () (IN ExceptionPtrInterface* a_exception,
 						  IN const DebugInfo& a_catchPosInfo) const asd_noexcept;
 	};
 
@@ -272,10 +272,10 @@ namespace asd
 	// asd_DAssert : release에서는 Check를 수행하지 않는다.
 #if defined(asd_Debug)
 #	define asd_DAssert(Check) asd_RAssert(Check, #Check)
-
+#
 #else
 #	define asd_DAssert(Check)
-
+#
 #endif
 
 

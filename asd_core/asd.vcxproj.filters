@@ -30,6 +30,8 @@
     <ClInclude Include="include\asd\timer.h" />
     <ClInclude Include="include\asd\trace.h" />
     <ClInclude Include="include\asd\util.h" />
+    <ClInclude Include="include\asd\handle.h" />
+    <ClInclude Include="include\asd\random.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\address.cpp" />

@@ -3,6 +3,7 @@
 #include "asd/ioevent.h"
 #include "asd/semaphore.h"
 #include "asd/serialize.h"
+#include "asd/handle.h"
 #include <thread>
 
 const uint16_t Port = 23456;
@@ -132,22 +133,40 @@ struct TestServer
 
 };
 
+struct MyObj
+{
+	MyObj()
+	{
+		printf("[%p] %s\n", this, __FUNCTION__);
+	}
+	~MyObj()
+	{
+		printf("[%p] %s\n", this, __FUNCTION__);
+	}
+	int data;
+};
+
 void Func1()
 {
-	int a = 1;
-	//asd_RAssert(a != 1, "RAssert Test");
-	asd_BeginTry();
+	typedef asd::Handle<MyObj> MyObjHandle;
 
+	MyObjHandle h1;
+	h1.Alloc();
+	printf("%p\n", h1.GetObj().get());
 
-	printf("exception test\n");
-	throw "asdasd";
-
-
-	asd_EndTry_Default();
+	MyObjHandle h2;
+	h2 = h1;
+	h2.Free();
+	printf("-------------\n");
+	h2.Alloc();
+	printf("%p\n", h2.GetObj().get());
+	h1.Free();
+	printf("end\n");
 }
 void Test()
 {
 	//Func1();
+	//exit(0);
 	return;
 	{
 		g_ev.Init();

@@ -27,14 +27,19 @@ namespace asd
 	public:
 		static T& GlobalInstance()
 		{
-			static std::unique_ptr<T> g_globalObject = nullptr;
-			static std::once_flag init;
-			std::call_once(init, []()
+			static std::unique_ptr<T> s_globalObject = nullptr;
+			static std::once_flag s_init;
+			std::call_once(s_init, []()
 			{
-				g_globalObject.reset(new T);
+				s_globalObject.reset(new T);
 			});
-			assert(g_globalObject != nullptr);
-			return *g_globalObject;
+			assert(s_globalObject != nullptr);
+			return *s_globalObject;
+		}
+
+		inline static T& Instance()
+		{
+			return GlobalInstance();
 		}
 	};
 
@@ -51,7 +56,21 @@ namespace asd
 				t_threadLocalObject.reset(new T);
 			return *t_threadLocalObject;
 		}
+
+		inline static T& Instance()
+		{
+			return ThreadLocalInstance();
+		}
 	};
+
+
+
+	template <typename T>
+	inline T& Default()
+	{
+		static T s_default;
+		return s_default;
+	}
 
 
 
