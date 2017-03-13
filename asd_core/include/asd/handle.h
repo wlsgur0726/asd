@@ -82,21 +82,10 @@ namespace asd
 			map->Delete(id);
 		}
 
-		void Alloc()
-		{
-			Alloc_Internal(Pool::Instance().Alloc());
-		}
-
 		template <typename... ARGS>
-		void Alloc(MOVE ARGS&&... a_constructorArgs)
+		void Alloc(ARGS&&... a_constructorArgs)
 		{
-			Alloc_Internal(Pool::Instance().Alloc(std::move(a_constructorArgs)...));
-		}
-
-		template <typename... ARGS>
-		void Alloc(IN const ARGS&... a_constructorArgs)
-		{
-			Alloc_Internal(Pool::Instance().Alloc(a_constructorArgs...));
+			Alloc_Internal(Pool::Instance().Alloc(std::forward<ARGS>(a_constructorArgs)...));
 		}
 
 	private:
