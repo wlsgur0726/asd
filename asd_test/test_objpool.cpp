@@ -198,7 +198,7 @@ namespace asdtest_objpool
 			size_t Alloc	= 0;
 			size_t Free		= 0;
 		};
-		std::unordered_map<void*, Count> Counter;
+		std::unordered_map<size_t, Count> Counter;
 		std::mutex lock;
 
 		volatile bool start = false;
@@ -206,7 +206,7 @@ namespace asdtest_objpool
 		for (auto& t : threads) {
 			t = std::thread([&]()
 			{
-				std::unordered_map<void*, Count> t_Counter;
+				std::unordered_map<size_t, Count> t_Counter;
 				while (start == false);
 
 				do {
@@ -214,16 +214,16 @@ namespace asdtest_objpool
 
 					// 3-1. 풀에서부터 할당
 					for (int i=0; i<TestCount; ++i) {
-						auto shard = &shardSet.GetShard();
+						objs[i] = shardSet.Alloc();
+						auto shard = *shardSet.GetHeader<size_t>(objs[i]);
 						t_Counter[shard].Alloc++;
-						objs[i] = shard->Alloc();
 					}
 
 					// 3-2. 할당받았던 것들을 풀에 반납
 					for (int i=0; i<TestCount; ++i) {
-						auto shard = &shardSet.GetShard(objs[i]);
+						auto shard = *shardSet.GetHeader<size_t>(objs[i]);
 						t_Counter[shard].Free++;
-						shard->Free(objs[i]);
+						shardSet.Free(objs[i]);
 					}
 				} while (run);
 
@@ -267,19 +267,19 @@ namespace asdtest_objpool
 
 	TEST(ObjectPool, WithStdMutex)
 	{
-		typedef asd::ObjectPool<TestClass, false, std::mutex>	Pool;
+		typedef asd::ObjectPool<TestClass, std::mutex>	Pool;
 		TestObjPool<Pool, 4>();
 	}
 
 	TEST(ObjectPool, WithAsdMutex)
 	{
-		typedef asd::ObjectPool<TestClass, false, asd::Mutex>	Pool;
+		typedef asd::ObjectPool<TestClass, asd::Mutex>	Pool;
 		TestObjPool<Pool, 4>();
 	}
 
 	TEST(ObjectPool, WithSpinMutex)
 	{
-		typedef asd::ObjectPool<TestClass, false, asd::SpinMutex>	Pool;
+		typedef asd::ObjectPool<TestClass, asd::SpinMutex>	Pool;
 		TestObjPool<Pool, 4>();
 	}
 
@@ -292,7 +292,7 @@ namespace asdtest_objpool
 	TEST(ObjectPool, ShardSet)
 	{
 		typedef asd::ObjectPool<TestClass>						Pool0;
-		typedef asd::ObjectPool<TestClass, false, asd::Mutex>	Pool1;
+		typedef asd::ObjectPool<TestClass, asd::Mutex>	Pool1;
 		typedef asd::ObjectPool2<TestClass>						Pool2;
 
 		// compile error

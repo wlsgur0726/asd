@@ -150,17 +150,19 @@ void Func1()
 {
 	typedef asd::Handle<MyObj> MyObjHandle;
 
-	MyObjHandle h1;
-	h1.Alloc();
-	printf("%p\n", h1.GetObj().get());
+	std::unordered_map<void*, size_t> counter;
+	for (int i=0; i<100; ++i) {
+		MyObjHandle h1;
+		h1.Alloc();
+		printf("%p\n", h1.GetObj().get());
 
-	MyObjHandle h2;
-	h2 = h1;
-	h2.Free();
-	printf("-------------\n");
-	h2.Alloc();
-	printf("%p\n", h2.GetObj().get());
-	h1.Free();
+		counter[h1.GetObj().get()]++;
+
+		MyObjHandle h2;
+		h2 = h1;
+		h2.Free();
+		printf("-------------\n");
+	}
 	printf("end\n");
 }
 void Test()

@@ -32,6 +32,7 @@
     <ClInclude Include="include\asd\util.h" />
     <ClInclude Include="include\asd\handle.h" />
     <ClInclude Include="include\asd\random.h" />
+    <ClInclude Include="include\asd\container.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\address.cpp" />

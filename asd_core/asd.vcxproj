@@ -158,6 +158,7 @@
     <ClInclude Include="include\asd\asdbase.h" />
     <ClInclude Include="include\asd\caster.h" />
     <ClInclude Include="include\asd\classutil.h" />
+    <ClInclude Include="include\asd\container.h" />
     <ClInclude Include="include\asd\exception.h" />
     <ClInclude Include="include\asd\file.h" />
     <ClInclude Include="include\asd\filedef.h" />

@@ -240,21 +240,14 @@ namespace asd
 	template<size_t BYTES>
 	Buffer_ptr NewBuffer() asd_noexcept
 	{
-		struct Buffer : public StaticBuffer<BYTES>
-		{
-			typedef ObjectPool2<Buffer> Pool;
-			Pool* m_pool;
-		};
-		static ObjectPoolShardSet<typename Buffer::Pool> g_bufferPool;
-
-		auto& pool = g_bufferPool.GetShard();
-		auto newBuf = pool.Alloc();
-		newBuf->m_pool = &pool;
-
+		using Buffer = StaticBuffer<BYTES>;
+		using Pool = ObjectPool2<Buffer>;
+		static ObjectPoolShardSet<Pool> g_bufferPool;
+		auto newBuf = g_bufferPool.Alloc();
 		return Buffer_ptr(newBuf, [](IN BufferInterface* a_ptr)
 		{
 			auto cast = reinterpret_cast<Buffer*>(a_ptr);
-			cast->m_pool->Free(cast);
+			g_bufferPool.Free(cast);
 		});
 	}
 

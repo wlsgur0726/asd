@@ -3,8 +3,7 @@
 #include "lock.h"
 #include "util.h"
 #include "objpool.h"
-#include <vector>
-#include <unordered_map>
+#include "container.h"
 
 
 namespace asd
@@ -17,7 +16,7 @@ namespace asd
 		using Object = OBJECT_TYPE;
 		using Object_ptr = std::shared_ptr<Object>;
 		using HandleType = Handle<Object, ID>;
-		using Pool = Global<ObjectPoolShardSet< ObjectPool<Object, false, Mutex> >>;
+		using Pool = Global<ObjectPoolShardSet< ObjectPool<Object, Mutex> >>;
 
 		static const ID Null = 0;
 
@@ -58,8 +57,7 @@ namespace asd
 		{
 			if (m_id == Null)
 				return Object_ptr();
-			auto map = Manager::Instance().Shard(m_id);
-			return map->Find(m_id);
+			return Manager::Instance().Find(m_id);
 		}
 
 		inline operator Object_ptr() const asd_noexcept
@@ -78,8 +76,7 @@ namespace asd
 				return;
 			ID id = m_id;
 			m_id = Null;
-			auto map = Manager::Instance().Shard(id);
-			map->Delete(id);
+			Manager::Instance().Erase(id);
 		}
 
 		template <typename... ARGS>
@@ -96,63 +93,15 @@ namespace asd
 			bool added;
 			do {
 				m_id = Manager::Instance().NewID();
-				auto map = Manager::Instance().Shard(m_id);
-				added = map->Add(m_id, obj);
+				added = Manager::Instance().Insert(m_id, obj);
 			} while (!added);
 		}
 
-		class Manager final : public Global<Manager>
+		class Manager final
+			: public Global<Manager>
+			, public ShardedHashMap<ID, Object>
 		{
 		public:
-			class Map final : protected std::unordered_map<ID, Object_ptr>
-			{
-			public:
-				inline bool Add(IN ID a_id,
-								IN Object_ptr& a_obj) asd_noexcept
-				{
-					auto lock = GetLock(m_lock);
-					return emplace(a_id, a_obj).second;
-				}
-
-				inline Object_ptr Find(IN ID a_id) asd_noexcept
-				{
-					auto lock = GetLock(m_lock);
-					auto it = find(a_id);
-					if (it == end())
-						return nullptr;
-					return it->second;
-				}
-
-				inline void Delete(IN ID a_id) asd_noexcept
-				{
-					auto lock = GetLock(m_lock);
-					auto it = find(a_id);
-					if (it == end())
-						return;
-					Object_ptr obj = std::move(it->second);
-					erase(it);
-					lock.unlock();
-					obj.reset();
-				}
-
-				~Map() asd_noexcept
-				{
-					auto lock = GetLock(m_lock);
-					clear();
-				}
-
-			private:
-				asd::Mutex m_lock;
-
-			};
-
-			Manager() asd_noexcept
-			{
-				m_shards.resize(2 * Get_HW_Concurrency());
-				for (auto& shard : m_shards)
-					shard.reset(new Map);
-			}
-
 			inline ID NewID()
 			{
 				ID id;
@@ -161,13 +110,6 @@ namespace asd
 				} while (id == Null);
 				return id;
 			}
-
-			inline Map* Shard(IN ID a_id)
-			{
-				return m_shards[a_id % m_shards.size()].get();
-			}
-
-			std::vector<std::unique_ptr<Map>> m_shards;
 			std::atomic<ID> m_lastID;
 		};
 	};

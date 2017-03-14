@@ -54,14 +54,14 @@ namespace asd
 
 
 
-	template <typename MutexType>
+	template <typename MUTEX_TYPE>
 	class Lock final
 	{
-		MutexType* m_mutex;
+		MUTEX_TYPE* m_mutex;
 		int m_recursionCount = 0;
 
 	public:
-		Lock(REF MutexType& a_mutex,
+		Lock(REF MUTEX_TYPE& a_mutex,
 			 IN bool a_getLock = true)
 			: m_mutex(&a_mutex)
 		{
@@ -69,7 +69,7 @@ namespace asd
 				lock();
 		}
 
-		Lock(MOVE Lock<MutexType>&& a_move) asd_noexcept
+		Lock(MOVE Lock<MUTEX_TYPE>&& a_move) asd_noexcept
 		{
 			m_recursionCount = a_move.m_recursionCount;
 			m_mutex = a_move.m_mutex;
@@ -88,20 +88,20 @@ namespace asd
 
 		asd_DeclareMutexInterface;
 
-		Lock(IN const Lock<MutexType>& a_copy) = delete;
-		Lock& operator=(IN const Lock<MutexType>& a_copy) = delete;
+		Lock(IN const Lock<MUTEX_TYPE>& a_copy) = delete;
+		Lock& operator=(IN const Lock<MUTEX_TYPE>& a_copy) = delete;
 	};
 
-	template <typename MutexType>
-	void Lock<MutexType>::lock()
+	template <typename MUTEX_TYPE>
+	void Lock<MUTEX_TYPE>::lock()
 	{
 		m_mutex->lock();
 		++m_recursionCount;
 		assert(m_recursionCount > 0);
 	}
 
-	template <typename MutexType>
-	bool Lock<MutexType>::try_lock()
+	template <typename MUTEX_TYPE>
+	bool Lock<MUTEX_TYPE>::try_lock()
 	{
 		bool r = m_mutex->try_lock();
 		if (r) {
@@ -112,8 +112,8 @@ namespace asd
 		return r;
 	}
 
-	template <typename MutexType>
-	void Lock<MutexType>::unlock()
+	template <typename MUTEX_TYPE>
+	void Lock<MUTEX_TYPE>::unlock()
 	{
 		if (m_recursionCount > 0) {
 			--m_recursionCount;
@@ -124,10 +124,10 @@ namespace asd
 
 
 
-	template <typename MutexType>
-	inline Lock<MutexType> GetLock(REF MutexType& a_mutex,
+	template <typename MUTEX_TYPE>
+	inline Lock<MUTEX_TYPE> GetLock(REF MUTEX_TYPE& a_mutex,
 								   IN bool a_getLock = true)
 	{
-		return Lock<MutexType>(a_mutex, a_getLock);
+		return Lock<MUTEX_TYPE>(a_mutex, a_getLock);
 	}
 }

@@ -53,13 +53,13 @@ namespace asd
 	};
 
 
-	template <typename MutexType = asd::NoLock>
+	template <typename MUTEX_TYPE = asd::NoLock>
 	struct Tracer : public std::deque<Trace>
 	{
 		typedef std::deque<Trace> Base;
 		using Base::Base;
 
-		mutable MutexType m_lock;
+		mutable MUTEX_TYPE m_lock;
 		size_t m_limit;
 
 		inline Tracer(IN size_t a_limit = std::numeric_limits<size_t>::max())
@@ -69,8 +69,8 @@ namespace asd
 	};
 
 
-	template <typename MutexType>
-	inline void PushTrace(REF Tracer<MutexType>& a_tracer,
+	template <typename MUTEX_TYPE>
+	inline void PushTrace(REF Tracer<MUTEX_TYPE>& a_tracer,
 						  IN const Trace& a_trace) asd_noexcept
 	{
 		auto lock = asd::GetLock(a_tracer.m_lock);

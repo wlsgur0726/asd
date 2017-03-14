@@ -17,16 +17,20 @@ namespace asd
 
 
 	template<
-		typename ObjectType,
-		bool Recycle = false,
-		typename MutexType = asd::NoLock
+		typename OBJECT_TYPE,
+		typename MUTEX_TYPE = asd::NoLock,
+		bool RECYCLE = false,
+		size_t HEADER_SIZE = 0
 	> class ObjectPool
 	{
 	public:
-		static constexpr bool IsThreadSafe = IsThreadSafeMutex<MutexType>::Value;
+		using Object	= OBJECT_TYPE;
+		using Mutex		= MUTEX_TYPE;
+		using ThisType	= ObjectPool<Object, Mutex, RECYCLE, HEADER_SIZE>;
 
-		typedef ObjectType								Object;
-		typedef ObjectPool<Object, Recycle, MutexType>	ThisType;
+		static constexpr bool IsThreadSafe = IsThreadSafeMutex<Mutex>::Value;
+		static constexpr bool Recycle = RECYCLE;
+		static constexpr size_t HeaderSize = HEADER_SIZE;
 
 		ObjectPool(IN const ThisType&) = delete;
 		ObjectPool& operator=(IN const ThisType&) = delete;
@@ -63,7 +67,7 @@ namespace asd
 			lock.unlock();
 
 			if (ret == nullptr) {
-				ret = (Object*) ::operator new(sizeof(Object));
+				ret = AllocMemory();
 				new(ret) Object(std::forward<ARGS>(a_constructorArgs)...);
 			}
 			else if (Recycle == false) {
@@ -81,7 +85,7 @@ namespace asd
 				return true;
 
 			if (Recycle == false)
-				a_obj->~ObjectType();
+				a_obj->~OBJECT_TYPE();
 
 			auto lock = GetLock(m_lock, true);
 			if (m_pool.size() < m_limitCount) {
@@ -91,8 +95,8 @@ namespace asd
 			lock.unlock();
 
 			if (Recycle)
-				a_obj->~ObjectType();
-			::operator delete(a_obj);
+				a_obj->~OBJECT_TYPE();
+			FreeMemory(a_obj);
 			return false;
 		}
 
@@ -117,7 +121,7 @@ namespace asd
 				for (int j=0; j<i; ++j) {
 					if (Recycle)
 						buf[j]->~Object();
-					::operator delete(buf[j]);
+					FreeMemory(buf[j]);
 				}
 			} while (loop);
 		}
@@ -133,7 +137,7 @@ namespace asd
 				if (m_pool.size() >= m_limitCount)
 					return;
 
-				Object* p = (Object*) ::operator new(sizeof(Object));
+				Object* p = AllocMemory();
 				m_pool.push(p);
 			}
 		}
@@ -147,10 +151,37 @@ namespace asd
 
 
 
+		template <typename CAST>
+		inline static CAST* GetHeader(IN Object* a_obj) asd_noexcept
+		{
+			static_assert(sizeof(CAST) <= HeaderSize, "invalid cast");
+			auto p = (uint8_t*)a_obj;
+			return (CAST*)(p - HeaderSize);
+		}
+
+
+
 	private:
+		inline static Object* AllocMemory() asd_noexcept
+		{
+			auto block = (uint8_t*)::operator new(sizeof(Object) + HeaderSize);
+			Object* ret = (Object*)&block[HeaderSize];
+			return ret;
+		}
+
+
+		inline static void FreeMemory(IN Object* a_ptr) asd_noexcept
+		{
+			auto p = (uint8_t*)a_ptr;
+			auto block = p - HeaderSize;
+			::operator delete(block);
+		}
+
+
 		const size_t m_limitCount;
 		std::stack<Object*> m_pool;
-		MutexType m_lock;
+		Mutex m_lock;
+
 	};
 
 
@@ -158,16 +189,18 @@ namespace asd
 
 
 	template<
-		typename ObjectType,
-		bool Recycle = false
+		typename OBJECT_TYPE,
+		bool RECYCLE = false,
+		size_t HEADER_SIZE = 0
 	> class ObjectPool2
 	{
 	public:
+		using Object = OBJECT_TYPE;
+		using ThisType = ObjectPool2<Object, RECYCLE, HEADER_SIZE>;
+
 		static constexpr bool IsThreadSafe = true;
-
-		typedef ObjectType						Object;
-		typedef ObjectPool2<Object, Recycle>	ThisType;
-
+		static constexpr bool Recycle = RECYCLE;
+		static constexpr size_t HeaderSize = HEADER_SIZE;
 
 		inline static const size_t Sign()
 		{
@@ -251,7 +284,7 @@ namespace asd
 			Node* node = (Node*)((uint8_t*)a_obj - offset);
 
 			if (Recycle == false && node->m_init)
-				a_obj->~Object();
+				a_obj->~OBJECT_TYPE();
 
 			return PushNode(node);
 		}
@@ -292,7 +325,7 @@ namespace asd
 				del->m_popContention = nullptr;
 				if (Recycle && del->m_init) {
 					auto cast = (Object*)del->m_data;
-					cast->~Object();
+					cast->~OBJECT_TYPE();
 				}
 				delete del;
 
@@ -310,7 +343,33 @@ namespace asd
 
 
 
+		template <typename CAST>
+		inline static CAST* GetHeader(IN Object* a_obj) asd_noexcept
+		{
+			static_assert(sizeof(CAST) <= HeaderSize, "invalid cast");
+			auto p = (uint8_t*)a_obj;
+			return (CAST*)(p - HeaderSize);
+		}
+
+
+
 	private:
+		inline static Object* AllocMemory() asd_noexcept
+		{
+			auto block = (uint8_t*)::operator new(sizeof(Object) + HeaderSize);
+			Object* ret = (Object*)&block[HeaderSize];
+			return ret;
+		}
+
+
+		inline static void FreeMemory(IN Object* a_ptr) asd_noexcept
+		{
+			auto p = (uint8_t*)a_ptr;
+			auto block = p - HeaderSize;
+			::operator delete(block);
+		}
+
+
 		Node* PopNode() asd_noexcept
 		{
 			++m_popContention;
@@ -319,7 +378,6 @@ namespace asd
 				Node* next = snapshot->m_next;
 				if (false == m_head.compare_exchange_strong(snapshot, next))
 					continue;
-
 				break;
 			}
 
@@ -335,7 +393,6 @@ namespace asd
 			}
 			return snapshot;
 		}
-
 
 
 		bool PushNode(IN Node* a_node)
@@ -363,6 +420,7 @@ namespace asd
 		std::atomic<size_t> m_pooledCount;
 		std::atomic<Node*> m_head;
 		std::atomic<int> m_popContention;
+
 	};
 
 
@@ -373,27 +431,59 @@ namespace asd
 		static_assert(ObjectPoolType::IsThreadSafe, "thread unsafe pool");
 
 
+		struct ShardSetHeader
+		{
+			size_t ShardIndex;
+		};
+
+
+		template <typename POOL>
+		struct PoolTemplate {};
+
+		template <typename OBJECT_TYPE, typename MUTEX_TYPE, bool RECYCLE, size_t HEADER_SIZE>
+		struct PoolTemplate < asd::ObjectPool<OBJECT_TYPE, MUTEX_TYPE, RECYCLE, HEADER_SIZE> >
+		{
+			using Type = asd::ObjectPool<
+				OBJECT_TYPE,
+				MUTEX_TYPE,
+				RECYCLE,
+				HEADER_SIZE + sizeof(ShardSetHeader)
+			>;
+		};
+
+		template <typename OBJECT_TYPE, bool RECYCLE, size_t HEADER_SIZE>
+		struct PoolTemplate < asd::ObjectPool2<OBJECT_TYPE, RECYCLE, HEADER_SIZE> >
+		{
+			using Type = asd::ObjectPool2<
+				OBJECT_TYPE,
+				RECYCLE,
+				HEADER_SIZE + sizeof(ShardSetHeader)
+			>;
+		};
+
+
+		static constexpr size_t OrgHeaderSize = ObjectPoolType::HeaderSize;
+
+
+
 	public:
-		typedef ObjectPoolShardSet<ObjectPoolType>		ThisType;
-		typedef ObjectPoolType							ObjectPool;
-		typedef typename ObjectPool::Object				Object;
+		typedef ObjectPoolShardSet<ObjectPoolType>				ThisType;
+		typedef typename PoolTemplate<ObjectPoolType>::Type		Pool;
+		typedef typename Pool::Object							Object;
 
 
 
-		ObjectPoolShardSet(IN uint32_t a_shardCount = Get_HW_Concurrency(),
+		ObjectPoolShardSet(IN size_t a_shardCount = Get_HW_Concurrency(),
 						   IN size_t a_totalLimitCount = std::numeric_limits<size_t>::max(),
 						   IN size_t a_initCount = 0)
-			: m_shardCount(a_shardCount)
+			: m_shardCount(std::max(a_shardCount, size_t(1)))
 		{
-			if (m_shardCount == 0)
-				asd_RaiseException("invalid shardCount");
-			asd_DAssert(m_shardCount <= Prime);
-			m_memory.resize(m_shardCount * sizeof(ObjectPool));
-			m_shards = (ObjectPool*)m_memory.data();
+			m_memory.resize(m_shardCount * sizeof(Pool));
+			m_shards = (Pool*)m_memory.data();
 
 			const size_t limitCount = a_totalLimitCount / m_shardCount;
 			for (size_t i=0; i<m_shardCount; ++i)
-				new(&m_shards[i]) ObjectPool(limitCount, a_initCount);
+				new(&m_shards[i]) Pool(limitCount, a_initCount);
 		}
 
 
@@ -401,44 +491,7 @@ namespace asd
 		virtual ~ObjectPoolShardSet() asd_noexcept
 		{
 			for (size_t i=0; i<m_shardCount; ++i)
-				m_shards[i].~ObjectPool();
-		}
-
-
-
-		inline ObjectPool& GetShard(IN void* a_obj = nullptr) asd_noexcept
-		{
-			size_t index;
-#if 1
-			// 컨텐션이 적지만
-			// 샤드개수가 쓰레드개수보다 많을 경우 누수의 여지가 있음
-			if (a_obj == nullptr)
-				index = GetCurrentThreadSequence() % m_shardCount; // alloc
-			else
-				index = (((size_t)a_obj) % Prime) % m_shardCount; // free
-#elif 0
-			thread_local size_t t_idx = GetCurrentThreadSequence();
-			index = ++t_idx % m_shardCount;
-#endif
-			return m_shards[index];
-		}
-
-
-
-		inline Object* AllocMemory()
-		{
-			auto& pool = GetShard();
-			return pool.AllocMemory();
-		}
-
-
-
-		inline bool FreeMemory(IN Object* a_obj)
-		{
-			if (a_obj == nullptr)
-				return true;
-			auto& pool = GetShard(a_obj);
-			return pool.FreeMemory(a_obj);
+				m_shards[i].~Pool();
 		}
 
 
@@ -446,24 +499,58 @@ namespace asd
 		template<typename... ARGS>
 		inline Object* Alloc(ARGS&&... a_constructorArgs)
 		{
-			auto& pool = GetShard();
-			return pool.Alloc(std::forward<ARGS>(a_constructorArgs)...);
+			size_t index = GetShardIndex();
+			Object* ret = m_shards[index].Alloc(std::forward<ARGS>(a_constructorArgs)...);
+			ShardSetHeader* header = GetShardSetHeader(ret);
+			header->ShardIndex = index;
+			return ret;
 		}
 
 
 
 		inline bool Free(MOVE Object*& a_obj)
 		{
-			auto& pool = GetShard(a_obj);
-			return pool.Free(a_obj);
+			size_t index = GetShardIndex(a_obj);
+			return m_shards[index].Free(a_obj);
+		}
+
+
+
+		template <typename CAST>
+		inline static CAST* GetHeader(IN Object* a_obj) asd_noexcept
+		{
+			return Pool::GetHeader<CAST>(a_obj);
 		}
 
 
 
 	private:
-		const static size_t		Prime = 997;
+		inline size_t GetShardIndex(IN Object* a_obj = nullptr) asd_noexcept
+		{
+			size_t index;
+			if (a_obj == nullptr) {
+				// alloc
+				index = GetCurrentThreadSequence() % m_shardCount;
+			}
+			else {
+				// free
+				ShardSetHeader* header = GetShardSetHeader(a_obj);
+				index = header->ShardIndex;
+			}
+			return index;
+		}
+
+
+		inline static ShardSetHeader* GetShardSetHeader(IN Object* a_obj) asd_noexcept
+		{
+			auto block = Pool::GetHeader<uint8_t>(a_obj);
+			return (ShardSetHeader*)(block + OrgHeaderSize);
+		}
+
+
 		const size_t			m_shardCount;
 		std::vector<uint8_t>	m_memory;
-		ObjectPool*				m_shards;
+		Pool*					m_shards;
+
 	};
 }

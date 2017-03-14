@@ -87,7 +87,7 @@ namespace asd
 
 #if defined(asd_Platform_Windows)
 		// N-Send
-		ObjectPool<WSAOVERLAPPED, true> m_sendov_pool = ObjectPool<WSAOVERLAPPED, true>(100);
+		ObjectPool<WSAOVERLAPPED, NoLock, true> m_sendov_pool = ObjectPool<WSAOVERLAPPED, NoLock, true>(100);
 		std::unordered_map<WSAOVERLAPPED*, std::deque<Buffer_ptr>> m_sendProgress;
 
 		// 1-Recv
