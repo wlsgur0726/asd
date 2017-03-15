@@ -15,7 +15,7 @@ asd::Mutex g_lock;
 struct Client;
 std::unordered_map<uintptr_t, std::unique_ptr<Client>> g_sockets;
 
-struct Sock : public asd::AsyncSocket
+struct Sock : public asd::AsyncSocket 
 {
 	asd::Semaphore m_connect;
 	asd::Semaphore m_recv;
