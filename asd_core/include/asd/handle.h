@@ -20,10 +20,6 @@ namespace asd
 
 		static const ID Null = 0;
 
-	protected:
-		ID m_id;
-
-	public:
 		inline Handle(IN ID a_id = Null)
 			: m_id(a_id)
 		{
@@ -38,7 +34,7 @@ namespace asd
 		inline HandleType& operator=(IN const HandleType&) asd_noexcept = default;
 		inline HandleType& operator=(MOVE HandleType&& a_mv) asd_noexcept
 		{
-			operator=(a_mv);
+			m_id = a_mv.m_id;
 			a_mv.m_id = Null;
 			return *this;
 		}
@@ -70,6 +66,19 @@ namespace asd
 			return GetObj() != nullptr;
 		}
 
+		template <typename... ARGS>
+		Object_ptr Alloc(ARGS&&... a_constructorArgs)
+		{
+			Object_ptr obj(Pool::Instance().Alloc(std::forward<ARGS>(a_constructorArgs)...),
+						   [](IN Object* a_ptr) { Pool::Instance().Free(a_ptr); });
+			bool added;
+			do {
+				m_id = Manager::Instance().NewID();
+				added = Manager::Instance().Insert(m_id, obj);
+			} while (!added);
+			return obj;
+		}
+
 		void Free() asd_noexcept
 		{
 			if (m_id == Null)
@@ -79,23 +88,8 @@ namespace asd
 			Manager::Instance().Erase(id);
 		}
 
-		template <typename... ARGS>
-		void Alloc(ARGS&&... a_constructorArgs)
-		{
-			Alloc_Internal(Pool::Instance().Alloc(std::forward<ARGS>(a_constructorArgs)...));
-		}
-
 	private:
-		void Alloc_Internal(IN Object* a_obj) asd_noexcept
-		{
-			Object_ptr obj(a_obj,
-						   [](IN Object* a_ptr) { Pool::Instance().Free(a_ptr); });
-			bool added;
-			do {
-				m_id = Manager::Instance().NewID();
-				added = Manager::Instance().Insert(m_id, obj);
-			} while (!added);
-		}
+		ID m_id;
 
 		class Manager final
 			: public Global<Manager>

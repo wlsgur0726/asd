@@ -17,13 +17,13 @@ namespace asd
 
 	public:
 #if defined(asd_Platform_Windows)
-		typedef intptr_t Handle;
-		typedef int Error;
+		using Handle = intptr_t;
+		using Error = int;
 		static const Handle InvalidHandle = (Handle)~0;
 
 #else
-		typedef int Handle;
-		typedef int Error;
+		using Handle = int;
+		using Error = int;
 		static const Handle InvalidHandle = -1;
 
 #endif

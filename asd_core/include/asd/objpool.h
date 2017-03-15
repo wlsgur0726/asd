@@ -473,7 +473,7 @@ namespace asd
 
 
 
-		ObjectPoolShardSet(IN size_t a_shardCount = Get_HW_Concurrency(),
+		ObjectPoolShardSet(IN size_t a_shardCount = 4*Get_HW_Concurrency(),
 						   IN size_t a_totalLimitCount = std::numeric_limits<size_t>::max(),
 						   IN size_t a_initCount = 0)
 			: m_shardCount(std::max(a_shardCount, size_t(1)))

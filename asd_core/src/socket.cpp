@@ -36,7 +36,11 @@ namespace asd
 
 	#define asd_SetNonblockFlag(SockObj, true_or_false) (SockObj).m_nonblock = true_or_false
 
-	#define asd_SwapNonblockFlag(SockObj1, SockObj2) std::swap((SockObj1).m_nonblock, (SockObj2).m_nonblock)
+	#define asd_MoveNonblockFlag(SockObj1, SockObj2)		\
+		do {												\
+			(SockObj1).m_nonblock = (SockObj2).m_nonblock;	\
+			(SockObj2).m_nonblock = false;					\
+		} while (false)
 
 	typedef char* SockOptValType;
 
@@ -84,7 +88,7 @@ namespace asd
 
 	#define asd_SetNonblockFlag(SockObj, true_or_false)
 
-	#define asd_SwapNonblockFlag(SockObj1, SockObj2)
+	#define asd_MoveNonblockFlag(SockObj1, SockObj2)
 
 	typedef void* SockOptValType;
 
@@ -139,10 +143,11 @@ namespace asd
 	Socket&
 	Socket::operator = (MOVE Socket&& a_rval) asd_noexcept
 	{
+		Close();
 		std::swap(m_handle, a_rval.m_handle);
-		std::swap(m_socketType, a_rval.m_socketType);
-		std::swap(m_addressFamily, a_rval.m_addressFamily);
-		asd_SwapNonblockFlag(*this, a_rval);
+		m_socketType = a_rval.m_socketType;
+		m_addressFamily = a_rval.m_addressFamily;
+		asd_MoveNonblockFlag(*this, a_rval);
 		return *this;
 	}
 
