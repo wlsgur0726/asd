@@ -7,9 +7,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "asd_test", "asd_test\asd_te
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "asd", "asd_core\asd.vcxproj", "{BED6683E-0EB1-4E30-8E45-8B8290B7C8C4}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtest-md", "..\googletest\googletest\msvc2015\gtest-md.vcxproj", "{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtest-md", "..\googletest\googletest\msvc2017\gtest-md.vcxproj", "{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libiconv", "..\libiconv\windows\msvc2015\libiconv.vcxproj", "{8BD75398-70D3-4786-A9DC-52FBD1E5CA13}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libiconv", "..\libiconv\windows\msvc2017\libiconv.vcxproj", "{8BD75398-70D3-4786-A9DC-52FBD1E5CA13}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9213C76A-F579-4F6D-9656-6331A80F789D}"
 	ProjectSection(SolutionItems) = preProject

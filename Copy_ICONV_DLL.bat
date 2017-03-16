@@ -5,7 +5,7 @@
 @echo off
 
 echo Copy ICONV DLL
-set ICONV_PATH=%~dp0\..\libiconv\windows\msvc2015\%1\%2
+set ICONV_PATH=%~dp0\..\libiconv\windows\msvc2017\%1\%2
 mkdir "%3"
 xcopy /Q /Y "%ICONV_PATH%\*.dll" "%3"
 xcopy /Q /Y "%ICONV_PATH%\*.pdb" "%3"
