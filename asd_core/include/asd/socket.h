@@ -7,13 +7,13 @@
 
 namespace asd
 {
-	class AsyncSocketInternal;
+	class AsyncSocketNative;
 
 
 	// Socket API 랩핑
 	class Socket
 	{
-		friend class asd::AsyncSocketInternal;
+		friend class asd::AsyncSocketNative;
 
 	public:
 #if defined(asd_Platform_Windows)
@@ -32,7 +32,8 @@ namespace asd
 			TCP,
 			UDP,
 		};
-		static int ToNativeCode(Type a_type) asd_noexcept;
+		static int ToNativeCode(IN Type a_type) asd_noexcept;
+		static Type FromNativeCode(IN int a_type) asd_noexcept;
 
 		struct IoResult {
 			int		m_bytes;
@@ -67,6 +68,14 @@ namespace asd
 
 
 		Socket(MOVE Socket&& a_rval) asd_noexcept;
+
+
+		Socket(IN Handle a_nativeHandle) asd_noexcept;
+
+
+		Socket(IN Handle a_nativeHandle,
+			   IN Socket::Type a_socketType,
+			   IN AddressFamily a_addressFamily) asd_noexcept;
 
 
 		virtual

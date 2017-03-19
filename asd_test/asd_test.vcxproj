@@ -62,7 +62,9 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>$(VLD_LIB64);</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+      <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
       <Command>$(ProjectDir)..\Copy_ICONV_DLL.bat "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
@@ -86,7 +88,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>$(VLD_LIB64);</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+      <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
       <Command>$(ProjectDir)..\Copy_ICONV_DLL.bat "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>

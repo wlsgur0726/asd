@@ -354,7 +354,7 @@ namespace asd
 		std::vector<IpAddress> ret;
 		addrinfo* result;
 		addrinfo hints;
-		memset(&hints, 0, sizeof(hints));
+		std::memset(&hints, 0, sizeof(hints));
 
 		int err = getaddrinfo(a_domain, NULL, &hints, &result);
 		if (err != 0)

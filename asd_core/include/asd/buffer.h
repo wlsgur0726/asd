@@ -241,13 +241,14 @@ namespace asd
 	Buffer_ptr NewBuffer() asd_noexcept
 	{
 		using Buffer = StaticBuffer<BYTES>;
-		using Pool = ObjectPool2<Buffer>;
-		static ObjectPoolShardSet<Pool> g_bufferPool;
-		auto newBuf = g_bufferPool.Alloc();
+		using PoolType = ObjectPoolShardSet< ObjectPool2<Buffer> >;
+		using Pool = Global<PoolType>;
+
+		auto newBuf = Pool::Instance().Alloc();
 		return Buffer_ptr(newBuf, [](IN BufferInterface* a_ptr)
 		{
 			auto cast = reinterpret_cast<Buffer*>(a_ptr);
-			g_bufferPool.Free(cast);
+			Pool::Instance().Free(cast);
 		});
 	}
 

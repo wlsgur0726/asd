@@ -9,191 +9,241 @@
 const uint16_t Port = 23456;
 #define PRINTF(...) ::printf(asd::MString::Format(__VA_ARGS__));
 
-asd::IOEvent g_ev;
-bool g_run = true;
-asd::Mutex g_lock;
-struct Client;
-std::unordered_map<uintptr_t, std::unique_ptr<Client>> g_sockets;
 
-struct Sock : public asd::AsyncSocket 
+volatile bool g_run = true;
+asd::Semaphore g_sync;
+
+
+struct TestClient;
+
+struct ClientEvent : public asd::IOEvent
 {
-	asd::Semaphore m_connect;
-	asd::Semaphore m_recv;
+	asd::Mutex m_lock;
+	std::unordered_map<asd::AsyncSocketHandle, std::shared_ptr<TestClient>> m_clients;
 
-	virtual void OnConnect(IN asd::Socket::Error a_err) asd_noexcept override
-	{
-		printf("%s\n", __FUNCTION__);
-		m_connect.Post();
-	}
+	void Stop();
 
-	virtual void OnAccept(MOVE asd::AsyncSocket&& a_newSock) asd_noexcept override
-	{
-		printf("%s\n", __FUNCTION__);
-	}
+	void Sync(asd::AsyncSocket* a_sock);
 
-	virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) asd_noexcept override
-	{
-		auto p = a_data->GetBuffer();
-		auto sz = a_data->GetSize();
-		m_recv.Post();
-		printf("%s\n", __FUNCTION__);
-	}
+	virtual void OnConnect(asd::AsyncSocket* a_sock,
+						   asd::Socket::Error a_err) asd_noexcept override;
 
-	virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept override
-	{
-		printf("%s\n", __FUNCTION__);
-	}
+	virtual void OnRecv(asd::AsyncSocket* a_sock,
+						asd::Buffer_ptr&& a_data) asd_noexcept override;
+
+	virtual void OnClose(IN asd::AsyncSocket* a_sock,
+						 IN asd::Socket::Error a_err) asd_noexcept override;
 };
+ClientEvent g_clientEvent;
 
 
-struct Client : public asd::AsyncSocket
+struct ServerEvent : public asd::IOEvent
 {
-	typedef asd::AsyncSocket Base;
+	asd::Mutex m_lock;
+	std::unordered_set<asd::AsyncSocketHandle> m_clients;
 
-	Client(Base&& a_sock)
-		: Base(std::move(a_sock))
-	{
-	}
+	void Stop();
 
-	virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) asd_noexcept override
-	{
-		printf("%s\n", __FUNCTION__);
-		asd::BufferList packets;
-		packets.PushBack(std::move(a_data));
-		Send(std::move(packets));
-	}
+	virtual void OnAccept(asd::AsyncSocket* a_listener,
+						  asd::AsyncSocket_ptr&& a_newSock) asd_noexcept;
 
-	virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept override
-	{
-		printf("%s\n", __FUNCTION__);
-		auto lock = asd::GetLock(g_lock);
-		g_sockets.erase(GetID());
-	}
+
+	virtual void OnRecv(asd::AsyncSocket* a_sock,
+						asd::Buffer_ptr&& a_data) asd_noexcept override;
+
+	virtual void OnClose(asd::AsyncSocket* a_sock,
+						 asd::Socket::Error a_err) asd_noexcept override;
 };
+ServerEvent g_serverEvent;
 
-struct ListenSocket : public asd::AsyncSocket
+
+struct TestClient
 {
-	virtual void OnAccept(MOVE asd::AsyncSocket&& a_newSock) asd_noexcept override
+	asd::AsyncSocketHandle m_socket;
+	asd::Semaphore m_sync;
+	TestClient()
 	{
-		printf("%s\n", __FUNCTION__);
+		asd_RAssert(g_clientEvent.Register(m_socket.Alloc()), "");
 
-		std::unique_ptr<Client> sock(new Client(std::move(a_newSock)));
-
-		if (g_ev.Register(*sock) == false) {
-			PRINTF("fail Register\n");
-			std::terminate();
-		}
-
-		auto lock = asd::GetLock(g_lock);
-		auto emplace = g_sockets.emplace(sock->GetID(), std::move(sock));
-		if (emplace.second == false) {
-			PRINTF("fail emplace\n");
-			std::terminate();
-		}
+		std::thread t([]()
+		{
+		});
+		t.detach();
 	}
 
-	virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept override
+	~TestClient()
 	{
-		printf("%s\n", __FUNCTION__);
+		m_socket.Free();
 	}
 };
 
 struct TestServer
 {
-	asd::Semaphore m_sync;
+	asd::AsyncSocketHandle m_socket;
 	std::thread m_thread;
+
 	TestServer()
 	{
 		m_thread = std::thread([this]()
 		{
-			ListenSocket listeningSock;
+			auto sock = m_socket.Alloc();
+			asd_RAssert(g_serverEvent.Register(sock), "");
 
-			if (g_ev.Register(listeningSock) == false) {
-				PRINTF("fail Register\n");
-				std::terminate();
-			}
+			//asd_RAssert(0 == sock->SetSockOpt_ReuseAddr(true), "");
 
-			//auto e = listeningSock.CastToSocket().SetSockOpt_ReuseAddr(true);
-			//if (e != 0) {
-			//	PRINTF("fail SetSockOpt_ReuseAddr\n");
-			//	std::terminate();
-			//}
+			asd_RAssert(sock->Listen(asd::IpAddress("0.0.0.0", Port), 1024), "");
 
-			if (listeningSock.Listen(asd::IpAddress("0.0.0.0", Port), 1024) == false) {
-				PRINTF("fail Listen\n");
-				std::terminate();
-			}
-
-			m_sync.Post();
-			while (g_run) 
+			g_sync.Post();
+			while (g_run)
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		});
-		m_thread.detach();
 	}
 
+	~TestServer()
+	{
+		m_thread.join();
+		m_socket.Free();
+	}
 };
 
-struct MyObj
+
+void ClientEvent::Sync(asd::AsyncSocket* a_sock)
 {
-	MyObj()
-	{
-		printf("[%p] %s\n", this, __FUNCTION__);
-	}
-	~MyObj()
-	{
-		printf("[%p] %s\n", this, __FUNCTION__);
-	}
-	int data;
-};
-
-void Func1()
-{
-	typedef asd::Handle<MyObj> MyObjHandle;
-
-	std::unordered_map<void*, size_t> counter;
-	for (int i=0; i<100; ++i) {
-		MyObjHandle h1;
-		h1.Alloc();
-		printf("%p\n", h1.GetObj().get());
-
-		counter[h1.GetObj().get()]++;
-
-		MyObjHandle h2;
-		h2 = h1;
-		h2.Free();
-		printf("-------------\n");
-	}
-	printf("end\n");
+	auto lock = asd::GetLock(m_lock);
+	auto cli = m_clients[asd::AsyncSocketHandle::GetHandle(a_sock)];
+	asd_RAssert(cli != nullptr, "");
+	cli->m_sync.Post();
 }
+
+void ClientEvent::OnConnect(asd::AsyncSocket* a_sock,
+							asd::Socket::Error a_err) asd_noexcept
+{
+	printf("%s\n", __FUNCTION__);
+	Sync(a_sock);
+}
+
+
+void ClientEvent::OnRecv(asd::AsyncSocket* a_sock,
+						 asd::Buffer_ptr&& a_data) asd_noexcept
+{
+	auto p = a_data->GetBuffer();
+	auto sz = a_data->GetSize();
+	printf("%s\n", __FUNCTION__);
+	Sync(a_sock);
+}
+
+void ClientEvent::OnClose(IN asd::AsyncSocket* a_sock,
+						  IN asd::Socket::Error a_err) asd_noexcept
+{
+	printf("%s\n", __FUNCTION__);
+	auto handle = asd::AsyncSocketHandle::GetHandle(a_sock);
+	auto lock = asd::GetLock(m_lock);
+	m_clients.erase(handle);
+	lock.unlock();
+	handle.Free();
+}
+
+void ClientEvent::Stop()
+{
+	asd::IOEvent::Stop();
+
+	auto lock = asd::GetLock(m_lock);
+	while (m_clients.size() > 0) {
+		auto it = m_clients.begin();
+		auto handle = it->first;
+		m_clients.erase(it);
+		lock.unlock();
+		//handle.Free();
+	}
+}
+
+
+void ServerEvent::OnAccept(asd::AsyncSocket* a_listener,
+						   asd::AsyncSocket_ptr&& a_newSock) asd_noexcept
+{
+	printf("%s\n", __FUNCTION__);
+	asd_RAssert(Register(a_newSock), "");
+
+	auto lock = asd::GetLock(m_lock);
+	auto emplace = m_clients.emplace(asd::AsyncSocketHandle::GetHandle(a_newSock.get()));
+	asd_RAssert(emplace.second, "");
+}
+
+
+void ServerEvent::OnRecv(asd::AsyncSocket* a_sock,
+						 asd::Buffer_ptr&& a_data) asd_noexcept
+{
+	auto p = a_data->GetBuffer();
+	auto sz = a_data->GetSize();
+	printf("%s\n", __FUNCTION__);
+	a_sock->Send(std::move(a_data));
+}
+
+void ServerEvent::OnClose(asd::AsyncSocket* a_sock,
+						  asd::Socket::Error a_err) asd_noexcept
+{
+	printf("%s\n", __FUNCTION__);
+	auto handle = asd::AsyncSocketHandle::GetHandle(a_sock);
+	auto lock = asd::GetLock(m_lock);
+	m_clients.erase(handle);
+	lock.unlock();
+	handle.Free();
+}
+
+void ServerEvent::Stop()
+{
+	asd::IOEvent::Stop();
+
+	auto lock = asd::GetLock(m_lock);
+	while (m_clients.size() > 0) {
+		auto it = m_clients.begin();
+		auto handle = *it;
+		m_clients.erase(it);
+		lock.unlock();
+		//handle.Free();
+	}
+}
+
+
 void Test()
 {
-	//Func1();
-	//exit(0);
-	return;
+	//return;
 	{
-		g_ev.Init();
+		g_clientEvent.Start();
+		g_serverEvent.Start();
+
 		TestServer server;
 
-		server.m_sync.Wait();
+		g_sync.Wait();
 
 		PRINTF("Connect...\n");
-		Sock conn;
 
-		if (g_ev.Register(conn) == false) {
-			PRINTF("fail Register\n");
-			std::terminate();
+		std::shared_ptr<TestClient> client(new TestClient);
+		auto clisock = client->m_socket.GetObj();
+		asd_RAssert(clisock != nullptr, "");
+		{
+			auto lock = asd::GetLock(g_clientEvent.m_lock);
+			g_clientEvent.m_clients[client->m_socket] = client;
 		}
 
-		conn.Connect(asd::IpAddress("127.0.0.1", Port));
-		conn.m_connect.Wait();
+		clisock->Connect(asd::IpAddress("127.0.0.1", Port));
+		client->m_sync.Wait();
 
 		uint8_t str[] = "TestData";
 		asd::BufferList bufs;
 		for (int i=0; i<sizeof(str); ++i)
 			asd::Write(bufs, str[i]);
 
-		conn.Send(std::move(bufs));
-		conn.m_recv.Wait();
+		clisock->Send(std::move(bufs));
+		client->m_sync.Wait();
+
+		g_run = false;
+
+		g_clientEvent.Stop();
+		g_serverEvent.Stop();
+		asd::AsyncSocketHandle::AllClear();
+		PRINTF("end\n");
 	}
+	PRINTF("exit\n");
 	exit(0);
 }

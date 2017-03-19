@@ -109,7 +109,7 @@ namespace asd
 
 
 
-	int Socket::ToNativeCode(Type a_type) asd_noexcept
+	int Socket::ToNativeCode(IN Type a_type) asd_noexcept
 	{
 		switch (a_type) {
 			case Socket::Type::TCP:
@@ -117,8 +117,22 @@ namespace asd
 			case Socket::Type::UDP:
 				return SOCK_DGRAM;
 		}
-		assert(false);
+		asd_DAssert(false);
 		return -1;
+	}
+
+
+
+	Socket::Type Socket::FromNativeCode(IN int a_type) asd_noexcept
+	{
+		switch (a_type) {
+			case SOCK_STREAM:
+				return Socket::Type::TCP;
+			case SOCK_DGRAM:
+				return Socket::Type::UDP;
+		}
+		asd_DAssert(false);
+		return Socket::Type::TCP;
 	}
 
 
@@ -136,6 +150,34 @@ namespace asd
 	Socket::Socket(MOVE Socket&& a_rval) asd_noexcept
 	{
 		*this = std::move(a_rval);
+	}
+
+
+	Socket::Socket(IN Handle a_nativeHandle) asd_noexcept
+	{
+		m_handle = a_nativeHandle;
+		if (m_handle == InvalidHandle)
+			return;
+
+		int result;
+		uint32_t size = sizeof(result);
+		if (0 == GetSockOpt(SOL_SOCKET, SO_TYPE, &result, size))
+			m_socketType = FromNativeCode(result);
+
+		IpAddress ip;
+		if (0 == GetSockName(ip))
+			m_addressFamily = ip.GetAddressFamily();
+
+		asd_SetNonblockFlag(*this, false);
+	}
+
+
+	Socket::Socket(IN Handle a_nativeHandle,
+				   IN Socket::Type a_socketType,
+				   IN AddressFamily a_addressFamily) asd_noexcept
+		: Socket(a_socketType, a_addressFamily)
+	{
+		m_handle = a_nativeHandle;
 	}
 
 
@@ -248,7 +290,7 @@ namespace asd
 	Socket::Error 
 	Socket::Listen(IN int a_backlog /*=1024*/) asd_noexcept
 	{
-		assert(m_handle != InvalidHandle);
+		asd_DAssert(m_handle != InvalidHandle);
 
 		Error ret = 0;
 		if (::listen(m_handle, a_backlog) == -1)
@@ -291,7 +333,7 @@ namespace asd
 	Socket::Accept(OUT Socket& a_newbe,
 				   OUT IpAddress& a_address) asd_noexcept
 	{
-		assert(m_handle != InvalidHandle);
+		asd_DAssert(m_handle != InvalidHandle);
 
 		Error ret = 0;
 		switch (m_addressFamily) {
@@ -312,7 +354,7 @@ namespace asd
 				break;
 			}
 			default:
-				assert(false);
+				asd_DAssert(false);
 				break;
 		}
 
@@ -342,7 +384,7 @@ namespace asd
 				 IN int a_bufferSize,
 				 IN int a_flags /*= 0*/) asd_noexcept
 	{
-		assert(m_handle != InvalidHandle);
+		asd_DAssert(m_handle != InvalidHandle);
 
 		IoResult ret;
 		ret.m_bytes = ::send(m_handle,
@@ -387,7 +429,7 @@ namespace asd
 				 IN int a_bufferSize,
 				 IN int a_flags /*= 0*/) asd_noexcept
 	{
-		assert(m_handle != InvalidHandle);
+		asd_DAssert(m_handle != InvalidHandle);
 
 		IoResult ret;
 		ret.m_bytes = ::recv(m_handle,
@@ -458,7 +500,7 @@ namespace asd
 				break;
 			}
 			default:
-				assert(false);
+				asd_DAssert(false);
 				break;
 		}
 
@@ -473,7 +515,7 @@ namespace asd
 					   IN const void* a_optval,
 					   IN uint32_t a_optlen) asd_noexcept
 	{
-		assert(m_handle != InvalidHandle);
+		asd_DAssert(m_handle != InvalidHandle);
 		auto r = ::setsockopt(m_handle,
 							  a_level,
 							  a_optname,
@@ -492,7 +534,7 @@ namespace asd
 					   OUT void* a_optval,
 					   INOUT uint32_t& a_optlen) const asd_noexcept
 	{
-		assert(m_handle != InvalidHandle);
+		asd_DAssert(m_handle != InvalidHandle);
 		auto r = ::getsockopt(m_handle,
 							  a_level,
 							  a_optname,
@@ -537,7 +579,7 @@ namespace asd
 	Socket::Error
 	Socket::SetSockOpt_UseNagle(IN bool a_set) asd_noexcept
 	{
-		assert(m_socketType == Type::TCP);
+		asd_DAssert(m_socketType == Type::TCP);
 
 		int set = !a_set;
 		return SetSockOpt(IPPROTO_TCP,
@@ -551,7 +593,7 @@ namespace asd
 	Socket::Error
 	Socket::GetSockOpt_UseNagle(OUT bool& a_result) const asd_noexcept
 	{
-		assert(m_socketType == Type::TCP);
+		asd_DAssert(m_socketType == Type::TCP);
 
 		int result;
 		uint32_t size = sizeof(result);
@@ -660,7 +702,7 @@ namespace asd
 	Socket::Error 
 	Socket::SetNonblock(IN bool a_nonblock) asd_noexcept
 	{
-		assert(m_handle != InvalidHandle);
+		asd_DAssert(m_handle != InvalidHandle);
 
 #if defined(asd_Platform_Windows)
 		Error ret = 0;
@@ -693,7 +735,7 @@ namespace asd
 	Socket::Error 
 	Socket::CheckNonblock(OUT bool& a_result) const asd_noexcept
 	{
-		assert(m_handle != InvalidHandle);
+		asd_DAssert(m_handle != InvalidHandle);
 
 #if defined(asd_Platform_Windows)
 		a_result = m_nonblock;
@@ -712,54 +754,89 @@ namespace asd
 
 	// getxxxxname 함수의 인자 타입이 플랫폼이나 컴파일러마다 너무 제각각이라서
 	// 템플릿함수 대신 매크로함수를 사용
-#define asd_GetIpAddress_Internal(getxxxxname, AddrType, a_sock, a_addr)					\
-	{																						\
-		AddrType addr;																		\
-		socklen_t len = sizeof(AddrType);													\
-		if (getxxxxname(a_sock, (sockaddr*)&addr, &len) != 0) {								\
-			return GetErrorNumber();														\
-		}																					\
-		a_addr = addr;																		\
-	}																						\
+//#define asd_GetIpAddress_Internal(getxxxxname, AddrType, a_sock, a_addr)					\
+//	{																						\
+//		AddrType addr;																		\
+//		socklen_t len = sizeof(AddrType);													\
+//		if (getxxxxname(a_sock, (sockaddr*)&addr, &len) != 0) {								\
+//			return GetErrorNumber();														\
+//		}																					\
+//		a_addr = addr;																		\
+//	}																						\
+//
+//#define asd_GetIpAddress_Case(getxxxxname, a_sock, a_addrFam, a_addr)						\
+//	{																						\
+//		asd_DAssert(a_sock != Socket::InvalidHandle);										\
+//																							\
+//		Socket::Error ret = 0;																\
+//		switch (a_addrFam) {																\
+//			case AddressFamily::IPv4: {														\
+//				asd_GetIpAddress_Internal(getxxxxname,										\
+//										  sockaddr_in,										\
+//										  a_sock,											\
+//										  a_addr);											\
+//				break;																		\
+//			}																				\
+//			case AddressFamily::IPv6: {														\
+//				asd_GetIpAddress_Internal(getxxxxname,										\
+//										  sockaddr_in6,										\
+//										  a_sock,											\
+//										  a_addr);											\
+//				break;																		\
+//			}																				\
+//			default: {																		\
+//				bool AF_Valid = false;														\
+//				asd_DAssert(AF_Valid);														\
+//				break;																		\
+//			}																				\
+//		}																					\
+//		return ret;																			\
+//	}																						\
 
-#define asd_GetIpAddress_Case(getxxxxname, a_sock, a_addrFam, a_addr)						\
-	{																						\
-		assert(a_sock != Socket::InvalidHandle);											\
-																							\
-		Socket::Error ret = 0;																\
-		switch (a_addrFam) {																\
-			case AddressFamily::IPv4: {														\
-				asd_GetIpAddress_Internal(getxxxxname,										\
-										  sockaddr_in,										\
-										  a_sock,											\
-										  a_addr);											\
-				break;																		\
-			}																				\
-			case AddressFamily::IPv6: {														\
-				asd_GetIpAddress_Internal(getxxxxname,										\
-										  sockaddr_in6,										\
-										  a_sock,											\
-										  a_addr);											\
-				break;																		\
-			}																				\
-			default: {																		\
-				bool AF_Valid = false;														\
-				assert(AF_Valid);															\
-				break;																		\
-			}																				\
-		}																					\
-		return ret;																			\
-	}																						\
+
+	template <typename Func>
+	Socket::Error
+	GetIpAddress(IN Func a_getxxxxname,
+				 IN Socket::Handle a_sock,
+				 OUT IpAddress& a_addr)
+	{
+		asd_DAssert(a_sock != Socket::InvalidHandle);
+
+		uint8_t buf[sizeof(sockaddr_in6) * 2];
+		sockaddr* addr = (sockaddr*)buf;
+		socklen_t len = sizeof(buf);
+		if (0 != a_getxxxxname(a_sock, addr, &len))
+			return GetErrorNumber();
+
+		switch (addr->sa_family) {
+			case AF_INET: {
+				auto cast = (sockaddr_in*)addr;
+				a_addr = *cast;
+				break;
+			}
+			case AF_INET6: {
+				auto cast = (sockaddr_in6*)addr;
+				a_addr = *cast;
+				break;
+			}
+			default:
+				asd_RAssert(false, "unknown address family, {}", addr->sa_family);
+				return -1;
+		}
+		return 0;
+	}
+
 
 
 
 	Socket::Error 
 	Socket::GetSockName(OUT IpAddress& a_addr) const asd_noexcept
 	{
-		asd_GetIpAddress_Case(::getsockname,
-							  m_handle,
-							  m_addressFamily,
-							  a_addr);
+		return GetIpAddress(::getsockname, m_handle, a_addr);
+		//asd_GetIpAddress_Case(::getsockname,
+		//					  m_handle,
+		//					  m_addressFamily,
+		//					  a_addr);
 	}
 
 
@@ -767,10 +844,11 @@ namespace asd
 	Socket::Error 
 	Socket::GetPeerName(OUT IpAddress& a_addr) const asd_noexcept
 	{
-		asd_GetIpAddress_Case(::getpeername,
-							  m_handle,
-							  m_addressFamily,
-							  a_addr);
+		return GetIpAddress(::getpeername, m_handle, a_addr);
+		//asd_GetIpAddress_Case(::getpeername,
+		//					  m_handle,
+		//					  m_addressFamily,
+		//					  a_addr);
 	}
 
 
@@ -789,7 +867,7 @@ namespace asd
 	void
 	EasySocket::Bind(IN const IpAddress& a_addr)
 	{
-		assert(m_socket != nullptr);
+		asd_DAssert(m_socket != nullptr);
 
 		auto e = m_socket->Bind(a_addr);
 		if (e != 0) {
@@ -802,7 +880,7 @@ namespace asd
 	void
 	EasySocket::Listen(IN int a_backlog /*= 1024*/)
 	{
-		assert(m_socket != nullptr);
+		asd_DAssert(m_socket != nullptr);
 
 		auto e = m_socket->Listen(a_backlog);
 		if (e != 0) {
@@ -816,7 +894,7 @@ namespace asd
 	EasySocket::Accept(OUT Socket& a_newbe,
 					   OUT IpAddress& a_address)
 	{
-		assert(m_socket != nullptr);
+		asd_DAssert(m_socket != nullptr);
 
 		auto e = m_socket->Accept(a_newbe, a_address);
 		if (e != 0) {
@@ -829,7 +907,7 @@ namespace asd
 	void
 	EasySocket::Connect(IN const IpAddress& a_dest)
 	{
-		assert(m_socket != nullptr);
+		asd_DAssert(m_socket != nullptr);
 
 		auto e = m_socket->Connect(a_dest);
 		if (e != 0) {
@@ -843,7 +921,7 @@ namespace asd
 	EasySocket::Send(IN const Buffer& a_buffer,
 					 IN int a_flags /*= 0*/)
 	{
-		assert(m_socket != nullptr);
+		asd_DAssert(m_socket != nullptr);
 
 		auto e = m_socket->Send(a_buffer.data(), 
 								a_buffer.size(), 
@@ -860,7 +938,7 @@ namespace asd
 					   IN const IpAddress& a_dest,
 					   IN int a_flags /*= 0*/)
 	{
-		assert(m_socket != nullptr);
+		asd_DAssert(m_socket != nullptr);
 
 		auto e = m_socket->SendTo(a_buffer.data(),
 								  a_buffer.size(),
@@ -879,7 +957,7 @@ namespace asd
 					 IN int a_flags /*= 0*/,
 					 IN int a_recvComplete /*= -1*/)
 	{
-		assert(m_socket != nullptr);
+		asd_DAssert(m_socket != nullptr);
 
 		Socket::IoResult r;
 		a_buffer.clear();
@@ -906,7 +984,7 @@ namespace asd
 						 OUT IpAddress& a_src,
 						 IN int a_flags /*= 0*/)
 	{
-		assert(m_socket != nullptr);
+		asd_DAssert(m_socket != nullptr);
 
 		Socket::IoResult r;
 		a_buffer.clear();

@@ -215,75 +215,7 @@ namespace asdtest_socket
 
 	void TCP_NonBlocked(asd::AddressFamily af)
 	{
-		struct ServerSideSocket;
-		typedef std::shared_ptr<ServerSideSocket> ServerSideSocket_ptr;
-		struct Clients
-		{
-			asd::Mutex lock;
-			std::unordered_map<uintptr_t, ServerSideSocket_ptr> list;
-		} clients;
 
-		struct ServerSideSocket : public asd::AsyncSocket
-		{
-			Clients* clients = nullptr;
-			bool registered  = false; // clients에 등록되어있는지 여부
-
-			ServerSideSocket(Clients* clients_ptr, asd::AddressFamily af)
-				: clients(clients_ptr), asd::AsyncSocket(asd::Socket::Type::TCP, af)
-			{
-			}
-
-			ServerSideSocket(Clients* clients_ptr, asd::AsyncSocket&& a_newSock)
-				: clients(clients_ptr), asd::AsyncSocket(std::move(a_newSock))
-			{
-			}
-
-			virtual void OnAccept(asd::AsyncSocket&& a_newSock) asd_noexcept override
-			{
-				ASSERT_FALSE(registered);
-				auto lock = asd::GetLock(clients->lock);
-				ServerSideSocket_ptr newSock(new ServerSideSocket(clients, std::move(a_newSock)));
-				ASSERT_TRUE(clients->list.emplace(newSock->GetID(), newSock).second);
-			}
-
-			virtual void OnRecv(asd::Buffer_ptr&& a_data) asd_noexcept override
-			{
-				auto lock = asd::GetLock(clients->lock);
-				ASSERT_TRUE(registered);
-				ASSERT_TRUE(clients->list.find(GetID()) != clients->list.end());
-				lock.unlock();
-				ASSERT_TRUE(Send(std::move(a_data)));
-			}
-
-			virtual void OnClose(asd::Socket::Error a_err) asd_noexcept override
-			{
-				EXPECT_EQ(0, a_err);
-				auto lock = asd::GetLock(clients->lock);
-				auto e = clients->list.erase(GetID());
-				if (registered)
-					ASSERT_EQ(1, e);
-				else
-					ASSERT_EQ(0, e);
-				registered = false;
-			}
-
-			virtual ~ServerSideSocket()
-			{
-				EXPECT_FALSE(registered);
-				auto lock = asd::GetLock(clients->lock);
-				EXPECT_EQ(0, clients->list.erase(GetID()));
-			}
-		};
-
-		asd::IOEvent io;
-		asd::Semaphore sync;
-		asd::IpAddress addr;
-		asd::AsyncSocket listener(asd::Socket::Type::TCP, af);
-		ASSERT_TRUE(io.Register(listener));
-		ASSERT_TRUE(listener.Listen(asd::IpAddress(Addr_Any(af))));
-		ASSERT_EQ(0, listener.CastToSocket().GetSockName(addr));
-
-		asd::AsyncSocket client(asd::Socket::Type::TCP, af);
 	}
 
 	void UDP_NonBlocked(asd::AddressFamily af)

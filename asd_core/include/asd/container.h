@@ -27,7 +27,9 @@ namespace asd
 			inline void clear()
 			{
 				auto lock = GetLock();
-				BaseContainer::clear();
+				BaseContainer temp = std::move(*this);
+				lock.unlock();
+				temp.clear();
 			}
 
 			virtual ~Container()

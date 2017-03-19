@@ -22,6 +22,7 @@ namespace asd
 		bool RECYCLE = false,
 		size_t HEADER_SIZE = 0
 	> class ObjectPool
+		: public HasMagicCode< ObjectPool<OBJECT_TYPE, MUTEX_TYPE, RECYCLE, HEADER_SIZE> >
 	{
 	public:
 		using Object	= OBJECT_TYPE;
@@ -83,6 +84,12 @@ namespace asd
 		{
 			if (a_obj == nullptr)
 				return true;
+
+			if (IsValidMagicCode() == false) {
+				a_obj->~OBJECT_TYPE();
+				FreeMemory(a_obj);
+				return false;
+			}
 
 			if (Recycle == false)
 				a_obj->~OBJECT_TYPE();
@@ -177,7 +184,6 @@ namespace asd
 			::operator delete(block);
 		}
 
-
 		const size_t m_limitCount;
 		std::stack<Object*> m_pool;
 		Mutex m_lock;
@@ -193,6 +199,7 @@ namespace asd
 		bool RECYCLE = false,
 		size_t HEADER_SIZE = 0
 	> class ObjectPool2
+		: public HasMagicCode< ObjectPool2<OBJECT_TYPE, RECYCLE, HEADER_SIZE> >
 	{
 	public:
 		using Object = OBJECT_TYPE;
@@ -202,17 +209,10 @@ namespace asd
 		static constexpr bool Recycle = RECYCLE;
 		static constexpr size_t HeaderSize = HEADER_SIZE;
 
-		inline static const size_t Sign()
-		{
-			static const size_t g_sign = typeid(ThisType).hash_code();
-			return g_sign;
-		}
-
-
 	private:
 		struct Node final
+			: public HasMagicCode<Node>
 		{
-			const size_t				m_sign = ThisType::Sign();
 			const std::atomic<int>*		m_popContention = nullptr;
 			bool						m_init = false;
 			Node*						m_next = nullptr;
@@ -282,6 +282,13 @@ namespace asd
 
 			const size_t offset = offsetof(Node, m_data);
 			Node* node = (Node*)((uint8_t*)a_obj - offset);
+
+			if (IsValidMagicCode() == false) {
+				asd_ChkErrAndRetVal(!node->IsValidMagicCode(), false, "invaild Node pointer");
+				a_obj->~OBJECT_TYPE();
+				delete node;
+				return false;
+			}
 
 			if (Recycle == false && node->m_init)
 				a_obj->~OBJECT_TYPE();
@@ -398,8 +405,7 @@ namespace asd
 		bool PushNode(IN Node* a_node)
 		{
 			asd_DAssert(a_node != nullptr);
-			if (a_node->m_sign != Sign())
-				asd_RaiseException("invaild Node pointer");
+			asd_ChkErrAndRetVal(!a_node->IsValidMagicCode(), false, "invaild Node pointer");
 
 			a_node->SafeWait(&m_popContention);
 			if (++m_pooledCount > m_limitCount) {

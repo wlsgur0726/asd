@@ -66,6 +66,32 @@ namespace asd
 
 
 	template <typename T>
+	class HasMagicCode
+	{
+	public:
+		virtual ~HasMagicCode() asd_noexcept
+		{
+			m_magicCode = nullptr;
+		}
+
+		static const char* GetMagicCode() asd_noexcept
+		{
+			static const char* s_magicCode = typeid(T).name();
+			return s_magicCode;
+		}
+
+		inline bool IsValidMagicCode() const asd_noexcept
+		{
+			return m_magicCode == GetMagicCode();
+		}
+
+	protected:
+		const char* m_magicCode = GetMagicCode();
+	};
+
+
+
+	template <typename T>
 	inline T& Default()
 	{
 		static T s_default;

@@ -18,11 +18,18 @@ namespace asd
 
 #if asd_Compiler_MSVC
 	MString g_currentFileName;
+	HANDLE g_currentProcessHandle = NULL;
 
 	struct Init
 	{
 		Init()
 		{
+			g_currentProcessHandle = ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, ::GetCurrentProcessId());
+			if (g_currentProcessHandle == NULL) {
+				auto e = ::GetLastError();
+				std::terminate();
+			}
+
 			// 실행파일과 pdb파일이 같은 경로에 있다고 가정
 			wchar_t buf[4096];
 			::GetModuleFileNameW(NULL, buf, sizeof(buf)/sizeof(buf[0]));
@@ -39,12 +46,19 @@ namespace asd
 			size_t cut = path.size() - del;
 			path.resize(cut);
 
-
-			if (FALSE == ::SymInitializeW(::GetCurrentProcess(), path.c_str(), TRUE)) {
+			if (FALSE == ::SymInitializeW(g_currentProcessHandle, path.c_str(), TRUE)) {
 				auto e = ::GetLastError();
 				std::terminate();
 			}
 			::SymSetOptions(SYMOPT_LOAD_LINES);
+		}
+
+		~Init()
+		{
+			if (g_currentProcessHandle == NULL)
+				return;
+			::SymCleanup(g_currentProcessHandle);
+			::CloseHandle(g_currentProcessHandle);
 		}
 	} g_init;
 
@@ -53,7 +67,6 @@ namespace asd
 	{
 		thread_local std::vector<void*> frames;
 		frames.resize(a_count);
-		auto process = ::GetCurrentProcess();
 		auto frameCount = ::CaptureStackBackTrace(a_skip+1, a_count, frames.data(), NULL);
 
 		for (int i=0; i<frameCount; ++i) {
@@ -63,7 +76,7 @@ namespace asd
 
 			symbol->MaxNameLen = MAX_SYM_NAME;
 			symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-			if (FALSE == ::SymFromAddr(process, (DWORD64)(frames[i]), 0, symbol)) {
+			if (FALSE == ::SymFromAddr(g_currentProcessHandle, (DWORD64)(frames[i]), 0, symbol)) {
 				auto e = ::GetLastError();
 				frame.Function = g_unknown;
 				frame.Module = g_unknown;
@@ -75,7 +88,7 @@ namespace asd
 
 			DWORD d;
 			IMAGEHLP_LINE64 line;
-			if (FALSE == ::SymGetLineFromAddr64(process, (DWORD64)(frames[i]), &d, &line)) {
+			if (FALSE == ::SymGetLineFromAddr64(g_currentProcessHandle, (DWORD64)(frames[i]), &d, &line)) {
 				auto e = ::GetLastError();
 				frame.File = g_unknown;
 				frame.Line = 0;

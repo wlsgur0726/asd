@@ -40,7 +40,7 @@ namespace asd
 		{
 #if defined (asd_Platform_Windows)
 			auto r = InitializeCriticalSectionAndSpinCount(&m_mtx, 5);
-			assert(r != 0);
+			asd_DAssert(r != 0);
 #else
 			pthread_mutexattr_t attr;
 			if (pthread_mutexattr_init(&attr) != 0) {
@@ -62,12 +62,12 @@ namespace asd
 		~MutexData() asd_noexcept
 		{
 #if defined (asd_Platform_Windows)
-			assert(m_mtx.RecursionCount == 0);
-			assert(m_mtx.OwningThread == 0);
+			asd_DAssert(m_mtx.RecursionCount == 0);
+			asd_DAssert(m_mtx.OwningThread == 0);
 			DeleteCriticalSection(&m_mtx);
 #else
-			assert(m_recursionCount == 0);
-			assert(m_ownerThread == 0);
+			asd_DAssert(m_recursionCount == 0);
+			asd_DAssert(m_ownerThread == 0);
 			if (pthread_mutex_destroy(&m_mtx) != 0) {
 				auto e = errno;
 				asd_RaiseException("fail pthread_mutex_destroy(), errno:{}", e);
@@ -94,7 +94,7 @@ namespace asd
 
 	Mutex& Mutex::operator = (MOVE Mutex&& a_rval)
 	{
-		m_data.swap(a_rval.m_data);
+		m_data = std::move(a_rval.m_data);
 		return *this;
 	}
 
@@ -111,7 +111,7 @@ namespace asd
 
 	void Mutex::lock()
 	{
-		assert(m_data != nullptr);
+		asd_DAssert(m_data != nullptr);
 		
 #if defined (asd_Platform_Windows)
 		EnterCriticalSection(&m_data->m_mtx);
@@ -124,7 +124,7 @@ namespace asd
 		
 		if (++m_data->m_recursionCount == 1)
 			m_data->m_ownerThread = GetCurrentThreadID();
-		assert(m_data->m_ownerThread == GetCurrentThreadID());
+		asd_DAssert(m_data->m_ownerThread == GetCurrentThreadID());
 
 #endif
 	}
@@ -133,7 +133,7 @@ namespace asd
 
 	bool Mutex::try_lock()
 	{
-		assert(m_data != nullptr);
+		asd_DAssert(m_data != nullptr);
 
 #if defined (asd_Platform_Windows)
 		return TryEnterCriticalSection(&m_data->m_mtx) != 0;
@@ -149,7 +149,7 @@ namespace asd
 		
 		if (++m_data->m_recursionCount == 1)
 			m_data->m_ownerThread = GetCurrentThreadID();
-		assert(m_data->m_ownerThread == GetCurrentThreadID());
+		asd_DAssert(m_data->m_ownerThread == GetCurrentThreadID());
 		return true;
 
 #endif
@@ -159,13 +159,13 @@ namespace asd
 
 	void Mutex::unlock()
 	{
-		assert(m_data != nullptr);
+		asd_DAssert(m_data != nullptr);
 
 #if defined (asd_Platform_Windows)
 		LeaveCriticalSection(&m_data->m_mtx);
 
 #else
-		assert(m_data->m_ownerThread == GetCurrentThreadID());
+		asd_DAssert(m_data->m_ownerThread == GetCurrentThreadID());
 		if (--m_data->m_recursionCount == 0)
 			m_data->m_ownerThread = 0;
 
