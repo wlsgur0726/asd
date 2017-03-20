@@ -215,13 +215,13 @@ namespace asdtest_objpool
 					// 3-1. 풀에서부터 할당
 					for (int i=0; i<TestCount; ++i) {
 						objs[i] = shardSet.Alloc();
-						auto shard = *shardSet.GetHeader<size_t>(objs[i]);
+						auto shard = *shardSet.template GetHeader<size_t>(objs[i]);
 						t_Counter[shard].Alloc++;
 					}
 
 					// 3-2. 할당받았던 것들을 풀에 반납
 					for (int i=0; i<TestCount; ++i) {
-						auto shard = *shardSet.GetHeader<size_t>(objs[i]);
+						auto shard = *shardSet.template GetHeader<size_t>(objs[i]);
 						t_Counter[shard].Free++;
 						shardSet.Free(objs[i]);
 					}

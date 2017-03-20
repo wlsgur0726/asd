@@ -63,7 +63,7 @@ namespace asd
 			if (a_obj == nullptr)
 				return Null;
 
-			ObjHeader* header = PoolType::GetHeader<ObjHeader>(a_obj);
+			ObjHeader* header = PoolType::template GetHeader<ObjHeader>(a_obj);
 			if (header->IsValidMagicCode() == false)
 				return Null;
 
@@ -109,7 +109,7 @@ namespace asd
 				added = Manager::Instance().Insert(m_id, obj);
 			} while (!added);
 
-			ObjHeader* header = PoolType::GetHeader<ObjHeader>(obj.get());
+			ObjHeader* header = PoolType::template GetHeader<ObjHeader>(obj.get());
 			new(header) ObjHeader(); // init MagicCode
 			header->ID = m_id;
 			return obj;

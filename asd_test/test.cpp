@@ -63,7 +63,8 @@ struct TestClient
 	asd::Semaphore m_sync;
 	TestClient()
 	{
-		asd_RAssert(g_clientEvent.Register(m_socket.Alloc()), "");
+		auto sock = m_socket.Alloc();
+		asd_RAssert(g_clientEvent.Register(sock), "");
 
 		std::thread t([]()
 		{
@@ -89,7 +90,7 @@ struct TestServer
 			auto sock = m_socket.Alloc();
 			asd_RAssert(g_serverEvent.Register(sock), "");
 
-			//asd_RAssert(0 == sock->SetSockOpt_ReuseAddr(true), "");
+			asd_RAssert(0 == sock->SetSockOpt_ReuseAddr(true), "");
 
 			asd_RAssert(sock->Listen(asd::IpAddress("0.0.0.0", Port), 1024), "");
 
@@ -118,7 +119,7 @@ void ClientEvent::Sync(asd::AsyncSocket* a_sock)
 void ClientEvent::OnConnect(asd::AsyncSocket* a_sock,
 							asd::Socket::Error a_err) asd_noexcept
 {
-	printf("%s\n", __FUNCTION__);
+	PRINTF("{}\n", asd_MakeDebugInfo("").ToString());
 	Sync(a_sock);
 }
 
@@ -128,14 +129,14 @@ void ClientEvent::OnRecv(asd::AsyncSocket* a_sock,
 {
 	auto p = a_data->GetBuffer();
 	auto sz = a_data->GetSize();
-	printf("%s\n", __FUNCTION__);
+	PRINTF("{}\n", asd_MakeDebugInfo("").ToString());
 	Sync(a_sock);
 }
 
 void ClientEvent::OnClose(IN asd::AsyncSocket* a_sock,
 						  IN asd::Socket::Error a_err) asd_noexcept
 {
-	printf("%s\n", __FUNCTION__);
+	PRINTF("{}\n", asd_MakeDebugInfo("").ToString());
 	auto handle = asd::AsyncSocketHandle::GetHandle(a_sock);
 	auto lock = asd::GetLock(m_lock);
 	m_clients.erase(handle);
@@ -161,7 +162,7 @@ void ClientEvent::Stop()
 void ServerEvent::OnAccept(asd::AsyncSocket* a_listener,
 						   asd::AsyncSocket_ptr&& a_newSock) asd_noexcept
 {
-	printf("%s\n", __FUNCTION__);
+	PRINTF("{}\n", asd_MakeDebugInfo("").ToString());
 	asd_RAssert(Register(a_newSock), "");
 
 	auto lock = asd::GetLock(m_lock);
@@ -175,14 +176,14 @@ void ServerEvent::OnRecv(asd::AsyncSocket* a_sock,
 {
 	auto p = a_data->GetBuffer();
 	auto sz = a_data->GetSize();
-	printf("%s\n", __FUNCTION__);
+	PRINTF("{}\n", asd_MakeDebugInfo("").ToString());
 	a_sock->Send(std::move(a_data));
 }
 
 void ServerEvent::OnClose(asd::AsyncSocket* a_sock,
 						  asd::Socket::Error a_err) asd_noexcept
 {
-	printf("%s\n", __FUNCTION__);
+	PRINTF("{}\n", asd_MakeDebugInfo("").ToString());
 	auto handle = asd::AsyncSocketHandle::GetHandle(a_sock);
 	auto lock = asd::GetLock(m_lock);
 	m_clients.erase(handle);
@@ -209,6 +210,7 @@ void Test()
 {
 	//return;
 	{
+		PRINTF("start\n");
 		g_clientEvent.Start();
 		g_serverEvent.Start();
 
@@ -216,7 +218,7 @@ void Test()
 
 		g_sync.Wait();
 
-		PRINTF("Connect...\n");
+		PRINTF("connect...\n");
 
 		std::shared_ptr<TestClient> client(new TestClient);
 		auto clisock = client->m_socket.GetObj();
@@ -239,6 +241,7 @@ void Test()
 
 		g_run = false;
 
+		PRINTF("stop\n");
 		g_clientEvent.Stop();
 		g_serverEvent.Stop();
 		asd::AsyncSocketHandle::AllClear();

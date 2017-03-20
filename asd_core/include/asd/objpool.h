@@ -525,7 +525,7 @@ namespace asd
 		template <typename CAST>
 		inline static CAST* GetHeader(IN Object* a_obj) asd_noexcept
 		{
-			return Pool::GetHeader<CAST>(a_obj);
+			return Pool::template GetHeader<CAST>(a_obj);
 		}
 
 
@@ -549,7 +549,7 @@ namespace asd
 
 		inline static ShardSetHeader* GetShardSetHeader(IN Object* a_obj) asd_noexcept
 		{
-			auto block = Pool::GetHeader<uint8_t>(a_obj);
+			auto block = Pool::template GetHeader<uint8_t>(a_obj);
 			return (ShardSetHeader*)(block + OrgHeaderSize);
 		}
 

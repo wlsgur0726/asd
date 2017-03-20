@@ -17,6 +17,7 @@
 #	include <sys/socket.h>
 #	include <sys/uio.h>
 #	include <limits.h>
+#	include <sys/eventfd.h>
 #
 #endif
 
@@ -66,7 +67,7 @@ namespace asd
 
 	struct EventInfo final
 	{
-		AsyncSocket_ptr m_socket = nullptr;
+		AsyncSocket_ptr m_socket;
 		bool m_timeout = false;
 		bool m_onEvent = false;
 		bool m_onSignal = false;
@@ -776,6 +777,7 @@ namespace asd
 		static const int ObjCntPerPoll = 1;
 		static const uint32_t DefaultPollOptions = EPOLLONESHOT;
 		int m_epoll = -1;
+		int m_eventfd = -1;
 
 
 		IOEventInternal_EPOLL(IN uint32_t a_threadCount,
@@ -783,9 +785,27 @@ namespace asd
 			: IOEventInternal(a_threadCount, a_event)
 		{
 			m_epoll = ::epoll_create(ObjCntPerPoll);
-			if (0 > m_epoll) {
+			if (m_epoll == -1) {
 				auto e = errno;
 				asd_RaiseException("fail epoll_create, errno:{}", e);
+			}
+
+			m_eventfd = ::eventfd(EFD_SEMAPHORE, 0);
+			if (m_eventfd == -1) {
+				auto e = errno;
+				asd_RaiseException("fail eventfd, errno:{}", e);
+			}
+
+			epoll_event ev;
+			ev.data.ptr = (void*)AsyncSocketHandle::Null;
+			ev.events = EPOLLIN;
+			auto r = ::epoll_ctl(m_epoll,
+								 EPOLL_CTL_ADD,
+								 m_eventfd,
+								 &ev);
+			if (r != 0) {
+				auto e = errno;
+				asd_RaiseException("fail epoll_ctl, errno:{}", e);
 			}
 			StartThread();
 		}
@@ -801,10 +821,10 @@ namespace asd
 
 
 
-		virtual bool Register(REF AsyncSocketNative* a_sock) asd_noexcept override
+		virtual bool Register(REF AsyncSocket* a_sock) asd_noexcept override
 		{
 			epoll_event ev;
-			ev.data.ptr = (void*)a_sock->m_id;
+			ev.data.ptr = (void*)AsyncSocketHandle::GetID(a_sock);
 			ev.events = DefaultPollOptions | EPOLLIN;
 			auto r = ::epoll_ctl(m_epoll,
 								 EPOLL_CTL_ADD,
@@ -829,13 +849,20 @@ namespace asd
 
 
 
-		virtual bool PostSignal(IN AsyncSocketNative* a_sock) asd_noexcept override
+		virtual bool PostSignal(IN AsyncSocket* a_sock) asd_noexcept override
 		{
-			if (a_sock == nullptr)
-				return false;
+			if (a_sock == nullptr) {
+				uint64_t wakeup = 1;
+				if (sizeof(wakeup) != ::write(m_eventfd, &wakeup, sizeof(wakeup))) {
+					auto e = errno;
+					asd_RAssert(false, "fail write to m_eventfd, errno:{}", e);
+					return false;
+				}
+				return true;
+			}
 
 			epoll_event ev;
-			ev.data.ptr = (void*)a_sock->m_id;
+			ev.data.ptr = (void*)AsyncSocketHandle::GetID(a_sock);
 			ev.events = DefaultPollOptions | EPOLLOUT;
 			auto r = ::epoll_ctl(m_epoll,
 								 EPOLL_CTL_MOD,
@@ -859,13 +886,19 @@ namespace asd
 								  1,
 								  a_timeoutMs);
 			if (r > 0) {
-				auto id = (uintptr_t)a_event.m_epollEvent.data.ptr;
-				auto ioLock = GetLock(m_ioLock);
-				auto it = m_sockets.find(id);
-				if (it == m_sockets.end())
+				auto id = (AsyncSocketHandle::ID)a_event.m_epollEvent.data.ptr;
+				if (id == AsyncSocketHandle::Null) {
+					uint64_t wakeup;
+					if (sizeof(wakeup) != ::read(m_eventfd, &wakeup, sizeof(wakeup))) {
+						auto e = errno;
+						asd_RAssert(false, "fail read from m_eventfd, errno:{}", e);
+						return false;
+					}
 					return true;
-				a_event.m_socket = it->second;
-				ioLock.unlock();
+				}
+				a_event.m_socket = AsyncSocketHandle(id).GetObj();
+				if (a_event.m_socket == nullptr)
+					return true;
 				if (a_event.m_socket->m_state == AsyncSocket::State::Connecting)
 					a_event.m_onEvent = a_event.m_epollEvent.events & EPOLLOUT;
 				else {
@@ -888,31 +921,32 @@ namespace asd
 
 
 
-		bool GetSocketError(IN AsyncSocketNative* sock,
-							OUT int& a_err) asd_noexcept
+		int GetSocketError(IN AsyncSocket* a_sock) asd_noexcept
 		{
-			a_err = 0;
-			socklen_t errlen = sizeof(a_err);
-			int r = ::getsockopt(sock->GetNativeHandle(),
+			int err = 0;
+			socklen_t errlen = sizeof(err);
+			int r = ::getsockopt(a_sock->GetNativeHandle(),
 								 SOL_SOCKET,
 								 SO_ERROR,
-								 &a_err,
+								 &err,
 								 &errlen);
-			if (r != 0)
-				a_err = errno;
-			return r == 0;
+			if (r != 0) {
+				err = errno;
+				if (err == 0)
+					err = -1;
+			}
+			return err;
 		}
 
 
 
 		virtual void ProcEvent(REF EventInfo& a_event) asd_noexcept override
 		{
-			AsyncSocketNative* sock = a_event.m_socket.get();
+			AsyncSocket* sock = a_event.m_socket.get();
 
 			// error
 			if (EPOLLERR & a_event.m_epollEvent.events) {
-				int e;
-				bool r = GetSocketError(sock, e);
+				int e = GetSocketError(sock);
 				switch (e) {
 					default:
 						asd_RAssert(false, "unknown socket error, errno:{}", e);
@@ -927,13 +961,11 @@ namespace asd
 			// connected
 			if (a_event.m_socket->m_state == AsyncSocket::State::Connecting) {
 				asd_RAssert(EPOLLOUT & a_event.m_epollEvent.events, "unknown logic error");
-				int e;
-				bool r = GetSocketError(sock, e);
+				int e = GetSocketError(sock);
 				if (e == 0) {
 					a_event.m_socket->m_state = AsyncSocket::State::Connected;
 					sock->m_recvBuffer = NewBuffer<asd_BufferList_DefaultReadBufferSize>();
-					if (sock->m_interface != nullptr)
-						sock->m_interface->OnConnect(0);
+					m_event->OnConnect(sock, 0);
 				}
 				else {
 					switch (e) {
@@ -943,8 +975,7 @@ namespace asd
 					}
 					sock->m_lastError = e;
 					sock->m_state = AsyncSocket::State::None;
-					if (sock->m_interface != nullptr)
-						sock->m_interface->OnConnect(e);
+					m_event->OnConnect(sock, e);
 				}
 				return;
 			}
@@ -960,8 +991,8 @@ namespace asd
 					// success
 					auto recvedData = std::move(sock->m_recvBuffer);
 					asd_RAssert(recvedData->SetSize(r), "fail recvedData->SetSize({})", r);
-					if (sock->m_interface != nullptr)
-						sock->m_interface->OnRecv(std::move(recvedData));
+					m_event->OnRecv(sock, std::move(recvedData));
+
 					// 유저 콜백 호출 후
 					if (sock->m_state == AsyncSocket::State::Connected)
 						sock->m_recvBuffer = NewBuffer<asd_BufferList_DefaultReadBufferSize>();
@@ -996,15 +1027,14 @@ namespace asd
 
 			// listen
 			while (sock->m_state == AsyncSocket::State::Listening) {
-				AsyncSocket newSock;
+				auto newSock = AsyncSocketHandle().Alloc();
 				IpAddress addr;
-				auto e = sock->Accept(newSock.CastToSocket(), addr);
+				auto e = sock->Accept(*newSock, addr);
 				switch (e) {
 					case 0:
-						newSock.m_internal->m_state = AsyncSocket::State::Connected;
-						newSock.m_internal->m_recvBuffer = NewBuffer<asd_BufferList_DefaultReadBufferSize>();
-						if (sock->m_interface != nullptr)
-							sock->m_interface->OnAccept(std::move(newSock));
+						newSock->m_state = AsyncSocket::State::Connected;
+						newSock->m_recvBuffer = NewBuffer<asd_BufferList_DefaultReadBufferSize>();
+						m_event->OnAccept(sock, std::move(newSock));
 						return;
 					case EAGAIN:
 						return;
@@ -1023,13 +1053,13 @@ namespace asd
 
 
 
-		virtual int Connect(REF AsyncSocketNative* a_sock,
+		virtual int Connect(REF AsyncSocket* a_sock,
 							IN const IpAddress& a_dest) asd_noexcept override
 		{
 			if (PostSignal(a_sock) == false)
 				return -1;
 
-			int e = a_sock->Connect(a_dest);
+			int e = a_sock->Socket::Connect(a_dest);
 			switch (e) {
 				case 0:
 					asd_RAssert(false, "??");
@@ -1042,7 +1072,7 @@ namespace asd
 
 
 
-		virtual int Listen(REF AsyncSocketNative* a_sock) asd_noexcept override
+		virtual int Listen(REF AsyncSocket* a_sock) asd_noexcept override
 		{
 			// 딱히 할게 없음
 			return 0;
@@ -1050,7 +1080,7 @@ namespace asd
 
 
 
-		virtual int Send(REF AsyncSocketNative* a_sock) asd_noexcept override
+		virtual int Send(REF AsyncSocket* a_sock) asd_noexcept override
 		{
 			thread_local std::vector<iovec> t_iovec;
 			const size_t count = std::min(a_sock->m_sendQueue.size(), (size_t)IOV_MAX);
@@ -1094,7 +1124,7 @@ namespace asd
 
 
 
-		virtual void CloseSocket(REF AsyncSocketNative* a_sock,
+		virtual void CloseSocket(REF AsyncSocket* a_sock,
 								 IN bool a_hard = false) asd_noexcept override
 		{
 			if (a_sock->m_state == AsyncSocket::State::Closed)
@@ -1113,25 +1143,19 @@ namespace asd
 
 			a_sock->Close();
 			a_sock->m_state = AsyncSocket::State::Closed;
-			if (a_sock->m_interface != nullptr) {
-				a_sock->m_interface->OnClose(a_sock->m_lastError);
-				a_sock->m_interface = nullptr;
-			}
-
-			auto ioLock = GetLock(m_ioLock);
-			m_sockets.erase(a_sock->m_id);
+			m_event->OnClose(a_sock, a_sock->m_lastError);
 		}
 
 
 
-		virtual void Poll_Finally(REF AsyncSocketNative* a_sock) asd_noexcept override
+		virtual void Poll_Finally(REF AsyncSocket* a_sock) asd_noexcept override
 		{
 			if (a_sock->m_state == AsyncSocket::State::Closed)
 				return;
 
 			if (DefaultPollOptions & EPOLLONESHOT) {
 				epoll_event ev;
-				ev.data.ptr = (void*)a_sock->m_id;
+				ev.data.ptr = (void*)AsyncSocketHandle::GetID(a_sock);
 				ev.events = DefaultPollOptions | EPOLLIN;
 				if (a_sock->m_sendSignal)
 					ev.events |= EPOLLOUT;
