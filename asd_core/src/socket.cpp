@@ -51,14 +51,14 @@ namespace asd
 	}
 
 	inline void CloseSocket(const Socket::Handle& socket) {
-		Retry:
-		if (0 != ::closesocket(socket)) {
+		while (0 != ::closesocket(socket)) {
 			auto e = GetErrorNumber();
 			if (e == WSAEWOULDBLOCK) {
-				goto Retry;
 				::Sleep(0);
+				continue;
 			}
 			asd_RAssert(false, "fail closesocket, WSAGetLastError:{}", e);
+			break;
 		}
 	}
 
@@ -693,6 +693,23 @@ namespace asd
 							  size);
 		if (ret == 0) {
 			a_byte = result;
+		}
+		return ret;
+	}
+
+
+
+	Socket::Error
+	Socket::GetSockOpt_Error(OUT int& a_error) const asd_noexcept
+	{
+		int result;
+		uint32_t size = sizeof(result);
+		auto ret = GetSockOpt(SOL_SOCKET,
+							  SO_ERROR,
+							  &result,
+							  size);
+		if (ret == 0) {
+			a_error = result;
 		}
 		return ret;
 	}

@@ -38,11 +38,11 @@ namespace asd
 		struct IoResult {
 			int		m_bytes;
 			Error	m_error;
-			IoResult(IN int a_bytes = 0,
-					 IN Error a_error = 0)
-					 // init
-					 : m_bytes(a_bytes)
-					 , m_error(a_error)
+			inline IoResult(IN int a_bytes = 0,
+							IN Error a_error = 0)
+				// init
+				: m_bytes(a_bytes)
+				, m_error(a_error)
 			{
 			}
 		};
@@ -90,7 +90,7 @@ namespace asd
 		GetNativeHandle() const asd_noexcept;
 
 
-		void
+		virtual void
 		Close() asd_noexcept;
 
 
@@ -144,10 +144,12 @@ namespace asd
 		inline IoResult
 		Send(IN const void* a_buffer,
 			 IN SizeType a_bufferSize,
-			 IN int a_flags = 0)
+			 IN int a_flags = 0) asd_noexcept
 		{
-			if (a_bufferSize > std::numeric_limits<int>::max())
-				asd_RaiseException("size overflow");
+			asd_ChkErrAndRetVal(a_bufferSize > std::numeric_limits<int>::max(),
+								IoResult(0, -1),
+								"size overflow, a_bufferSize:{}",
+								a_bufferSize);
 			return Send(a_buffer,
 						(int)a_bufferSize,
 						a_flags);
@@ -165,10 +167,12 @@ namespace asd
 		SendTo(IN const void* a_buffer,
 			   IN SizeType a_bufferSize,
 			   IN const IpAddress& a_dest,
-			   IN int a_flags = 0)
+			   IN int a_flags = 0) asd_noexcept
 		{
-			if (a_bufferSize > std::numeric_limits<int>::max())
-				asd_RaiseException("size overflow");
+			asd_ChkErrAndRetVal(a_bufferSize > std::numeric_limits<int>::max(),
+								IoResult(0, -1),
+								"size overflow, a_bufferSize:{}",
+								a_bufferSize);
 			return SendTo(a_buffer,
 						  (int)a_bufferSize,
 						  a_dest,
@@ -185,10 +189,12 @@ namespace asd
 		inline IoResult
 		Recv(OUT void* a_buffer,
 			 IN SizeType a_bufferSize,
-			 IN int a_flags = 0) 
+			 IN int a_flags = 0) asd_noexcept
 		{
-			if (a_bufferSize > std::numeric_limits<int>::max())
-				asd_RaiseException("size overflow");
+			asd_ChkErrAndRetVal(a_bufferSize > std::numeric_limits<int>::max(),
+								IoResult(0, -1),
+								"size overflow, a_bufferSize:{}",
+								a_bufferSize);
 			return Recv(a_buffer,
 						(int)a_bufferSize,
 						a_flags);
@@ -206,10 +212,12 @@ namespace asd
 		RecvFrom(OUT void* a_buffer,
 				 IN SizeType a_bufferSize,
 				 OUT IpAddress& a_src,
-				 IN int a_flags = 0) 
+				 IN int a_flags = 0) asd_noexcept
 		{
-			if (a_bufferSize > std::numeric_limits<int>::max())
-				asd_RaiseException("size overflow");
+			asd_ChkErrAndRetVal(a_bufferSize > std::numeric_limits<int>::max(),
+								IoResult(0, -1),
+								"size overflow, a_bufferSize:{}",
+								a_bufferSize);
 			return RecvFrom(a_buffer,
 							(int)a_bufferSize,
 							a_src,
@@ -271,6 +279,10 @@ namespace asd
 
 		Error
 		GetSockOpt_SendBufSize(OUT int& a_byte) const asd_noexcept;
+		
+
+		Error
+		GetSockOpt_Error(OUT int& a_error) const asd_noexcept;
 
 
 		Error

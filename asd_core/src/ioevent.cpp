@@ -24,10 +24,10 @@
 
 namespace asd
 {
-	class AsyncSocketNative
+#if defined(asd_Platform_Windows)
+	class AsyncSocketNative final
 	{
 	public:
-#if defined(asd_Platform_Windows)
 		static_assert(IsEqualType<AsyncSocketHandle::ID, ULONG_PTR>::Value, "SocketID-CompletionKey type missmatch");
 
 		// N-Send
@@ -38,11 +38,17 @@ namespace asd
 		WSAOVERLAPPED m_recvov;
 
 		// Listen소켓에서 AcceptEx를 위해 사용
-		struct Listening
+		struct Listening final
 		{
 			SOCKET m_acceptSock = INVALID_SOCKET;
 			DWORD m_bytes = 0;
 			uint8_t m_buffer[(sizeof(sockaddr_in6)+16)*2];
+
+			~Listening()
+			{
+				if (m_acceptSock != INVALID_SOCKET)
+					::closesocket(m_acceptSock);
+			}
 		};
 		std::unique_ptr<Listening> m_listening;
 
@@ -60,8 +66,27 @@ namespace asd
 			m_listening->m_acceptSock = INVALID_SOCKET;
 			return newSock;
 		}
-#endif
 	};
+
+
+	UniquePtr<AsyncSocketNative> AsyncSocket::InitNative() asd_noexcept
+	{
+		return UniquePtr<AsyncSocketNative>(new AsyncSocketNative);
+	}
+
+
+#else
+	class AsyncSocketNative final
+	{
+	};
+
+	UniquePtr<AsyncSocketNative> AsyncSocket::InitNative() asd_noexcept
+	{
+		return nullptr;
+	}
+
+
+#endif
 
 
 
@@ -260,6 +285,12 @@ namespace asd
 
 		virtual bool Register(REF AsyncSocket* a_sock) asd_noexcept override
 		{
+			if (a_sock->m_native == nullptr) {
+				a_sock->m_lastError = -1;
+				asd_RAssert(false, "empty native data");
+				return false;
+			}
+
 			auto r = ::CreateIoCompletionPort((HANDLE)a_sock->GetNativeHandle(),
 											  m_iocp,
 											  (ULONG_PTR)AsyncSocketHandle::GetID(a_sock),
@@ -306,14 +337,15 @@ namespace asd
 
 			DWORD flags = 0;
 
-			std::memset(&a_sock->m_native->m_recvov, 0, sizeof(a_sock->m_native->m_recvov));
+			auto& ov = a_sock->m_native->m_recvov;
+			std::memset(&ov, 0, sizeof(ov));
 
 			int r = ::WSARecv(a_sock->GetNativeHandle(),
 							  &wsabuf,
 							  1,
 							  NULL,
 							  &flags,
-							  &a_sock->m_native->m_recvov,
+							  &ov,
 							  NULL);
 			if (r != 0) {
 				auto e = ::WSAGetLastError();
@@ -499,7 +531,7 @@ namespace asd
 					asd_RAssert(false, "fail WSASocket, WSAGetLastError:{}", e);
 					return e;
 				}
-				GUID  guid = WSAID_CONNECTEX;
+				GUID guid = WSAID_CONNECTEX;
 				DWORD bytes = 0;
 				int r = ::WSAIoctl(sock,
 								   SIO_GET_EXTENSION_FUNCTION_POINTER,
@@ -550,14 +582,15 @@ namespace asd
 			}
 
 			auto addr = (const sockaddr*)a_dest;
-			std::memset(&a_sock->m_native->m_recvov, 0, sizeof(a_sock->m_native->m_recvov));
+			auto& ov = a_sock->m_native->m_recvov;
+			std::memset(&ov, 0, sizeof(ov));
 			BOOL r = s_connectEx(a_sock->GetNativeHandle(),
 								 addr,
 								 a_dest.GetAddrLen(),
 								 NULL,
 								 0,
 								 NULL,
-								 &a_sock->m_native->m_recvov);
+								 &ov);
 			if (r == FALSE) {
 				auto e = ::WSAGetLastError();
 				switch (e) {
@@ -597,9 +630,8 @@ namespace asd
 					return e;
 				}
 
-				GUID  guid = WSAID_ACCEPTEX;
+				GUID guid = WSAID_ACCEPTEX;
 				DWORD bytes = 0;
-
 				int r = ::WSAIoctl(sock,
 								   SIO_GET_EXTENSION_FUNCTION_POINTER,
 								   &guid,
@@ -625,15 +657,17 @@ namespace asd
 				return e;
 			}
 
-			std::memset(&a_sock->m_native->m_recvov, 0, sizeof(a_sock->m_native->m_recvov));
+			auto& listening = *a_sock->m_native->m_listening;
+			auto& ov = a_sock->m_native->m_recvov;
+			std::memset(&ov, 0, sizeof(ov));
 			BOOL r = s_acceptEx(a_sock->GetNativeHandle(),
-								a_sock->m_native->m_listening->m_acceptSock,
-								a_sock->m_native->m_listening->m_buffer,
+								listening.m_acceptSock,
+								listening.m_buffer,
 								0,
-								sizeof(a_sock->m_native->m_listening->m_buffer) / 2,
-								sizeof(a_sock->m_native->m_listening->m_buffer) / 2,
-								&a_sock->m_native->m_listening->m_bytes,
-								&a_sock->m_native->m_recvov);
+								sizeof(listening.m_buffer) / 2,
+								sizeof(listening.m_buffer) / 2,
+								&listening.m_bytes,
+								&ov);
 			if (r == FALSE) {
 				auto e = ::WSAGetLastError();
 				switch (e) {
@@ -749,7 +783,7 @@ namespace asd
 				}
 			}
 
-			a_sock->Close();
+			a_sock->Socket::Close();
 			a_sock->m_state = AsyncSocket::State::Closed;
 			m_event->OnClose(a_sock, a_sock->m_lastError);
 
@@ -790,23 +824,15 @@ namespace asd
 				asd_RaiseException("fail epoll_create, errno:{}", e);
 			}
 
-			m_eventfd = ::eventfd(EFD_SEMAPHORE, 0);
+			m_eventfd = ::eventfd(0, EFD_SEMAPHORE | EFD_NONBLOCK);
 			if (m_eventfd == -1) {
 				auto e = errno;
 				asd_RaiseException("fail eventfd, errno:{}", e);
 			}
 
-			epoll_event ev;
-			ev.data.ptr = (void*)AsyncSocketHandle::Null;
-			ev.events = EPOLLIN;
-			auto r = ::epoll_ctl(m_epoll,
-								 EPOLL_CTL_ADD,
-								 m_eventfd,
-								 &ev);
-			if (r != 0) {
-				auto e = errno;
-				asd_RaiseException("fail epoll_ctl, errno:{}", e);
-			}
+			if (OnEventfd<true>() == false)
+				return;
+
 			StartThread();
 		}
 
@@ -817,6 +843,8 @@ namespace asd
 			StopThread();
 			if (m_epoll >= 0)
 				::close(m_epoll);
+			if (m_eventfd >= 0)
+				::close(m_eventfd);
 		}
 
 
@@ -852,9 +880,17 @@ namespace asd
 		virtual bool PostSignal(IN AsyncSocket* a_sock) asd_noexcept override
 		{
 			if (a_sock == nullptr) {
+				ssize_t r;
 				uint64_t wakeup = 1;
-				if (sizeof(wakeup) != ::write(m_eventfd, &wakeup, sizeof(wakeup))) {
+				while (sizeof(wakeup) != (r=::write(m_eventfd, &wakeup, sizeof(wakeup)))) {
+					asd_ChkErrAndRetVal(r>=0, false, "unexpected result, r:{}", r);
 					auto e = errno;
+					switch (e) {
+						case EAGAIN:
+							return true;
+						case EINTR:
+							continue;
+					}
 					asd_RAssert(false, "fail write to m_eventfd, errno:{}", e);
 					return false;
 				}
@@ -878,6 +914,48 @@ namespace asd
 
 
 
+		template <bool IS_FIRST>
+		bool OnEventfd()
+		{
+			bool fail = false;
+			if (IS_FIRST == false) {
+				ssize_t r;
+				uint64_t wakeup;
+				while (sizeof(wakeup) != (r=::read(m_eventfd, &wakeup, sizeof(wakeup)))) {
+					if (r >= 0)
+						asd_RAssert(false, "unexpected result, r:{}", r);
+					else {
+						auto e = errno;
+						if (e == EINTR)
+							continue;
+						asd_RAssert(false, "fail read from m_eventfd, errno:{}", e);
+					}
+					fail = true;
+					break;
+				}
+			}
+
+			epoll_event ev;
+			ev.data.ptr = (void*)AsyncSocketHandle::Null;
+			ev.events = EPOLLONESHOT | EPOLLIN;
+			auto r = ::epoll_ctl(m_epoll,
+								 IS_FIRST ? EPOLL_CTL_ADD : EPOLL_CTL_MOD,
+								 m_eventfd,
+								 &ev);
+			if (r != 0) {
+				auto e = errno;
+				if (IS_FIRST)
+					asd_RaiseException("fail epoll_ctl, errno:{}", e);
+				else
+					asd_RAssert(false, "fail epoll_ctl, errno:{}", e);
+				return false;
+			}
+
+			return !fail;
+		}
+
+
+
 		virtual bool Wait(IN uint32_t a_timeoutMs,
 						  OUT EventInfo& a_event) asd_noexcept override
 		{
@@ -887,15 +965,8 @@ namespace asd
 								  a_timeoutMs);
 			if (r > 0) {
 				auto id = (AsyncSocketHandle::ID)a_event.m_epollEvent.data.ptr;
-				if (id == AsyncSocketHandle::Null) {
-					uint64_t wakeup;
-					if (sizeof(wakeup) != ::read(m_eventfd, &wakeup, sizeof(wakeup))) {
-						auto e = errno;
-						asd_RAssert(false, "fail read from m_eventfd, errno:{}", e);
-						return false;
-					}
-					return true;
-				}
+				if (id == AsyncSocketHandle::Null)
+					return OnEventfd<false>();
 				a_event.m_socket = AsyncSocketHandle(id).GetObj();
 				if (a_event.m_socket == nullptr)
 					return true;
@@ -923,18 +994,8 @@ namespace asd
 
 		int GetSocketError(IN AsyncSocket* a_sock) asd_noexcept
 		{
-			int err = 0;
-			socklen_t errlen = sizeof(err);
-			int r = ::getsockopt(a_sock->GetNativeHandle(),
-								 SOL_SOCKET,
-								 SO_ERROR,
-								 &err,
-								 &errlen);
-			if (r != 0) {
-				err = errno;
-				if (err == 0)
-					err = -1;
-			}
+			int err = -1;
+			a_sock->GetSockOpt_Error(err);
 			return err;
 		}
 
@@ -1048,7 +1109,6 @@ namespace asd
 				}
 				return;
 			}
-
 		}
 
 
@@ -1116,7 +1176,7 @@ namespace asd
 				break;
 			}
 
-			for (i=t_iovec.size(); i>0; --i)
+			for (i=0; i<t_iovec.size(); ++i)
 				a_sock->m_sendQueue.pop_front();
 
 			return 0;
@@ -1141,9 +1201,12 @@ namespace asd
 				}
 			}
 
-			a_sock->Close();
+			a_sock->Socket::Close();
 			a_sock->m_state = AsyncSocket::State::Closed;
 			m_event->OnClose(a_sock, a_sock->m_lastError);
+
+			auto handle = AsyncSocketHandle::GetHandle(a_sock);
+			handle.Free();
 		}
 
 
@@ -1212,8 +1275,6 @@ namespace asd
 			return false;
 		if (a_sock == nullptr)
 			return false;
-		if (a_sock->m_native == nullptr)
-			return false;
 
 		auto sockLock = GetLock(a_sock->m_sockLock);
 
@@ -1243,12 +1304,6 @@ namespace asd
 			internal->Poll(a_timeoutSec);
 	}
 
-
-
-	UniquePtr<AsyncSocketNative> AsyncSocket::InitNative() asd_noexcept
-	{
-		return UniquePtr<AsyncSocketNative>(new AsyncSocketNative);
-	}
 
 
 	void AsyncSocket::Connect(IN const IpAddress& a_dest,
@@ -1360,6 +1415,8 @@ namespace asd
 		m_lastError = 0;
 		if (ev != nullptr)
 			ev->CloseSocket(this, true);
+		else
+			Socket::Close();
 	}
 
 

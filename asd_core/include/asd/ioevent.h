@@ -62,6 +62,7 @@ namespace asd
 		static UniquePtr<AsyncSocketNative> InitNative() asd_noexcept;
 		UniquePtr<AsyncSocketNative> m_native = InitNative();
 
+
 	public:
 		using Socket::Socket;
 
@@ -94,7 +95,7 @@ namespace asd
 		}
 
 
-		void Close() asd_noexcept;
+		virtual void Close() asd_noexcept override;
 
 
 		virtual ~AsyncSocket() asd_noexcept;
