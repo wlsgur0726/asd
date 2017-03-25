@@ -2,7 +2,8 @@
 #include "asd/ioevent.h"
 #include "asd/string.h"
 #include "asd/semaphore.h"
-#include "asd/threadutil.h"
+#include "asd/threadpool.h"
+#include "asd/random.h"
 #include <thread>
 #include <array>
 #include <unordered_map>
@@ -213,9 +214,282 @@ namespace asdtest_socket
 
 
 
+	struct PeerManager;
+	struct Peer
+	{
+		asd::AsyncSocketHandle m_sock;
+		PeerManager* m_owner = nullptr;
+
+		virtual ~Peer() { m_sock.Free(); }
+		virtual void OnConnect(IN asd::Socket::Error a_err) asd_noexcept = 0;
+		virtual void OnAccept(MOVE asd::AsyncSocket_ptr&& a_newSock) asd_noexcept = 0;
+		virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) asd_noexcept = 0;
+		virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept = 0;
+	};
+
+	struct PeerManager
+	{
+		asd::Mutex m_lock;
+		std::unordered_map<asd::AsyncSocketHandle, std::shared_ptr<Peer>> m_peers;
+		asd::SequentialThreadPool<asd::AsyncSocketHandle> m_threadPool;
+
+		bool Add(std::shared_ptr<Peer> peer)
+		{
+			auto lock = asd::GetLock(m_lock);
+			bool ok = m_peers.emplace(peer->m_sock, peer).second;
+			EXPECT_TRUE(ok);
+			peer->m_owner = ok ? this : nullptr;
+			return ok;
+		}
+
+		std::shared_ptr<Peer> Find(asd::AsyncSocketHandle handle)
+		{
+			auto lock = asd::GetLock(m_lock);
+			return m_peers[handle];
+		}
+
+		std::shared_ptr<Peer> Del(asd::AsyncSocketHandle handle)
+		{
+			auto lock = asd::GetLock(m_lock);
+			auto ret = std::move(m_peers[handle]);
+			m_peers.erase(handle);
+			return ret;
+		}
+	};
+
 	void TCP_NonBlocked(asd::AddressFamily af)
 	{
+		static const size_t TotalDataSize = 1 * 1024 * 1024;
+		static const size_t SendSize = TotalDataSize / 1024;
+		static asd::Semaphore s_finish;
+		static std::atomic<size_t> s_clientCOunt;
 
+		struct Client : public Peer
+		{
+			std::deque<uint8_t> m_expect;
+			bool m_sendComplete = false;
+			bool m_finish = false;
+
+			void Finish()
+			{
+				if (m_finish)
+					return;
+				m_finish = false;
+				if (0 == --s_clientCOunt)
+					s_finish.Post();
+			}
+
+			virtual void OnAccept(MOVE asd::AsyncSocket_ptr&& a_newSock) asd_noexcept override
+			{
+				FAIL();
+			}
+
+			virtual void OnConnect(IN asd::Socket::Error a_err) asd_noexcept override
+			{
+				EXPECT_EQ(0, a_err);
+				if (0 != a_err) {
+					m_owner->Del(m_sock);
+					return;
+				}
+				auto sock = m_sock.GetObj();
+				ASSERT_NE(sock, nullptr);
+				for (size_t i=0; i<TotalDataSize/SendSize; ++i) {
+					m_owner->m_threadPool.PushSeq(m_sock, [this, sock]()
+					{
+						auto buf = asd::NewBuffer<SendSize>();
+						buf->SetSize(SendSize);
+						for (size_t i=0; i<SendSize; ++i) {
+							auto p = buf->GetBuffer();
+							p[i] = (uint8_t)asd::Random::Uniform(0, 255);
+							m_expect.push_back(p[i]);
+						}
+						sock->Send(std::move(buf));
+					});
+				}
+				m_sendComplete = true;
+			}
+
+			virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) asd_noexcept override
+			{
+				m_owner->m_threadPool.PushSeq(m_sock, [this, data=std::move(a_data)]()
+				{
+					for (size_t i=0; i<data->GetSize(); ++i) {
+						auto p = data->GetBuffer();
+						ASSERT_FALSE(m_expect.empty());
+						EXPECT_EQ(p[i], m_expect.front());
+						m_expect.pop_front();
+					}
+
+					if (m_sendComplete && m_expect.empty()) {
+						Finish();
+						auto sock = m_sock.GetObj();
+						ASSERT_NE(sock, nullptr);
+						sock->Close();
+					}
+				});
+			}
+
+			virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept override
+			{
+				EXPECT_EQ(0, a_err);
+				Finish();
+				m_owner->Del(m_sock);
+			}
+		};
+
+
+		struct Server : public Peer
+		{
+			struct Client : public Peer
+			{
+				virtual void OnAccept(MOVE asd::AsyncSocket_ptr&& a_newSock) asd_noexcept override
+				{
+					FAIL();
+				}
+
+				virtual void OnConnect(IN asd::Socket::Error a_err) asd_noexcept override
+				{
+					FAIL();
+				}
+
+				virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) asd_noexcept override
+				{
+					auto sock = m_sock.GetObj();
+					ASSERT_NE(sock, nullptr);
+					sock->Send(std::move(a_data));
+				}
+
+				virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept override
+				{
+					EXPECT_EQ(0, a_err);
+					m_owner->Del(m_sock);
+				}
+			};
+
+			virtual void OnAccept(MOVE asd::AsyncSocket_ptr&& a_newSock) asd_noexcept override
+			{
+				auto handle = asd::AsyncSocketHandle::GetHandle(a_newSock.get());
+				std::shared_ptr<Peer> peer(new Server::Client);
+				peer->m_sock = handle;
+				m_owner->Add(peer);
+			}
+
+			virtual void OnConnect(IN asd::Socket::Error a_err) asd_noexcept override
+			{
+				FAIL();
+			}
+
+			virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) asd_noexcept override
+			{
+				FAIL();
+			}
+
+			virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept override
+			{
+				EXPECT_EQ(0, a_err);
+				m_owner->Del(m_sock);
+			}
+		};
+
+		struct TestIO : public asd::IOEvent
+		{
+			PeerManager m_peerManager;
+
+			virtual void OnAccept(IN asd::AsyncSocket* a_listener,
+								  MOVE asd::AsyncSocket_ptr&& a_newSock) asd_noexcept override
+			{
+				auto handle = asd::AsyncSocketHandle::GetHandle(a_listener);
+				auto listener = m_peerManager.Find(handle);
+				ASSERT_TRUE(listener != nullptr);
+				ASSERT_TRUE(Register(a_newSock));
+				m_peerManager.m_threadPool.PushSeq(handle, [listener, newSock=std::move(a_newSock)]() mutable
+				{
+					listener->OnAccept(std::move(newSock));
+				});
+			}
+
+			virtual void OnConnect(IN asd::AsyncSocket* a_sock,
+								   IN asd::Socket::Error a_err) asd_noexcept override
+			{
+				auto handle = asd::AsyncSocketHandle::GetHandle(a_sock);
+				auto peer = m_peerManager.Find(handle);
+				ASSERT_TRUE(peer != nullptr);
+				m_peerManager.m_threadPool.PushSeq(handle, [peer, a_err]() mutable
+				{
+					peer->OnConnect(a_err);
+				});
+			}
+
+			virtual void OnRecv(IN asd::AsyncSocket* a_sock,
+								MOVE asd::Buffer_ptr&& a_data) asd_noexcept override
+			{
+				auto handle = asd::AsyncSocketHandle::GetHandle(a_sock);
+				auto peer = m_peerManager.Find(handle);
+				ASSERT_TRUE(peer != nullptr);
+				m_peerManager.m_threadPool.PushSeq(handle, [peer, data=std::move(a_data)]() mutable
+				{
+					peer->OnRecv(std::move(data));
+				});
+			}
+
+			virtual void OnClose(IN asd::AsyncSocket* a_sock,
+								 IN asd::Socket::Error a_err) asd_noexcept override
+			{
+				auto handle = asd::AsyncSocketHandle::GetHandle(a_sock);
+				auto peer = m_peerManager.Find(handle);
+				ASSERT_TRUE(peer != nullptr);
+				m_peerManager.m_threadPool.PushSeq(handle, [peer, a_err]() mutable
+				{
+					peer->OnClose(a_err);
+				});
+			}
+		};
+
+		const size_t ClientCount = 1;
+		asd::IpAddress addr;
+		TestIO io;
+		io.Start();
+		io.m_peerManager.m_threadPool.Start();
+
+		// start server
+		{
+			std::shared_ptr<Peer> listener(new Server);
+			auto sock = listener->m_sock.Alloc();
+			ASSERT_TRUE(io.m_peerManager.Add(listener));
+			ASSERT_TRUE(io.Register(sock));
+			ASSERT_EQ(0, sock->SetSockOpt_ReuseAddr(true));
+			ASSERT_TRUE(sock->Listen(asd::IpAddress(Addr_Any(af), 0), 1024), "");
+			ASSERT_EQ(0, sock->GetSockName(addr));
+		}
+
+		asd::printf("addr = %s\n", addr.ToString().c_str());
+
+		// add client
+		s_clientCOunt = ClientCount;
+		for (size_t i=0; i<ClientCount; ++i) {
+			std::shared_ptr<Peer> client(new Client);
+			auto sock = client->m_sock.Alloc();
+			ASSERT_TRUE(io.m_peerManager.Add(client));
+			ASSERT_TRUE(io.Register(sock));
+			sock->Connect(asd::IpAddress(Addr_Loopback(af), addr.GetPort()));
+		}
+
+		// wait finish
+		s_finish.Wait();
+
+		auto lock = asd::GetLock(io.m_peerManager.m_lock);
+		io.m_peerManager.m_peers.clear();
+		lock.unlock();
+	}
+
+	TEST(Socket, IPv4_TCP_NonBlocked)
+	{
+		TCP_NonBlocked(asd::AddressFamily::IPv4);
+	}
+
+	TEST(Socket, IPv6_TCP_NonBlocked)
+	{
+		TCP_NonBlocked(asd::AddressFamily::IPv6);
 	}
 
 	void UDP_NonBlocked(asd::AddressFamily af)

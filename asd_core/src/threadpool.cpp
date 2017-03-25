@@ -80,8 +80,8 @@ namespace asd
 				a_data->standby.emplace_back(event);
 				lock.unlock();
 				bool on = event->Wait(a_timeoutMs);
-				t_events.Free(event);
 				lock.lock();
+				t_events.Free(event);
 				if (on)
 					continue;
 

@@ -128,19 +128,19 @@ namespace asd
 		void Poll(IN uint32_t a_timeoutSec) asd_noexcept;
 
 
-		virtual void OnConnect(IN AsyncSocket* a_sock,
-							   IN Socket::Error a_err) asd_noexcept
-		{
-			auto handle = AsyncSocketHandle::GetHandle(a_sock);
-			asd_DAssert(handle.IsValid());
-		}
-
 		virtual void OnAccept(IN AsyncSocket* a_listener,
 							  MOVE AsyncSocket_ptr&& a_newSock) asd_noexcept
 		{
 			auto handle = AsyncSocketHandle::GetHandle(a_listener);
 			asd_DAssert(handle.IsValid());
 			asd_RAssert(Register(a_newSock), "fail Register");
+		}
+
+		virtual void OnConnect(IN AsyncSocket* a_sock,
+							   IN Socket::Error a_err) asd_noexcept
+		{
+			auto handle = AsyncSocketHandle::GetHandle(a_sock);
+			asd_DAssert(handle.IsValid());
 		}
 
 		virtual void OnRecv(IN AsyncSocket* a_sock,

@@ -2,6 +2,7 @@
 #include "asd/string.h"
 #include "asd/threadpool.h"
 #include "asd/threadutil.h"
+#include "asd/random.h"
 #include <atomic>
 
 
@@ -45,7 +46,8 @@ namespace asdtest_threadpool
 
 	void Push_Counter(asd::SequentialThreadPool<uint32_t>* tp)
 	{
-		tp->PushSeq(rand() % 1000, [tp]()
+		auto rnd = asd::Random::Uniform<uint32_t>(0, 999);
+		tp->PushSeq(rnd, [tp]()
 		{
 			thread_local bool srandInit = false;
 			if (srandInit == false) {

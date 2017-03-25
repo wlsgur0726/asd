@@ -124,8 +124,8 @@ namespace asd
 		}
 
 
-		template <typename FUNC, typename... PARAMS>
-		inline void PushSeq(Key&& a_key,
+		template <typename KEY, typename FUNC, typename... PARAMS>
+		inline void PushSeq(KEY&& a_key,
 							FUNC&& a_func,
 							PARAMS&&... a_params) asd_noexcept
 		{
@@ -133,14 +133,14 @@ namespace asd
 								   std::forward<PARAMS>(a_params)...);
 			Push(std::mem_fn(&ThisType::OnSequentialTask),
 				 this,
-				 std::forward<Key>(a_key),
+				 std::forward<KEY>(a_key),
 				 std::move(task));
 		}
 
 
-		template <typename FUNC, typename... PARAMS>
+		template <typename KEY, typename FUNC, typename... PARAMS>
 		inline Task_ptr PushSeqAt(IN Timer::TimePoint a_timepoint,
-								  Key&& a_key,
+								  KEY&& a_key,
 								  FUNC&& a_func,
 								  PARAMS&&... a_params) asd_noexcept
 		{
@@ -149,14 +149,14 @@ namespace asd
 			return PushAt(a_timepoint,
 						  std::mem_fn(&ThisType::OnSequentialTask),
 						  this,
-						  std::forward<Key>(a_key),
+						  std::forward<KEY>(a_key),
 						  std::move(task));
 		}
 
 
-		template <typename FUNC, typename... PARAMS>
+		template <typename KEY, typename FUNC, typename... PARAMS>
 		inline Task_ptr PushSeqAfter(IN uint32_t a_afterMs,
-									 Key&& a_key,
+									 KEY&& a_key,
 									 FUNC&& a_func,
 									 PARAMS&&... a_params) asd_noexcept
 		{
@@ -165,7 +165,7 @@ namespace asd
 			return PushAfter(a_afterMs,
 							 std::mem_fn(&ThisType::OnSequentialTask),
 							 this,
-							 std::forward<Key>(a_key),
+							 std::forward<KEY>(a_key),
 							 std::move(task));
 		}
 

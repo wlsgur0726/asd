@@ -378,6 +378,7 @@ namespace asd
 												 a_timeoutMs);
 			if (r == FALSE) {
 				a_event.m_error = ::GetLastError();
+				bool isSocketRecvEvent = id!=AsyncSocketHandle::Null && a_event.m_overlapped!=nullptr;
 				switch (a_event.m_error) {
 					case WAIT_TIMEOUT:
 						a_event.m_timeout = true;
@@ -385,10 +386,13 @@ namespace asd
 					case ERROR_CONNECTION_REFUSED:
 					case ERROR_NETNAME_DELETED:
 					case ERROR_SEM_TIMEOUT:
-						if (id!=AsyncSocketHandle::Null && a_event.m_overlapped!=nullptr)
+					case ERROR_INVALID_NETNAME:
+						if (isSocketRecvEvent)
 							break; // socket error
 					default:
 						asd_RAssert(false, "polling error, GetLastError:{}", a_event.m_error);
+						if (isSocketRecvEvent)
+							break;
 						return false;
 				}
 			}
@@ -415,7 +419,8 @@ namespace asd
 				switch (a_event.m_error) {
 					case ERROR_CONNECTION_REFUSED:
 					case ERROR_NETNAME_DELETED:
-					case ERROR_SEM_TIMEOUT: {
+					case ERROR_SEM_TIMEOUT:
+					case ERROR_INVALID_NETNAME: {
 						DWORD t, f;
 						::WSAGetOverlappedResult(sock->GetNativeHandle(),
 												 a_event.m_overlapped,
