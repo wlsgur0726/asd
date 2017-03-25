@@ -33,6 +33,7 @@
     <ClInclude Include="include\asd\handle.h" />
     <ClInclude Include="include\asd\random.h" />
     <ClInclude Include="include\asd\container.h" />
+    <ClInclude Include="include\asd\task.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\address.cpp" />
@@ -55,5 +56,6 @@
     <ClCompile Include="src\threadutil.cpp" />
     <ClCompile Include="src\timer.cpp" />
     <ClCompile Include="src\trace.cpp" />
+    <ClCompile Include="src\task.cpp" />
   </ItemGroup>
 </Project>

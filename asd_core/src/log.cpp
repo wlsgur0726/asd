@@ -107,7 +107,7 @@ namespace asd
 		asd::Log* log = m_logObjPool.Alloc();
 		*log = std::move(a_log);
 
-		m_writer.PushTask([this, log]()
+		m_writer.Push([this, log]()
 		{
 			Print(log);
 		});

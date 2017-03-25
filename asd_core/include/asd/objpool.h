@@ -514,7 +514,7 @@ namespace asd
 
 
 
-		inline bool Free(MOVE Object*& a_obj)
+		inline bool Free(IN Object* a_obj)
 		{
 			size_t index = GetShardIndex(a_obj);
 			return m_shards[index].Free(a_obj);

@@ -49,6 +49,8 @@ namespace asd
 		std::atomic<bool> m_lock;
 
 	public:
+		SpinMutex() asd_noexcept;
+
 		asd_DeclareMutexInterface;
 	};
 

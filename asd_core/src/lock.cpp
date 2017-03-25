@@ -184,6 +184,13 @@ namespace asd
 
 
 
+	SpinMutex::SpinMutex() asd_noexcept
+	{
+		m_lock = false;
+	}
+
+
+
 	void SpinMutex::lock()
 	{
 		while (true) {

@@ -1,7 +1,10 @@
 ﻿#pragma once
 #include "asdbase.h"
+#include "task.h"
 #include <functional>
 #include <chrono>
+#include <map>
+#include <deque>
 
 
 namespace asd
@@ -10,33 +13,57 @@ namespace asd
 	// 등록한 task는 전용 쓰레드에서 실행된다.
 	// 병목이 발생하기 쉬우므로 시그널발생, 다른 task큐잉 등
 	// 부하가 적은 알람 계열 작업만 넣어야 한다.
-	namespace Timer
+	class Timer : public Global<Timer>
 	{
-		typedef std::function<void()>							Callback;
-		typedef std::chrono::milliseconds						Milliseconds;
-		typedef std::chrono::high_resolution_clock::time_point	TimePoint;
+	public:
+		using Millisec	= std::chrono::milliseconds;
+		using TimePoint	= std::chrono::high_resolution_clock::time_point;
+
+		Timer() asd_noexcept;
 
 		// 현재시간
-		TimePoint Now() asd_noexcept;
+		static TimePoint Now() asd_noexcept;
 
 		// 어디까지 실행했는지
 		TimePoint CurrentOffset() asd_noexcept;
 
-		// a_timepoint 시점에 수행할 task를 큐잉
-		// 핸들 리턴 (0이면 실패)
-		uint64_t PushAt(IN TimePoint a_timepoint,
-						MOVE Callback&& a_task) asd_noexcept;
-
 		// a_afterMs 후에 수행할 task를 큐잉
-		inline uint64_t PushAfter(IN uint32_t a_afterMs,
-								  MOVE Callback&& a_task) asd_noexcept
+		// 큐잉된 task 리턴 (nullptr이면 실패)
+		template <typename FUNC, typename... PARAMS>
+		inline Task_ptr PushAfter(IN uint32_t a_afterMs,
+								  FUNC&& a_func,
+								  PARAMS&&... a_params) asd_noexcept
 		{
-			return PushAt(Now() + Milliseconds(a_afterMs),
-						  std::move(a_task));
+			return PushAt(Now() + Millisec(a_afterMs),
+						  std::forward<FUNC>(a_func),
+						  std::forward<PARAMS>(a_params)...);
 		}
 
-		// 아직 실행되지 않은 task를 취소
-		// 아직 실행되지 않은 유효한 핸들이면 true 리턴
-		bool Cancel(IN uint64_t a_handle) asd_noexcept;
-	}
+		// a_timepoint 시점에 수행할 task를 큐잉
+		// 큐잉된 task 리턴 (nullptr이면 실패)
+		template <typename FUNC, typename... PARAMS>
+		inline Task_ptr PushAt(IN TimePoint a_timepoint,
+							   FUNC&& a_func,
+							   PARAMS&&... a_params) asd_noexcept
+		{
+			auto task = CreateTask(std::forward<FUNC>(a_func),
+								   std::forward<PARAMS>(a_params)...);
+			PushTask(a_timepoint, task);
+			return task;
+		}
+
+		void PushTask(IN TimePoint a_timepoint,
+					  IN const Task_ptr& a_task) asd_noexcept;
+
+		virtual ~Timer() asd_noexcept;
+
+	private:
+		void PollLoop() asd_noexcept;
+
+		Mutex m_lock;
+		bool m_run = true;
+		std::map<TimePoint, std::deque<Task_ptr>> m_taskList;
+		TimePoint m_offset;
+		std::thread m_thread;
+	};
 }

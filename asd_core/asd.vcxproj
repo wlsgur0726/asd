@@ -85,7 +85,7 @@
     </Link>
     <Lib>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>DbgHelp.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>DbgHelp.lib;Ws2_32.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
       <Command>"$(ProjectDir)..\Copy_ICONV_DLL.bat" "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
@@ -114,7 +114,7 @@
     </Link>
     <Lib>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>DbgHelp.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>DbgHelp.lib;Ws2_32.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
       <Command>"$(ProjectDir)..\Copy_ICONV_DLL.bat" "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
@@ -144,7 +144,7 @@
     </Link>
     <Lib>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>DbgHelp.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>DbgHelp.lib;Ws2_32.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
       <Command>"$(ProjectDir)..\Copy_ICONV_DLL.bat" "$(Platform)" "Release" "$(OutDir)"</Command>
@@ -178,6 +178,7 @@
     <ClInclude Include="include\asd\socket.h" />
     <ClInclude Include="include\asd\string.h" />
     <ClInclude Include="include\asd\sysutil.h" />
+    <ClInclude Include="include\asd\task.h" />
     <ClInclude Include="include\asd\tempbuffer.h" />
     <ClInclude Include="include\asd\threadpool.h" />
     <ClInclude Include="include\asd\datetime.h" />
@@ -207,6 +208,7 @@
     <ClCompile Include="src\socket.cpp" />
     <ClCompile Include="src\string.cpp" />
     <ClCompile Include="src\sysutil.cpp" />
+    <ClCompile Include="src\task.cpp" />
     <ClCompile Include="src\threadpool.cpp" />
     <ClCompile Include="src\datetime.cpp" />
     <ClCompile Include="src\threadutil.cpp" />

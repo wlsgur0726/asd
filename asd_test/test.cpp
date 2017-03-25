@@ -208,7 +208,7 @@ void ServerEvent::Stop()
 
 void Test()
 {
-	//return;
+	return;
 	{
 		PRINTF("start\n");
 		g_clientEvent.Start();

@@ -2,6 +2,7 @@
 #include "asdbase.h"
 #include "string.h"
 #include "trace.h"
+#include "threadutil.h"
 #include <vector>
 #include <functional>
 #include <typeinfo>
@@ -14,12 +15,15 @@ namespace asd
 
 	struct DebugInfo 
 	{
-		static const char ToStringFormat[]; // "[{}({}):{}] {}", File, Line, Function, Comment)
+		// "[{}][{}:{}][{}] {}"
+		// [TID][File:Line][Function] Comment
+		static const char ToStringFormat[];
 
-		const char*	File;
-		const int	Line;
-		const char* Function;
-		MString		Comment;
+		const uint32_t	TID;
+		const char*		File;
+		const int		Line;
+		const char*		Function;
+		MString			Comment;
 
 		template<typename... ARGS>
 		inline DebugInfo(IN const char* a_file,
@@ -27,7 +31,8 @@ namespace asd
 						 IN const char* a_function,
 						 IN const char* a_comment = "",
 						 IN const ARGS&... a_args) asd_noexcept
-			: File(a_file)
+			: TID(GetCurrentThreadID())
+			, File(a_file)
 			, Line(a_line)
 			, Function(a_function)
 			, Comment(MString::Format(a_comment, a_args...))

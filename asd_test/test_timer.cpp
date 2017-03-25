@@ -18,37 +18,39 @@ namespace asdtest_testtemplate
 
 	TEST(Timer, Event)
 	{
+		auto& globalTimer = asd::Global<asd::Timer>::Instance();
+
 		const int TestTimeMs = 1000;
 
 		std::map<int64_t, std::vector<int>> eventHistory;
 		std::set<int> expect_events;
-		std::vector<uint64_t> cancel;
+		std::vector<asd::Task_ptr> cancel;
 		cancel.reserve(TestTimeMs);
 
 		const auto Start = asd::Timer::Now();
 
 		for (int i=TestTimeMs; i>10; --i) {
-			uint64_t handle = asd::Timer::PushAfter(i, [i, &eventHistory]()
+			auto task = globalTimer.PushAfter(i, [i, &eventHistory]()
 			{
 				eventHistory[Tick()].emplace_back(i);
 			});
-			ASSERT_NE(handle, 0);
+			ASSERT_NE(task, nullptr);
 			if (i % 2 == 0)
-				cancel.emplace_back(handle);
+				cancel.emplace_back(task);
 			else
 				expect_events.emplace(i);
 		}
 
-		for (auto handle : cancel)
-			EXPECT_TRUE(asd::Timer::Cancel(handle));
+		for (auto task : cancel)
+			task->Cancel();
 
-		asd::Timer::PushAt(Start - asd::Timer::Milliseconds(1), [&eventHistory]()
+		globalTimer.PushAt(Start - asd::Timer::Millisec(1), [&eventHistory]()
 		{
 			eventHistory[Tick()].emplace_back(-1);
 		});
 
-		const auto Wait = asd::Timer::Now() + asd::Timer::Milliseconds(TestTimeMs);
-		while (Wait >= asd::Timer::CurrentOffset())
+		const auto Wait = asd::Timer::Now() + asd::Timer::Millisec(TestTimeMs);
+		while (Wait >= globalTimer.CurrentOffset())
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
 		const int64_t Tolerance = 2;

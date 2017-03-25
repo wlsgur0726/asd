@@ -18,6 +18,7 @@ TEST(Exception, MacroFunctionTest1)
 		EXPECT_STREQ("Test asd_MakeDebugInfo", di.Comment);
 
 		auto cmpstr = asd::MString::Format(asd::DebugInfo::ToStringFormat,
+										   asd::GetCurrentThreadID(),
 										   __FILE__,
 										   LineCheck,
 										   __FUNCTION__,
@@ -35,6 +36,7 @@ TEST(Exception, MacroFunctionTest1)
 		EXPECT_STREQ("Test asd_MakeDebugInfo 123", di.Comment);
 
 		auto cmpstr = asd::MString::Format(asd::DebugInfo::ToStringFormat,
+										   asd::GetCurrentThreadID(),
 										   __FILE__,
 										   LineCheck,
 										   __FUNCTION__,
@@ -55,6 +57,7 @@ TEST(Exception, MacroFunctionTest2)
 	}
 	catch (asd::Exception& e) {
 		auto cmpstr = asd::MString::Format(asd::DebugInfo::ToStringFormat,
+										   asd::GetCurrentThreadID(),
 										   __FILE__,
 										   LineCheck,
 										   __FUNCTION__,
@@ -69,6 +72,7 @@ TEST(Exception, MacroFunctionTest2)
 	}
 	catch (asd::Exception& e) {
 		auto cmpstr = asd::MString::Format(asd::DebugInfo::ToStringFormat,
+										   asd::GetCurrentThreadID(),
 										   __FILE__,
 										   LineCheck,
 										   __FUNCTION__,

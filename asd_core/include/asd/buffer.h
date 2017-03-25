@@ -90,7 +90,7 @@ namespace asd
 		{
 			const auto capacity = Capacity();
 			const auto size = GetSize();
-			assert(capacity >= size);
+			asd_DAssert(capacity >= size);
 			return capacity - size;
 		}
 
@@ -201,24 +201,25 @@ namespace asd
 
 		virtual uint8_t* GetBuffer() const asd_noexcept override
 		{
-			assert(m_data != nullptr);
+			asd_DAssert(m_data != nullptr);
 			return m_data.get();
 		}
 
 		virtual size_t Capacity() const asd_noexcept override
 		{
-			assert(m_data != nullptr);
+			asd_DAssert(m_data != nullptr);
 			return m_bytes;
 		}
 
 		virtual size_t GetSize() const asd_noexcept override
 		{
-			assert(m_data != nullptr);
+			asd_DAssert(m_data != nullptr);
 			return m_bytes;
 		}
 
 		virtual bool SetSize(IN size_t a_bytes) asd_noexcept override
 		{
+			asd_RAssert(false, "banned call (send only)");
 			return false; // not use
 		}
 	};

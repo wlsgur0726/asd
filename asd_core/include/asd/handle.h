@@ -115,21 +115,19 @@ namespace asd
 			return obj;
 		}
 
-		void Free() asd_noexcept
+		Object_ptr Free() asd_noexcept
 		{
 			if (m_id == Null)
-				return;
+				return nullptr;
 			ID id = m_id;
 			m_id = Null;
-			Manager::Instance().Erase(id);
+			return Manager::Instance().Erase(id);
 		}
-
 
 		static void AllClear()
 		{
 			Manager::Instance().clear();
 		}
-
 
 		inline static int Compare(IN ID a_left,
 								  IN ID a_right) asd_noexcept

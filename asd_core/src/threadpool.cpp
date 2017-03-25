@@ -1,7 +1,8 @@
 ﻿#include "asd_pch.h"
 #include "asd/threadpool.h"
-#include "asd/threadutil.h"
+#include "asd/util.h"
 #include "asd/semaphore.h"
+#include "asd/objpool.h"
 #include <atomic>
 #include <queue>
 #include <deque>
@@ -21,7 +22,7 @@ namespace asd
 		Mutex tpLock;
 
 		// 작업 큐
-		std::queue<ThreadPool::Task> taskQueue;
+		std::queue<Task_ptr> taskQueue;
 
 		// 동작 상태
 		bool run = false;
@@ -34,7 +35,8 @@ namespace asd
 		const uint32_t					threadCount;
 		std::vector<std::thread>		threads;
 		std::unordered_set<uint32_t>	workers;
-		std::deque<Semaphore*>			waitingList;
+		std::deque<Semaphore*>			standby;
+		std::unique_ptr<Timer>			timer;
 	};
 
 
@@ -56,9 +58,9 @@ namespace asd
 
 
 
-	inline size_t Poll(REF std::shared_ptr<ThreadPoolData>& a_data,
-					   IN uint32_t a_timeoutMs,
-					   IN size_t a_procCountLimit) asd_noexcept
+	inline size_t Poll_Internal(REF std::shared_ptr<ThreadPoolData>& a_data,
+								IN uint32_t a_timeoutMs,
+								IN size_t a_procCountLimit) asd_noexcept
 	{
 		if (a_data == nullptr)
 			return 0;
@@ -66,37 +68,38 @@ namespace asd
 		if (a_procCountLimit <= 0)
 			return 0;
 
-		thread_local Semaphore t_event;
+		thread_local ObjectPool<Semaphore> t_events;
 		size_t procCount = 0;
-		auto lock = GetLock(a_data->tpLock);
 
 		// 이벤트 체크
+		auto lock = GetLock(a_data->tpLock);
 		while (a_data->run || (a_data->overtime && !a_data->taskQueue.empty())) {
 			if (a_data->taskQueue.empty()) {
 				// 대기
-				a_data->waitingList.emplace_back(&t_event);
+				auto event = t_events.Alloc();
+				a_data->standby.emplace_back(event);
 				lock.unlock();
-				bool ev = t_event.Wait(a_timeoutMs);
+				bool on = event->Wait(a_timeoutMs);
+				t_events.Free(event);
 				lock.lock();
-				if (ev)
+				if (on)
 					continue;
 
 				// 타임아웃
-				auto it = std::find(a_data->waitingList.begin(), a_data->waitingList.end(), &t_event);
-				if (it != a_data->waitingList.end())
-					a_data->waitingList.erase(it);
+				auto it = std::find(a_data->standby.begin(), a_data->standby.end(), event);
+				if (it != a_data->standby.end())
+					a_data->standby.erase(it);
 				break;
 			}
 
 			// 작업을 접수
-			assert(a_data->taskQueue.empty() == false);
-			ThreadPool::Task task(std::move(a_data->taskQueue.front()));
+			asd_DAssert(a_data->taskQueue.empty() == false);
+			Task_ptr task(std::move(a_data->taskQueue.front()));
 			a_data->taskQueue.pop();
 
 			// 작업 수행
 			lock.unlock();
-			assert(task != nullptr);
-			task();
+			task->Execute();
 			if (++procCount >= a_procCountLimit)
 				break;
 
@@ -118,7 +121,7 @@ namespace asd
 			asd_RaiseException("already running");
 
 		data->run = true;
-		assert(data->threads.size() == data->threadCount);
+		asd_DAssert(data->threads.size() == data->threadCount);
 		for (auto& t : data->threads) {
 			t = std::thread([data]() mutable
 			{
@@ -126,9 +129,9 @@ namespace asd
 				data->workers.emplace(GetCurrentThreadID());
 				lock.unlock();
 				while (data->run) {
-					asd::Poll(data,
-							  100,
-							  std::numeric_limits<size_t>::max());
+					asd::Poll_Internal(data,
+									   std::numeric_limits<uint32_t>::max(),
+									   std::numeric_limits<size_t>::max());
 				}
 			});
 		}
@@ -141,99 +144,74 @@ namespace asd
 							IN size_t a_procCountLimit /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
 	{
 		auto data = std::atomic_load(&m_data);
-		return asd::Poll(data,
-						 a_timeoutMs,
-						 a_procCountLimit);
+		return asd::Poll_Internal(data,
+								  a_timeoutMs,
+								  a_procCountLimit);
 	}
 
 
 
-	inline void PushTask(REF std::shared_ptr<ThreadPoolData>& a_data,
-						 MOVE ThreadPool::Task&& a_task) asd_noexcept
+	void PushTask_Internal(REF std::shared_ptr<ThreadPoolData>& a_data,
+						   MOVE Task_ptr& a_task) asd_noexcept
 	{
 		if (a_data == nullptr)
 			return;
+		if (a_task == nullptr)
+			return;
 
-		assert(a_task != nullptr);
 		auto lock = GetLock(a_data->tpLock);
 		if (a_data->run == false)
 			return;
 
 		a_data->taskQueue.emplace(std::move(a_task));
 
-		if (a_data->waitingList.size() > 0) {
-			a_data->waitingList.front()->Post();
-			a_data->waitingList.pop_front();
+		if (a_data->standby.size() > 0) {
+			a_data->standby.back()->Post();
+			a_data->standby.pop_back();
 		}
 	}
 
 
 
-	ThreadPool& ThreadPool::PushTask(MOVE Task&& a_task) asd_noexcept
+	void ThreadPool::PushTask(MOVE Task_ptr&& a_task) asd_noexcept
 	{
 		auto data = std::atomic_load(&m_data);
-		asd::PushTask(data, std::move(a_task));
-		return *this;
+		asd::PushTask_Internal(data, a_task);
 	}
 
 
 
-	ThreadPool& ThreadPool::PushTask(IN const Task& a_task) asd_noexcept
-	{
-		auto data = std::atomic_load(&m_data);
-		asd::PushTask(data, Task(a_task));
-		return *this;
-	}
-
-
-
-	inline uint64_t PushTaskAt(REF std::shared_ptr<ThreadPoolData>& a_data,
-							   IN Timer::TimePoint a_timePoint,
-							   MOVE ThreadPool::Task&& a_task) asd_noexcept
+	inline Task_ptr PushTimerTask_Internal(REF std::shared_ptr<ThreadPoolData>& a_data,
+										   IN Timer::TimePoint a_timePoint,
+										   IN Task_ptr a_task) asd_noexcept
 	{
 		if (a_data == nullptr)
-			return 0;
+			return nullptr;
+		if (a_task == nullptr)
+			return nullptr;
 
-		return Timer::PushAt(a_timePoint, [a_data, task=std::move(a_task)]() mutable
-		{
-			asd::PushTask(a_data, std::move(task));
-		});
+		if (a_data->timer == nullptr)
+			a_data->timer.reset(new Timer);
+
+		if (a_data->timer->CurrentOffset() > a_timePoint) {
+			Task_ptr ret = a_task;
+			PushTask_Internal(a_data, a_task);
+			return ret;
+		}
+
+		return a_data->timer->PushAt(a_timePoint,
+									 &asd::PushTask_Internal,
+									 std::move(a_data),
+									 std::move(a_task));
 	}
 
 
 
-	uint64_t ThreadPool::PushTaskAt(IN Timer::TimePoint a_timePoint,
-									MOVE Task&& a_task) asd_noexcept
+	Task_ptr ThreadPool::PushTimerTask(IN Timer::TimePoint a_timePoint,
+									   IN const Task_ptr& a_task) asd_noexcept
 	{
 		auto data = std::atomic_load(&m_data);
-		return asd::PushTaskAt(data, a_timePoint, std::move(a_task));
-	}
-
-
-
-	uint64_t ThreadPool::PushTaskAt(IN Timer::TimePoint a_timePoint,
-									IN const Task& a_task) asd_noexcept
-	{
-		auto data = std::atomic_load(&m_data);
-		return asd::PushTaskAt(data, a_timePoint, Task(a_task));
-	}
-
-
-
-	uint64_t ThreadPool::PushTaskAfter(IN uint32_t a_afterMs,
-									   MOVE Task&& a_task) asd_noexcept
-	{
-		return PushTaskAt(Timer::Now() + Timer::Milliseconds(a_afterMs),
-						  std::move(a_task));
-	}
-
-
-
-	uint64_t ThreadPool::PushTaskAfter(IN uint32_t a_afterMs,
-									   IN const Task& a_task) asd_noexcept
-	{
-		return PushTaskAt(Timer::Now() + Timer::Milliseconds(a_afterMs),
-						  Task(a_task));
+		return asd::PushTimerTask_Internal(data, a_timePoint, a_task);
 	}
 
 
@@ -254,9 +232,9 @@ namespace asd
 		data->run = false;
 		data->overtime = a_overtime;
 
-		while (data->waitingList.size() > 0) {
-			data->waitingList.front()->Post();
-			data->waitingList.pop_front();
+		while (data->standby.size() > 0) {
+			data->standby.front()->Post();
+			data->standby.pop_front();
 		}
 
 		while (data->threads.size() > 0) {

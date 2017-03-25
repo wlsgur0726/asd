@@ -396,6 +396,7 @@ namespace asd
 			a_event.m_socket = AsyncSocketHandle(id).GetObj();
 			if (a_event.m_socket == nullptr)
 				return true;
+
 			a_event.m_onEvent = a_event.m_overlapped != nullptr;
 			a_event.m_onSignal = a_event.m_overlapped == nullptr;
 			return true;
@@ -428,8 +429,8 @@ namespace asd
 								if (sock->m_state == AsyncSocket::State::Closing)
 									break;
 								asd_RAssert(sock->m_state == AsyncSocket::State::Connecting,
-										   "invaild socket state : {}",
-										   (uint8_t)sock->m_state);
+											"invaild socket state : {}",
+											(uint8_t)sock->m_state);
 								sock->m_lastError = e;
 								sock->m_state = AsyncSocket::State::None;
 								m_event->OnConnect(sock, sock->m_lastError);
@@ -476,8 +477,8 @@ namespace asd
 						else {
 							auto recvedData = std::move(sock->m_recvBuffer);
 							asd_RAssert(recvedData->SetSize(a_event.m_transBytes),
-									   "fail recvedData->SetSize({})",
-									   a_event.m_transBytes);
+										"fail recvedData->SetSize({})",
+										a_event.m_transBytes);
 							m_event->OnRecv(sock, std::move(recvedData));
 						}
 						break;
@@ -830,7 +831,7 @@ namespace asd
 				asd_RaiseException("fail eventfd, errno:{}", e);
 			}
 
-			if (OnEventfd<true>() == false)
+			if (ProcEventfd<true>() == false)
 				return;
 
 			StartThread();
@@ -915,7 +916,7 @@ namespace asd
 
 
 		template <bool IS_FIRST>
-		bool OnEventfd()
+		bool ProcEventfd()
 		{
 			bool fail = false;
 			if (IS_FIRST == false) {
@@ -966,7 +967,7 @@ namespace asd
 			if (r > 0) {
 				auto id = (AsyncSocketHandle::ID)a_event.m_epollEvent.data.ptr;
 				if (id == AsyncSocketHandle::Null)
-					return OnEventfd<false>();
+					return ProcEventfd<false>();
 				a_event.m_socket = AsyncSocketHandle(id).GetObj();
 				if (a_event.m_socket == nullptr)
 					return true;
@@ -1044,6 +1045,12 @@ namespace asd
 			// recv
 			sock->m_lastError = 0;
 			while (sock->m_state == AsyncSocket::State::Connected) {
+				if (sock->m_recvBuffer == nullptr) {
+					asd_RAssert(false, "unknown logic error");
+					sock->m_lastError = -1;
+					CloseSocket(sock, true);
+					return;
+				}
 				auto r = ::recv(sock->GetNativeHandle(),
 								sock->m_recvBuffer->GetBuffer(),
 								sock->m_recvBuffer->Capacity(),

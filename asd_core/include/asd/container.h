@@ -135,18 +135,17 @@ namespace asd
 		}
 
 
-		bool Erase(IN const key_type& a_key) asd_noexcept
+		mapped_type Erase(IN const key_type& a_key) asd_noexcept
 		{
 			auto shard = GetShard(a_key);
 			auto lock = shard->GetLock();
 			auto it = shard->find(a_key);
 			if (it == shard->end())
-				return false;
-			auto del = std::move(it->second);
+				return nullptr;
+			auto ret = std::move(it->second);
 			shard->erase(it);
 			lock.unlock();
-			del.reset();
-			return true;
+			return ret;
 		}
 	};
 

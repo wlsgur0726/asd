@@ -35,7 +35,7 @@ namespace asdtest_threadpool
 
 	void Push_Counter(asd::ThreadPool* tp)
 	{
-		tp->PushTask([tp]()
+		tp->Push([tp]()
 		{
 			t_counter.Increase();
 			Push_Counter(tp);
@@ -45,7 +45,7 @@ namespace asdtest_threadpool
 
 	void Push_Counter(asd::SequentialThreadPool<uint32_t>* tp)
 	{
-		tp->PushTask(rand() % 1000, [tp](uint32_t&)
+		tp->PushSeq(rand() % 1000, [tp]()
 		{
 			thread_local bool srandInit = false;
 			if (srandInit == false) {
@@ -114,9 +114,8 @@ namespace asdtest_threadpool
 		for (auto i=TestCount; i>0; --i) {
 			for (auto j=ThreadCount; j>0; --j) {
 				Counter* ptr = &counter[j-1];
-				tp.PushTask(ptr, [ptr](void*& key)
+				tp.PushSeq((void*)ptr, [ptr]()
 				{
-					EXPECT_EQ(ptr, key);
 					ptr->Increase();
 				});
 			}

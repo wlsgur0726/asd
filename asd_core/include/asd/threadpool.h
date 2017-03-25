@@ -14,7 +14,6 @@ namespace asd
 	class ThreadPool
 	{
 	public:
-		typedef std::function<void()>						Task;
 		typedef std::function<void(const std::exception&)>	ExceptionHandler;
 
 
@@ -24,26 +23,53 @@ namespace asd
 		ThreadPool& Reset(IN uint32_t a_threadCount = std::thread::hardware_concurrency());
 		ThreadPool&	Start();
 
+
 		// 작업을 기다리고 처리하는 함수
 		//   a_timeoutMs       :  작업이 없을 때 최대로 대기하는 시간 (밀리초)
-		//   a_procCountLimit  :  처리할 작업의 개수 제한. starvation 방지에 활용
+		//   a_procCountLimit  :  처리할 작업의 개수 제한
 		size_t Poll(IN uint32_t a_timeoutMs = std::numeric_limits<uint32_t>::max(),
 					IN size_t a_procCountLimit = std::numeric_limits<size_t>::max()) asd_noexcept;
 
-		// 작업 등록
-		ThreadPool& PushTask(MOVE Task&& a_task) asd_noexcept;
-		ThreadPool& PushTask(IN const Task& a_task) asd_noexcept;
 
-		// 타이머 등록
-		// Timer::Cancel 함수로 실행 전에 취소 가능
-		uint64_t PushTaskAt(IN Timer::TimePoint a_timePoint,
-							MOVE Task&& a_task) asd_noexcept;
-		uint64_t PushTaskAt(IN Timer::TimePoint a_timePoint,
-							IN const Task& a_task) asd_noexcept;
-		uint64_t PushTaskAfter(IN uint32_t a_afterMs,
-							   MOVE Task&& a_task) asd_noexcept;
-		uint64_t PushTaskAfter(IN uint32_t a_afterMs,
-							   IN const Task& a_task) asd_noexcept;
+		// 작업 등록
+		template <typename FUNC, typename... PARAMS>
+		inline void Push(FUNC&& a_func,
+						 PARAMS&&... a_params) asd_noexcept
+		{
+			auto task = CreateTask(std::forward<FUNC>(a_func),
+								   std::forward<PARAMS>(a_params)...);
+			PushTask(std::move(task));
+		}
+
+		void PushTask(MOVE Task_ptr&& a_task) asd_noexcept;
+
+
+		// 타이머 작업 등록
+		template <typename FUNC, typename... PARAMS>
+		inline Task_ptr PushAfter(IN uint32_t a_afterMs,
+								  FUNC&& a_func,
+								  PARAMS&&... a_params) asd_noexcept
+		{
+			return PushAt(Now() + Milliseconds(a_afterMs),
+						  std::forward<FUNC>(a_func),
+						  std::forward<PARAMS>(a_params)...);
+		}
+
+		// 타이머 작업 등록
+		template <typename FUNC, typename... PARAMS>
+		inline Task_ptr PushAt(IN Timer::TimePoint a_timePoint,
+							   FUNC&& a_func,
+							   PARAMS&&... a_params) asd_noexcept
+		{
+			auto task = CreateTask(std::forward<FUNC>(a_func),
+								   std::forward<PARAMS>(a_params)...);
+			PushTimerTask(a_timePoint, task);
+			return task;
+		}
+
+		Task_ptr PushTimerTask(IN Timer::TimePoint a_timePoint,
+							   IN const Task_ptr& a_task) asd_noexcept;
+
 
 		// 종료
 		// a_overtime이 true이면 남은 작업을 모두 처리할 때까지 기다린다.
@@ -64,105 +90,18 @@ namespace asd
 
 
 
-	// Key의 Hash가 동일한 작업이 수행중인 경우 
+	// Key가 동일한 작업이 수행중인 경우 
 	// 선작업이 끝날 때까지 실행을 보류하여 
 	// 실행순서를 보장해주는 쓰레드풀
-	template <typename Key,
-			  typename Hash = std::hash<Key>>
+	template <typename Key, typename... MapOpts>
 	class SequentialThreadPool : public ThreadPool
 	{
-	public:
-		typedef std::function<void(Key&)>		SequentialTask;
-		typedef size_t							HashKey;
-
-
 	private:
-		typedef std::pair<Key, SequentialTask>	TaskObject;
-		typedef std::queue<TaskObject>			TaskObjectQueue;
-		struct AlreadyHashed
-		{
-			inline constexpr size_t operator()(const HashKey h) const
-			{
-				return h;
-			}
-		};
-
-		typedef std::unordered_map<HashKey, TaskObjectQueue*, AlreadyHashed>	WorkingMap;
-		WorkingMap	m_workingMap;
-		Mutex		m_lock;
-
+		using ThisType = SequentialThreadPool<Key, MapOpts...>;
+		using SeqTask = std::pair<Key, Task_ptr>;
+		using SeqTaskQueue = std::queue<SeqTask>;
 
 	public:
-		using ThreadPool::ThreadPool;
-
-
-		virtual ~SequentialThreadPool()
-		{
-			ThreadPool::Stop();
-		}
-
-
-		inline SequentialThreadPool& PushTask(IN const Key& a_key,
-											  IN const SequentialTask& a_task)
-		{
-			return PushTask(std::move(Key(a_key)),
-							std::move(SequentialTask(a_task)));
-		}
-
-
-		SequentialThreadPool& PushTask(MOVE Key&& a_key,
-									   MOVE SequentialTask&& a_task)
-		{
-			assert(a_task != nullptr);
-			const HashKey hashKey = Hash()(a_key);
-			TaskObject temp;
-			temp.first = std::move(a_key);
-			temp.second = std::move(a_task);
-			ThreadPool::PushTask([	this,
-									hashKey,
-									taskObj = std::move(temp) ]() mutable
-			{
-				thread_local TaskObjectQueue t_queue;
-
-				// sequence check
-				auto mtx = GetLock(m_lock);
-				auto emplace_result = m_workingMap.emplace(hashKey, &t_queue);
-				if (emplace_result.second == false) {
-					// 동일한 작업이 이미 수행중인 경우
-					// 해당 작업을 수행중인 쓰레드가 처리하도록 큐잉하고 종료
-					emplace_result.first->second->emplace(std::move(taskObj));
-					++m_report.conflictCount;
-					mtx.unlock();
-					return;
-				}
-
-				for (;;) {
-					// 1. 작업 수행
-					auto& key  = taskObj.first;
-					auto& task = taskObj.second;
-					mtx.unlock();
-					assert(task != nullptr);
-					task(key);
-
-					// 2. 작업 수행하는 도중 동일한 작업이 큐잉되었는지 확인
-					mtx.lock();
-					++m_report.totalProcCount;
-					if (t_queue.empty()) {
-						// 동일한 작업이 없는 경우 등록을 해제하고 종료
-						m_workingMap.erase(hashKey);
-						break;
-					}
-
-					// 3. 동일한 작업이 또 들어온 경우 해당 작업을 우선 처리
-					taskObj = std::move(t_queue.front());
-					t_queue.pop();
-				}
-				// 완료
-			});
-			return *this;
-		}
-
-
 		struct Report
 		{
 			uint64_t totalProcCount = 0;
@@ -173,13 +112,116 @@ namespace asd
 					return std::numeric_limits<double>::max();
 				return conflictCount / (double)totalProcCount;
 			}
-		} m_report;
+		};
+
+
+		using ThreadPool::ThreadPool;
+
+
+		virtual ~SequentialThreadPool()
+		{
+			ThreadPool::Stop();
+		}
+
+
+		template <typename FUNC, typename... PARAMS>
+		inline void PushSeq(Key&& a_key,
+							FUNC&& a_func,
+							PARAMS&&... a_params) asd_noexcept
+		{
+			auto task = CreateTask(std::forward<FUNC>(a_func),
+								   std::forward<PARAMS>(a_params)...);
+			Push(std::mem_fn(&ThisType::OnSequentialTask),
+				 this,
+				 std::forward<Key>(a_key),
+				 std::move(task));
+		}
+
+
+		template <typename FUNC, typename... PARAMS>
+		inline Task_ptr PushSeqAt(IN Timer::TimePoint a_timepoint,
+								  Key&& a_key,
+								  FUNC&& a_func,
+								  PARAMS&&... a_params) asd_noexcept
+		{
+			auto task = CreateTask(std::forward<FUNC>(a_func),
+								   std::forward<PARAMS>(a_params)...);
+			return PushAt(a_timepoint,
+						  std::mem_fn(&ThisType::OnSequentialTask),
+						  this,
+						  std::forward<Key>(a_key),
+						  std::move(task));
+		}
+
+
+		template <typename FUNC, typename... PARAMS>
+		inline Task_ptr PushSeqAfter(IN uint32_t a_afterMs,
+									 Key&& a_key,
+									 FUNC&& a_func,
+									 PARAMS&&... a_params) asd_noexcept
+		{
+			auto task = CreateTask(std::forward<FUNC>(a_func),
+								   std::forward<PARAMS>(a_params)...);
+			return PushAfter(a_afterMs,
+							 std::mem_fn(&ThisType::OnSequentialTask),
+							 this,
+							 std::forward<Key>(a_key),
+							 std::move(task));
+		}
+
+
+		void OnSequentialTask(REF Key& a_key,
+							  REF Task_ptr& a_task) asd_noexcept
+		{
+			thread_local SeqTaskQueue t_queue;
+
+			// sequence check
+			auto lock = GetLock(m_lock);
+			auto emplace = m_workingMap.emplace(a_key, &t_queue);
+			if (emplace.second == false) {
+				// 동일한 작업이 이미 수행중인 경우
+				// 해당 작업을 수행중인 쓰레드가 처리하도록 큐잉하고 종료
+				auto& queue = *emplace.first->second;
+				queue.emplace(SeqTask(std::move(a_key), std::move(a_task)));
+				++m_report.conflictCount;
+				lock.unlock();
+				return;
+			}
+
+			for (;;) {
+				// 1. 작업 수행
+				lock.unlock();
+				a_task->Execute();
+
+				// 2. 작업 수행하는 도중 동일한 작업이 큐잉되었는지 확인
+				lock.lock();
+				++m_report.totalProcCount;
+				if (t_queue.empty()) {
+					// 동일한 작업이 없는 경우 등록을 해제하고 종료
+					m_workingMap.erase(a_key);
+					break;
+				}
+
+				// 3. 동일한 작업이 또 들어온 경우 해당 작업을 우선 처리
+				auto nextTask = std::move(t_queue.front());
+				t_queue.pop();
+				a_key = std::move(nextTask.first);
+				a_task = std::move(nextTask.second);
+			}
+		}
+
 
 		Report GetReport() asd_noexcept
 		{
 			auto mtx = GetLock(m_lock);
 			return m_report;
 		}
+
+
+	private:
+		Report m_report;
+		Mutex m_lock;
+		std::unordered_map<Key, SeqTaskQueue*, MapOpts...> m_workingMap;
 
 
 	}; // SequentialThreadPool

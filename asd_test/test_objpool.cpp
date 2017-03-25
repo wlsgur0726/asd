@@ -82,8 +82,8 @@ namespace asdtest_objpool
 
 			// 2-1. initCount로 풀링되어있는 개수만큼 
 			//      기본생성자로 Alloc을 하면서 풀에 남아있는 객체 수를 검사
-			const int FirstGetCount = objPool.GetCount();
-			for (int i=1; i<=FirstGetCount; ++i) {
+			const size_t FirstGetCount = objPool.GetCount();
+			for (size_t i=1; i<=FirstGetCount; ++i) {
 				objs.emplace_back(objPool.Alloc());
 				EXPECT_EQ(g_objCount, i);
 				EXPECT_EQ(g_conCount_default, i);
@@ -93,8 +93,8 @@ namespace asdtest_objpool
 
 			// 2-2. 기존에 풀링되어있는 개수를 초과하여 Alloc,
 			//      더불어 생성하는 객체의 다른 생성자가 동작하는지 여부도 테스트
-			const int SecondGetCount = TestCount;
-			for (int i=1; i<=SecondGetCount; ++i) {
+			const size_t SecondGetCount = TestCount;
+			for (size_t i=1; i<=SecondGetCount; ++i) {
 				objs.emplace_back(objPool.Alloc(123, &objPool));
 				EXPECT_EQ(g_objCount, FirstGetCount + i);
 				EXPECT_EQ(g_conCount_default, FirstGetCount);
@@ -291,9 +291,9 @@ namespace asdtest_objpool
 
 	TEST(ObjectPool, ShardSet)
 	{
-		typedef asd::ObjectPool<TestClass>						Pool0;
+		typedef asd::ObjectPool<TestClass>				Pool0;
 		typedef asd::ObjectPool<TestClass, asd::Mutex>	Pool1;
-		typedef asd::ObjectPool2<TestClass>						Pool2;
+		typedef asd::ObjectPool2<TestClass>				Pool2;
 
 		// compile error
 		//typedef asd::ObjectPoolShardSet<Pool0> ShardSet0;

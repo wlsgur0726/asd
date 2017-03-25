@@ -22,11 +22,11 @@
 int main(int argc, char** argv)
 {
 	Test();
-#if 1
+#if 0
 	std::vector<char*> args;
 	args.emplace_back(argv[0]);
 
-	char* filter = "--gtest_filter=ObjectPool.*";
+	char* filter = "--gtest_filter=ThreadPool.*";
 	args.emplace_back(filter);
 
 	argc = args.size();

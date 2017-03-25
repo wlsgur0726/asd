@@ -27,12 +27,13 @@ namespace asd
 #endif
 
 
-	const char DebugInfo::ToStringFormat[] = "[{}({}):{}] {} ";
+	const char DebugInfo::ToStringFormat[] = "[{}][{}:{}][{}] {}";
 
 
 	MString DebugInfo::ToString() const asd_noexcept
 	{
 		return MString::Format(ToStringFormat,
+							   TID,
 							   File, 
 							   Line, 
 							   Function, 

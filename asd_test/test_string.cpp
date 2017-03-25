@@ -225,7 +225,7 @@ namespace asdtest_string
 
 			const int BufSize = 512;
 			typename StringType_asd::CharType buf[BufSize];
-			int offset = 0;
+			size_t offset = 0;
 			asd::strcpy(buf+offset, s1);
 
 			offset += s1.length();
@@ -250,7 +250,7 @@ namespace asdtest_string
 
 			const int BufSize = 512;
 			typename StringType_asd::CharType buf[BufSize];
-			int offset = 0;
+			size_t offset = 0;
 			asd::strcpy(buf+offset, s1);
 
 			offset += s1.length();
