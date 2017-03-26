@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "asdbase.h"
-#include "string.h"
 #include "trace.h"
 #include "threadutil.h"
 #include <vector>
@@ -11,53 +10,6 @@
 namespace asd
 {
 	void DebugBreak();
-
-
-	struct DebugInfo 
-	{
-		// "[{}][{}:{}][{}] {}"
-		// [TID][File:Line][Function] Comment
-		static const char ToStringFormat[];
-
-		const uint32_t	TID;
-		const char*		File;
-		const int		Line;
-		const char*		Function;
-		MString			Comment;
-
-		template<typename... ARGS>
-		inline DebugInfo(IN const char* a_file,
-						 IN const int a_line,
-						 IN const char* a_function,
-						 IN const char* a_comment = "",
-						 IN const ARGS&... a_args) asd_noexcept
-			: TID(GetCurrentThreadID())
-			, File(a_file)
-			, Line(a_line)
-			, Function(a_function)
-			, Comment(MString::Format(a_comment, a_args...))
-		{
-			assert(File != nullptr);
-			assert(Line > 0);
-			assert(Function != nullptr);
-		}
-
-		MString ToString() const asd_noexcept;
-	};
-	typedef std::vector<DebugInfo> DebugTrace;
-
-
-
-	// __VA_ARGS__ : format, ...
-#define asd_MakeDebugInfo(...)\
-	asd::DebugInfo(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-
-#define asd_DebugTrace(TRACE, ...)\
-	TRACE.emplace_back(asd_MakeDebugInfo(__VA_ARGS__))
-
-#define asd_PrintStdErr(...)\
-	asd::fputs(asd_MakeDebugInfo(__VA_ARGS__).ToString(), stderr)
-
 
 
 	// exception
@@ -135,7 +87,7 @@ namespace asd
 
 #else
 	#define asd_RaiseException(...)\
-		throw asd::Exception(asd_MakeDebugInfo(__VA_ARGS__))
+		throw asd::Exception(asd_DebugInfo(__VA_ARGS__))
 
 #endif
 
@@ -267,11 +219,11 @@ namespace asd
 
 	// asd_RAssert : 표준 assert와는 다르게 release에서도 Check는 수행된다.
 	// __VA_ARGS__ : format, ...
-#define asd_RAssert(Check, ...)														\
-	do {																			\
-		if ((Check) == false)														\
-			asd::GetAssertHandler()->OnError(asd_MakeDebugInfo(__VA_ARGS__));		\
-	} while(false)																	\
+#define asd_RAssert(Check, ...)													\
+	do {																		\
+		if ((Check) == false)													\
+			asd::GetAssertHandler()->OnError(asd_DebugInfo(__VA_ARGS__));		\
+	} while(false)																\
 
 
 	// asd_DAssert : release에서는 Check를 수행하지 않는다.
@@ -286,17 +238,16 @@ namespace asd
 
 	// check error and return
 	// __VA_ARGS__ : format, ...
-#define asd_ChkErrAndRetVal(IsErr, RetVal, ...)										\
-	do {																			\
-		if (IsErr) {																\
-			asd::GetAssertHandler()->OnError(asd_MakeDebugInfo(__VA_ARGS__));		\
-			return RetVal;															\
-		}																			\
-	} while(false)																	\
+#define asd_ChkErrAndRetVal(IsErr, RetVal, ...)									\
+	do {																		\
+		if (IsErr) {															\
+			asd::GetAssertHandler()->OnError(asd_DebugInfo(__VA_ARGS__));		\
+			return RetVal;														\
+		}																		\
+	} while(false)																\
 
 #define asd_ChkErrAndRet(IsErr, ...)\
 	asd_ChkErrAndRetVal(IsErr, ;, __VA_ARGS__)
-
 
 
 }

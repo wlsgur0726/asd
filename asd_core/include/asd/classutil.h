@@ -102,10 +102,10 @@ namespace asd
 
 	template <typename T, typename... Args>
 	inline void Reset(REF T& a_target,
-					  IN const Args&... a_constructorArgs)
+					  Args&&... a_constructorArgs)
 	{
 		a_target.~T();
-		new(&a_target) T(a_constructorArgs...);
+		new(&a_target) T(std::forward<Args>(a_constructorArgs)...);
 	}
 
 

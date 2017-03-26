@@ -216,14 +216,14 @@ namespace asd
 			asd_RAssert(false, "not impl");
 		}
 
-		virtual int Connect(REF AsyncSocket* a_sock,
-							IN const IpAddress& a_dest) asd_noexcept
+		virtual int Listen(REF AsyncSocket* a_sock) asd_noexcept
 		{
 			asd_RAssert(false, "not impl");
 			return -1;
 		}
 
-		virtual int Listen(REF AsyncSocket* a_sock) asd_noexcept
+		virtual int Connect(REF AsyncSocket* a_sock,
+							IN const IpAddress& a_dst) asd_noexcept
 		{
 			asd_RAssert(false, "not impl");
 			return -1;
@@ -378,20 +378,22 @@ namespace asd
 												 a_timeoutMs);
 			if (r == FALSE) {
 				a_event.m_error = ::GetLastError();
-				bool isSocketRecvEvent = id!=AsyncSocketHandle::Null && a_event.m_overlapped!=nullptr;
+				bool isSocketIoEvent = id!=AsyncSocketHandle::Null && a_event.m_overlapped!=nullptr;
 				switch (a_event.m_error) {
 					case WAIT_TIMEOUT:
 						a_event.m_timeout = true;
 						return true;
 					case ERROR_CONNECTION_REFUSED:
+					case ERROR_CONNECTION_ABORTED:
 					case ERROR_NETNAME_DELETED:
 					case ERROR_SEM_TIMEOUT:
 					case ERROR_INVALID_NETNAME:
-						if (isSocketRecvEvent)
+					case ERROR_OPERATION_ABORTED:
+						if (isSocketIoEvent)
 							break; // socket error
 					default:
 						asd_RAssert(false, "polling error, GetLastError:{}", a_event.m_error);
-						if (isSocketRecvEvent)
+						if (isSocketIoEvent)
 							break;
 						return false;
 				}
@@ -412,50 +414,46 @@ namespace asd
 		{
 			AsyncSocket* sock = a_event.m_socket.get();
 
+#if asd_Debug
+			bool _isRecvOv = a_event.m_overlapped == &sock->m_native->m_recvov;
+			bool _isSendOv = _isRecvOv 
+				? false
+				: sock->m_native->m_sendProgress.find(a_event.m_overlapped) != sock->m_native->m_sendProgress.end();
+#endif
+
 			// error
 			if (a_event.m_error != 0) {
 				bool sendError = sock->m_native->m_sendProgress.erase(a_event.m_overlapped) == 1;
 				bool closed = false;
-				switch (a_event.m_error) {
-					case ERROR_CONNECTION_REFUSED:
-					case ERROR_NETNAME_DELETED:
-					case ERROR_SEM_TIMEOUT:
-					case ERROR_INVALID_NETNAME: {
-						DWORD t, f;
-						::WSAGetOverlappedResult(sock->GetNativeHandle(),
-												 a_event.m_overlapped,
-												 &t,
-												 FALSE,
-												 &f);
-						auto e = ::WSAGetLastError();
-						switch (e) {
-							case WSAETIMEDOUT: // connection timeout
-							case WSAECONNREFUSED: // 서버에서 connection 거부 (listen backlog 부족)
-								if (sock->m_state == AsyncSocket::State::Closing)
-									break;
-								asd_RAssert(sock->m_state == AsyncSocket::State::Connecting,
-											"invaild socket state : {}",
-											(uint8_t)sock->m_state);
-								sock->m_lastError = e;
-								sock->m_state = AsyncSocket::State::None;
-								m_event->OnConnect(sock, sock->m_lastError);
-								return; // 지금은 닫지 않는다.
-							case WSAECONNABORTED: // 로컬에서 끊음
-							case WSAECONNRESET: // 상대방이 끊음 (RST)
-								closed = true;
-								if (sock->m_state != AsyncSocket::State::Closing)
-									sock->m_lastError = e;
-								break;
-							default:
-								asd_RAssert(false, "unknown socket error : {}", e);
-								sock->m_lastError = e;
-								break;
-						}
+				DWORD t, f;
+				::WSAGetOverlappedResult(sock->GetNativeHandle(),
+										 a_event.m_overlapped,
+										 &t,
+										 FALSE,
+										 &f);
+				auto e = ::WSAGetLastError();
+				switch (e) {
+					case WSAETIMEDOUT: // connection timeout
+					case WSAECONNREFUSED: // 서버에서 connection 거부 (listen backlog 부족)
+					case WSAEADDRNOTAVAIL: // 잘못된 dst addr (ex 0.0.0.0)
+						if (sock->m_state == AsyncSocket::State::Closing)
+							break;
+						asd_RAssert(sock->m_state == AsyncSocket::State::Connecting,
+									"invaild socket state : {}",
+									(uint8_t)sock->m_state);
+						sock->m_lastError = e;
+						sock->m_state = AsyncSocket::State::None;
+						m_event->OnConnect(sock, sock->m_lastError);
+						return; // 지금은 닫지 않는다.
+					case WSAECONNABORTED: // 로컬에서 끊음
+					case WSAECONNRESET: // 상대방이 끊음 (RST)
+						closed = true;
+						if (sock->m_state != AsyncSocket::State::Closing)
+							sock->m_lastError = e;
 						break;
-					}
 					default:
-						asd_RAssert(false, "unknown error : {}", a_event.m_error);
-						sock->m_lastError = a_event.m_error;
+						asd_RAssert(m_run, "unknown error, GQCS:{}, WSA:{}", a_event.m_error, e);
+						sock->m_lastError = e!=0 ? e : a_event.m_error;
 						break;
 				}
 				if (sendError)
@@ -525,99 +523,9 @@ namespace asd
 
 
 
-		virtual int Connect(REF AsyncSocket* a_sock,
-							IN const IpAddress& a_dest) asd_noexcept override
-		{
-			static LPFN_CONNECTEX s_connectEx = nullptr;
-			if (s_connectEx == nullptr) {
-				LPFN_CONNECTEX connectEx;
-				SOCKET sock = ::WSASocket(AF_INET, SOCK_STREAM, 0, NULL, NULL, WSA_FLAG_OVERLAPPED);
-				if (sock == INVALID_SOCKET) {
-					auto e = ::WSAGetLastError();
-					asd_RAssert(false, "fail WSASocket, WSAGetLastError:{}", e);
-					return e;
-				}
-				GUID guid = WSAID_CONNECTEX;
-				DWORD bytes = 0;
-				int r = ::WSAIoctl(sock,
-								   SIO_GET_EXTENSION_FUNCTION_POINTER,
-								   &guid,
-								   sizeof(guid),
-								   &connectEx,
-								   sizeof(connectEx),
-								   &bytes,
-								   NULL,
-								   NULL);
-				if (r != 0) {
-					auto e = ::WSAGetLastError();
-					asd_RAssert(false, "fail WSAIoctl, WSAGetLastError:{}", e);
-					::closesocket(sock);
-					return e;
-				}
-				::closesocket(sock);
-				s_connectEx = connectEx;
-			}
-
-			IpAddress bindAddr;
-			switch (a_dest.GetAddressFamily()) {
-				case AddressFamily::IPv4:{
-					sockaddr_in t;
-					t.sin_family = PF_INET;
-					t.sin_addr.s_addr = INADDR_ANY;
-					t.sin_port = 0;
-					bindAddr = t;
-					break;
-				}
-				case AddressFamily::IPv6:{
-					sockaddr_in6 t;
-					t.sin6_family = PF_INET6;
-					t.sin6_addr = in6addr_any;
-					t.sin6_port = 0;
-					t.sin6_scope_id = 0; // TODO
-					bindAddr = t;
-					break;
-				}
-				default:
-					asd_RAssert(false, "invalid a_dest:{}", a_dest.ToString());
-					return -1;
-			}
-			auto e = a_sock->Bind(bindAddr);
-			if (e != 0) {
-				asd_RAssert(false, "fail Bind, WSAGetLastError:{}", e);
-				return e;
-			}
-
-			auto addr = (const sockaddr*)a_dest;
-			auto& ov = a_sock->m_native->m_recvov;
-			std::memset(&ov, 0, sizeof(ov));
-			BOOL r = s_connectEx(a_sock->GetNativeHandle(),
-								 addr,
-								 a_dest.GetAddrLen(),
-								 NULL,
-								 0,
-								 NULL,
-								 &ov);
-			if (r == FALSE) {
-				auto e = ::WSAGetLastError();
-				switch (e) {
-					case WSA_IO_PENDING:
-						break; // 정상
-					default:
-						asd_RAssert(false, "fail WSASend, WSAGetLastError:{}", e);
-						return e;
-				}
-			}
-			return 0;
-		}
-
-
-
 		virtual int Listen(REF AsyncSocket* a_sock) asd_noexcept override
 		{
-			if (a_sock->m_native->m_listening != nullptr) {
-				asd_RAssert(false, "already listenig");
-				return -1;
-			}
+			asd_ChkErrAndRetVal(a_sock->m_native->m_listening != nullptr, -1, "already listenig");
 			a_sock->m_native->m_listening.reset(new AsyncSocketNative::Listening);
 			return AcceptEx(a_sock);
 		}
@@ -681,6 +589,93 @@ namespace asd
 						break; // 정상
 					default:
 						asd_RAssert(false, "fail AcceptEx, WSAGetLastError:{}", e);
+						return e;
+				}
+			}
+			return 0;
+		}
+
+
+
+		virtual int Connect(REF AsyncSocket* a_sock,
+							IN const IpAddress& a_dst) asd_noexcept override
+		{
+			static LPFN_CONNECTEX s_connectEx = nullptr;
+			if (s_connectEx == nullptr) {
+				LPFN_CONNECTEX connectEx;
+				SOCKET sock = ::WSASocket(AF_INET, SOCK_STREAM, 0, NULL, NULL, WSA_FLAG_OVERLAPPED);
+				if (sock == INVALID_SOCKET) {
+					auto e = ::WSAGetLastError();
+					asd_RAssert(false, "fail WSASocket, WSAGetLastError:{}", e);
+					return e;
+				}
+				GUID guid = WSAID_CONNECTEX;
+				DWORD bytes = 0;
+				int r = ::WSAIoctl(sock,
+								   SIO_GET_EXTENSION_FUNCTION_POINTER,
+								   &guid,
+								   sizeof(guid),
+								   &connectEx,
+								   sizeof(connectEx),
+								   &bytes,
+								   NULL,
+								   NULL);
+				if (r != 0) {
+					auto e = ::WSAGetLastError();
+					asd_RAssert(false, "fail WSAIoctl, WSAGetLastError:{}", e);
+					::closesocket(sock);
+					return e;
+				}
+				::closesocket(sock);
+				s_connectEx = connectEx;
+			}
+
+			IpAddress bindAddr;
+			switch (a_dst.GetAddressFamily()) {
+				case AddressFamily::IPv4:{
+					sockaddr_in t;
+					t.sin_family = PF_INET;
+					t.sin_addr.s_addr = INADDR_ANY;
+					t.sin_port = 0;
+					bindAddr = t;
+					break;
+				}
+				case AddressFamily::IPv6:{
+					sockaddr_in6 t;
+					t.sin6_family = PF_INET6;
+					t.sin6_addr = in6addr_any;
+					t.sin6_port = 0;
+					t.sin6_scope_id = 0; // TODO
+					bindAddr = t;
+					break;
+				}
+				default:
+					asd_RAssert(false, "invalid a_dest:{}", a_dst.ToString());
+					return -1;
+			}
+			auto e = a_sock->Bind(bindAddr);
+			if (e != 0) {
+				asd_RAssert(false, "fail Bind, WSAGetLastError:{}", e);
+				return e;
+			}
+
+			auto addr = (const sockaddr*)a_dst;
+			auto& ov = a_sock->m_native->m_recvov;
+			std::memset(&ov, 0, sizeof(ov));
+			BOOL r = s_connectEx(a_sock->GetNativeHandle(),
+								 addr,
+								 a_dst.GetAddrLen(),
+								 NULL,
+								 0,
+								 NULL,
+								 &ov);
+			if (r == FALSE) {
+				auto e = ::WSAGetLastError();
+				switch (e) {
+					case WSA_IO_PENDING:
+						break; // 정상
+					default:
+						asd_RAssert(false, "fail WSASend, WSAGetLastError:{}", e);
 						return e;
 				}
 			}
@@ -775,6 +770,8 @@ namespace asd
 		virtual void CloseSocket(REF AsyncSocket* a_sock,
 								 IN bool a_hard = false) asd_noexcept override
 		{
+			if (a_sock->GetNativeHandle() == Socket::InvalidHandle)
+				return;
 			if (a_sock->m_state == AsyncSocket::State::Closed)
 				return;
 
@@ -1126,12 +1123,12 @@ namespace asd
 
 
 		virtual int Connect(REF AsyncSocket* a_sock,
-							IN const IpAddress& a_dest) asd_noexcept override
+							IN const IpAddress& a_dst) asd_noexcept override
 		{
 			if (PostSignal(a_sock) == false)
 				return -1;
 
-			int e = a_sock->Socket::Connect(a_dest);
+			int e = a_sock->Socket::Connect(a_dst);
 			switch (e) {
 				case 0:
 					asd_RAssert(false, "??");
@@ -1280,6 +1277,83 @@ namespace asd
 	}
 
 
+	bool IOEvent::RegisterListener(IN AsyncSocket_ptr& a_sock,
+								   IN const IpAddress& a_bind,
+								   IN int a_backlog /*= 1024*/) asd_noexcept
+	{
+		auto internal = get();
+		if (internal == nullptr)
+			return false;
+		if (a_sock == nullptr)
+			return false;
+
+		auto sockLock = GetLock(a_sock->m_sockLock);
+
+		if (a_sock->m_state != AsyncSocket::State::None) {
+			asd_RAssert(false, "invalid socket state : {}", (uint8_t)a_sock->m_state);
+			return false;
+		}
+
+		auto e = a_sock->Bind(a_bind);
+		if (e != 0) {
+			asd_RAssert(false, "fail Socket::Bind({}), e:{}", a_bind.ToString(), e);
+			return false;
+		}
+
+		if (Register(a_sock) == false)
+			return false;
+
+		e = a_sock->Listen(a_backlog);
+		if (e != 0) {
+			asd_RAssert(false, "fail Socket::Listen({}), e:{}", a_backlog, e);
+			return false;
+		}
+
+		e = internal->Listen(a_sock.get());
+		if (0 != 0) {
+			asd_RAssert(false, "fail IOEventInternal::Listen(), e:{}", e);
+			return false;
+		}
+
+		a_sock->m_state = AsyncSocket::State::Listening;
+		return true;
+	}
+
+
+	bool IOEvent::RegisterConnector(IN AsyncSocket_ptr& a_sock,
+									IN const IpAddress& a_dst) asd_noexcept
+	{
+		auto internal = get();
+		if (internal == nullptr)
+			return false;
+		if (a_sock == nullptr)
+			return false;
+
+		auto sockLock = GetLock(a_sock->m_sockLock);
+
+		if (a_sock->m_state != AsyncSocket::State::None) {
+			asd_RAssert(false, "invalid socket state : {}", (uint8_t)a_sock->m_state);
+			return false;
+		}
+
+		auto e = a_sock->Init(a_sock->GetSocektType(), a_dst.GetAddressFamily());
+		if (e != 0) {
+			asd_RAssert(false, "fail socket init, e:{}", e);
+			return false;
+		}
+
+		if (Register(a_sock) == false)
+			return false;
+
+		a_sock->m_state = AsyncSocket::State::Connecting;
+		a_sock->m_lastError = internal->Connect(a_sock.get(), a_dst);
+		if (a_sock->m_lastError != 0) {
+			a_sock->m_state = AsyncSocket::State::None;
+			return false;
+		}
+	}
+
+
 	bool IOEvent::Register(IN AsyncSocket_ptr& a_sock) asd_noexcept
 	{
 		auto internal = get();
@@ -1316,72 +1390,6 @@ namespace asd
 			internal->Poll(a_timeoutSec);
 	}
 
-
-
-	void AsyncSocket::Connect(IN const IpAddress& a_dest,
-							  IN uint32_t a_timeoutMs /*= 10*1000*/) asd_noexcept
-	{
-		auto ev = std::atomic_load(&m_event);
-		if (ev == nullptr) {
-			asd_RAssert(false, "not registered socket");
-			return;
-		}
-
-		auto sockLock = GetLock(m_sockLock);
-
-		if (m_state != AsyncSocket::State::None) {
-			asd_RAssert(false, "invalid socket state : {}", (uint8_t)m_state);
-			ev->m_event->OnConnect(this, -1);
-			return;
-		}
-
-		m_state = AsyncSocket::State::Connecting;
-		m_lastError = ev->Connect(this, a_dest);
-		if (m_lastError != 0) {
-			m_state = AsyncSocket::State::None;
-			ev->m_event->OnConnect(this, m_lastError);
-			return;
-		}
-	}
-
-
-	bool AsyncSocket::Listen(IN const IpAddress& a_bind,
-							 IN int a_backlog /*= 1024*/) asd_noexcept
-	{
-		auto ev = std::atomic_load(&m_event);
-		if (ev == nullptr) {
-			asd_RAssert(false, "not registered socket");
-			return false;
-		}
-
-		auto sockLock = GetLock(m_sockLock);
-
-		if (m_state != AsyncSocket::State::None) {
-			asd_RAssert(false, "invalid socket state : {}", (uint8_t)m_state);
-			return false;
-		}
-
-		auto e = Bind(a_bind);
-		if (e != 0) {
-			asd_RAssert(false, "fail Socket::Bind({}), e:{}", a_bind.ToString(), e);
-			return false;
-		}
-
-		e = Socket::Listen(a_backlog);
-		if (e != 0) {
-			asd_RAssert(false, "fail Socket::Listen({}), e:{}", a_backlog, e);
-			return false;
-		}
-
-		e = ev->Listen(this);
-		if (0 != 0) {
-			asd_RAssert(false, "fail IOEventInternal::Listen(), e:{}", e);
-			return false;
-		}
-
-		m_state = AsyncSocket::State::Listening;
-		return true;
-	}
 
 
 	bool AsyncSocket::Send(MOVE std::deque<Buffer_ptr>&& a_data) asd_noexcept

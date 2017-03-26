@@ -219,12 +219,24 @@ namespace asdtest_socket
 	{
 		asd::AsyncSocketHandle m_sock;
 		PeerManager* m_owner = nullptr;
+		std::atomic_bool m_onConnect;
+		std::atomic_bool m_onClose;
 
-		virtual ~Peer() { m_sock.Free(); }
-		virtual void OnConnect(IN asd::Socket::Error a_err) asd_noexcept = 0;
-		virtual void OnAccept(MOVE asd::AsyncSocket_ptr&& a_newSock) asd_noexcept = 0;
-		virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) asd_noexcept = 0;
-		virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept = 0;
+		Peer()
+		{
+			m_onConnect = false;
+			m_onClose = false;
+		}
+		virtual ~Peer()
+		{
+			auto sock = m_sock.Free();
+			if (sock != nullptr)
+				sock->Close();
+		}
+		virtual void OnAccept(MOVE asd::AsyncSocket_ptr&& a_newSock) asd_noexcept { FAIL(); }
+		virtual void OnConnect(IN asd::Socket::Error a_err) asd_noexcept { FAIL(); }
+		virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) asd_noexcept { FAIL(); }
+		virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept { FAIL(); }
 	};
 
 	struct PeerManager
@@ -261,36 +273,46 @@ namespace asdtest_socket
 	{
 		static const size_t TotalDataSize = 1 * 1024 * 1024;
 		static const size_t SendSize = TotalDataSize / 1024;
+		static const size_t ClientCount = 1;
+
 		static asd::Semaphore s_finish;
-		static std::atomic<size_t> s_clientCOunt;
+		static std::atomic<size_t> s_clientCount;
+
+		asd::Reset(s_finish);
+		s_clientCount = ClientCount;
 
 		struct Client : public Peer
 		{
-			std::deque<uint8_t> m_expect;
+			std::vector<uint8_t> m_expect;
 			bool m_sendComplete = false;
+			size_t m_offset = 0;
 			bool m_finish = false;
+
+			Client()
+			{
+				m_expect.reserve(TotalDataSize);
+			}
 
 			void Finish()
 			{
 				if (m_finish)
 					return;
-				m_finish = false;
-				if (0 == --s_clientCOunt)
+				m_finish = true;
+				if (0 == --s_clientCount)
 					s_finish.Post();
-			}
-
-			virtual void OnAccept(MOVE asd::AsyncSocket_ptr&& a_newSock) asd_noexcept override
-			{
-				FAIL();
 			}
 
 			virtual void OnConnect(IN asd::Socket::Error a_err) asd_noexcept override
 			{
+				bool b = false;
+				EXPECT_TRUE(m_onConnect.compare_exchange_strong(b, true));
 				EXPECT_EQ(0, a_err);
 				if (0 != a_err) {
+					Finish();
 					m_owner->Del(m_sock);
 					return;
 				}
+
 				auto sock = m_sock.GetObj();
 				ASSERT_NE(sock, nullptr);
 				for (size_t i=0; i<TotalDataSize/SendSize; ++i) {
@@ -298,8 +320,8 @@ namespace asdtest_socket
 					{
 						auto buf = asd::NewBuffer<SendSize>();
 						buf->SetSize(SendSize);
+						uint8_t* p = buf->GetBuffer();
 						for (size_t i=0; i<SendSize; ++i) {
-							auto p = buf->GetBuffer();
 							p[i] = (uint8_t)asd::Random::Uniform(0, 255);
 							m_expect.push_back(p[i]);
 						}
@@ -313,14 +335,13 @@ namespace asdtest_socket
 			{
 				m_owner->m_threadPool.PushSeq(m_sock, [this, data=std::move(a_data)]()
 				{
-					for (size_t i=0; i<data->GetSize(); ++i) {
-						auto p = data->GetBuffer();
-						ASSERT_FALSE(m_expect.empty());
-						EXPECT_EQ(p[i], m_expect.front());
-						m_expect.pop_front();
-					}
+					uint8_t* exp = &m_expect[m_offset];
+					uint8_t* cmp = data->GetBuffer();
+					ASSERT_TRUE(m_expect.size() >= m_offset+data->GetSize());
+					EXPECT_EQ(0, std::memcmp(exp, cmp, data->GetSize()));
+					m_offset += data->GetSize();
 
-					if (m_sendComplete && m_expect.empty()) {
+					if (m_sendComplete && m_offset==m_expect.size()) {
 						Finish();
 						auto sock = m_sock.GetObj();
 						ASSERT_NE(sock, nullptr);
@@ -331,6 +352,8 @@ namespace asdtest_socket
 
 			virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept override
 			{
+				bool b = false;
+				EXPECT_TRUE(m_onClose.compare_exchange_strong(b, true));
 				EXPECT_EQ(0, a_err);
 				Finish();
 				m_owner->Del(m_sock);
@@ -342,16 +365,6 @@ namespace asdtest_socket
 		{
 			struct Client : public Peer
 			{
-				virtual void OnAccept(MOVE asd::AsyncSocket_ptr&& a_newSock) asd_noexcept override
-				{
-					FAIL();
-				}
-
-				virtual void OnConnect(IN asd::Socket::Error a_err) asd_noexcept override
-				{
-					FAIL();
-				}
-
 				virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) asd_noexcept override
 				{
 					auto sock = m_sock.GetObj();
@@ -361,6 +374,8 @@ namespace asdtest_socket
 
 				virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept override
 				{
+					bool b = false;
+					EXPECT_TRUE(m_onClose.compare_exchange_strong(b, true));
 					EXPECT_EQ(0, a_err);
 					m_owner->Del(m_sock);
 				}
@@ -374,18 +389,10 @@ namespace asdtest_socket
 				m_owner->Add(peer);
 			}
 
-			virtual void OnConnect(IN asd::Socket::Error a_err) asd_noexcept override
-			{
-				FAIL();
-			}
-
-			virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) asd_noexcept override
-			{
-				FAIL();
-			}
-
 			virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept override
 			{
+				bool b = false;
+				EXPECT_TRUE(m_onClose.compare_exchange_strong(b, true));
 				EXPECT_EQ(0, a_err);
 				m_owner->Del(m_sock);
 			}
@@ -437,7 +444,8 @@ namespace asdtest_socket
 			{
 				auto handle = asd::AsyncSocketHandle::GetHandle(a_sock);
 				auto peer = m_peerManager.Find(handle);
-				ASSERT_TRUE(peer != nullptr);
+				if (peer == nullptr)
+					return;
 				m_peerManager.m_threadPool.PushSeq(handle, [peer, a_err]() mutable
 				{
 					peer->OnClose(a_err);
@@ -445,7 +453,6 @@ namespace asdtest_socket
 			}
 		};
 
-		const size_t ClientCount = 1;
 		asd::IpAddress addr;
 		TestIO io;
 		io.Start();
@@ -456,30 +463,28 @@ namespace asdtest_socket
 			std::shared_ptr<Peer> listener(new Server);
 			auto sock = listener->m_sock.Alloc();
 			ASSERT_TRUE(io.m_peerManager.Add(listener));
-			ASSERT_TRUE(io.Register(sock));
+			ASSERT_TRUE(io.RegisterListener(sock, asd::IpAddress(Addr_Any(af), 0), 1024));
 			ASSERT_EQ(0, sock->SetSockOpt_ReuseAddr(true));
-			ASSERT_TRUE(sock->Listen(asd::IpAddress(Addr_Any(af), 0), 1024), "");
 			ASSERT_EQ(0, sock->GetSockName(addr));
 		}
 
-		asd::printf("addr = %s\n", addr.ToString().c_str());
+		asd::puts(asd::MString::Format("addr = {}", addr.ToString()));
 
 		// add client
-		s_clientCOunt = ClientCount;
 		for (size_t i=0; i<ClientCount; ++i) {
 			std::shared_ptr<Peer> client(new Client);
 			auto sock = client->m_sock.Alloc();
 			ASSERT_TRUE(io.m_peerManager.Add(client));
-			ASSERT_TRUE(io.Register(sock));
-			sock->Connect(asd::IpAddress(Addr_Loopback(af), addr.GetPort()));
+			ASSERT_TRUE(io.RegisterConnector(sock, asd::IpAddress(Addr_Loopback(af), addr.GetPort())));
 		}
 
 		// wait finish
 		s_finish.Wait();
 
 		auto lock = asd::GetLock(io.m_peerManager.m_lock);
-		io.m_peerManager.m_peers.clear();
+		auto peers = std::move(io.m_peerManager.m_peers);
 		lock.unlock();
+		peers.clear();
 	}
 
 	TEST(Socket, IPv4_TCP_NonBlocked)

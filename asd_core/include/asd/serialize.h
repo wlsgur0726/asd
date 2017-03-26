@@ -25,7 +25,7 @@ namespace asd
 		const auto Limit = asd_Default_LimitCount;
 		static_assert(Limit > 0, "invalid Limit value");
 		if (a_count > Limit || a_count < 0) {
-			assert(false);
+			asd_DAssert(false);
 			return true;
 		}
 		return false;
@@ -36,7 +36,7 @@ namespace asd
 	{
 		// Write  :  버퍼의 여유공간이 부족하여 쓸 수 없음
 		// Read   :  버퍼에 들어있는 데이터가 온전하지 않아 읽을 수 없음
-		assert(false);
+		asd_DAssert(false);
 	}
 
 
@@ -90,7 +90,7 @@ namespace asd
 		if (ret > 0) {
 			if (EndianFree<BufferEndian, DataType>() == false)
 				a_data = Reverse(a_data);
-			assert(sizeof(DataType) == ret);
+			asd_DAssert(sizeof(DataType) == ret);
 		}
 		return ret;
 	}
@@ -116,7 +116,7 @@ namespace asd
 			DataType reverse = Reverse(a_data[i]);
 			ret += a_buffer.Write(&reverse, sizeof(DataType));
 		}
-		assert(TotalBytes == ret);
+		asd_DAssert(TotalBytes == ret);
 		return TotalBytes;
 	}
 
@@ -137,7 +137,7 @@ namespace asd
 				for (size_t i=0; i<a_count; ++i)
 					a_data[i] = Reverse(a_data[i]);
 			}
-			assert(ret == TotalBytes);
+			asd_DAssert(ret == TotalBytes);
 		}
 		return ret;
 	}
@@ -575,7 +575,7 @@ namespace asd
 				for (DefaultCountType j=0; j<i; ++j) {
 					T data2;
 					size_t r2 = Read(a_buffer, data2);
-					assert(r2 != 0);
+					asd_DAssert(r2 != 0);
 					a_data.erase(data2);
 				}
 				return 0;
@@ -608,7 +608,7 @@ namespace asd
 				for (DefaultCountType j=0; j<i; ++j) {
 					T data2;
 					size_t r2 = Read(a_buffer, data2);
-					assert(r2 != 0);
+					asd_DAssert(r2 != 0);
 					a_data.erase(data2);
 				}
 				return 0;
@@ -657,7 +657,7 @@ namespace asd
 				for (DefaultCountType j=0; j<i; ++j) {
 					T data2;
 					size_t r2 = Read(a_buffer, data2);
-					assert(r2 != 0);
+					asd_DAssert(r2 != 0);
 					a_data.erase(data2.first);
 				}
 				return 0;
@@ -705,7 +705,7 @@ namespace asd
 				for (DefaultCountType j=0; j<i; ++j) {
 					T data2;
 					size_t r2 = Read(a_buffer, data2);
-					assert(r2 != 0);
+					asd_DAssert(r2 != 0);
 					a_data.erase(data2.first);
 				}
 				return 0;
@@ -739,7 +739,7 @@ namespace asd
 				for (DefaultCountType j=0; j<i; ++j) {
 					T data2;
 					size_t r2 = Read(a_buffer, data2);
-					assert(r2 != 0);
+					asd_DAssert(r2 != 0);
 					a_data.erase(data2.first);
 				}
 				return 0;
@@ -772,7 +772,7 @@ namespace asd
 				for (DefaultCountType j=0; j<i; ++j) {
 					T data2;
 					size_t r2 = Read(a_buffer, data2);
-					assert(r2 != 0);
+					asd_DAssert(r2 != 0);
 					a_data.erase(data2.first);
 				}
 				return 0;

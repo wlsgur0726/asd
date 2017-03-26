@@ -11,36 +11,36 @@ TEST(Exception, MacroFunctionTest1)
 
 	{
 		const int LineCheck = __LINE__ + 1;
-		asd::DebugInfo di = asd_MakeDebugInfo("Test asd_MakeDebugInfo");
+		asd::DebugInfo di = asd_DebugInfo("Test asd_DebugInfo");
 		EXPECT_EQ(di.Line, LineCheck);
 		EXPECT_STREQ(__FUNCTION__, di.Function);
 		EXPECT_STREQ(__FILE__, di.File);
-		EXPECT_STREQ("Test asd_MakeDebugInfo", di.Comment);
+		EXPECT_STREQ("Test asd_DebugInfo", di.Comment);
 
 		auto cmpstr = asd::MString::Format(asd::DebugInfo::ToStringFormat,
 										   asd::GetCurrentThreadID(),
 										   __FILE__,
 										   LineCheck,
 										   __FUNCTION__,
-										   "Test asd_MakeDebugInfo");
+										   "Test asd_DebugInfo");
 		EXPECT_STREQ(di.ToString(), cmpstr);
 		asd::puts(di.ToString());
 	}
 
 	{
 		const int LineCheck = __LINE__ + 1;
-		asd::DebugInfo di = asd_MakeDebugInfo("Test asd_MakeDebugInfo {}", 123);
+		asd::DebugInfo di = asd_DebugInfo("Test asd_DebugInfo {}", 123);
 		EXPECT_EQ(di.Line, LineCheck);
 		EXPECT_STREQ(__FUNCTION__, di.Function);
 		EXPECT_STREQ(__FILE__, di.File);
-		EXPECT_STREQ("Test asd_MakeDebugInfo 123", di.Comment);
+		EXPECT_STREQ("Test asd_DebugInfo 123", di.Comment);
 
 		auto cmpstr = asd::MString::Format(asd::DebugInfo::ToStringFormat,
 										   asd::GetCurrentThreadID(),
 										   __FILE__,
 										   LineCheck,
 										   __FUNCTION__,
-										   "Test asd_MakeDebugInfo 123");
+										   "Test asd_DebugInfo 123");
 		EXPECT_STREQ(di.ToString(), cmpstr);
 		asd::puts(di.ToString());
 	}

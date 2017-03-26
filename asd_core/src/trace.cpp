@@ -220,26 +220,55 @@ namespace asd
 
 
 
+	const Trace::TimePoint g_startTime = std::chrono::system_clock::now();
+	inline int64_t Elapsed(IN Trace::TimePoint a_time)
+	{
+		return std::chrono::duration_cast<std::chrono::milliseconds>(a_time - g_startTime).count();
+	}
+
+
 	Trace::Trace(IN const char* a_file,
 				 IN int a_line,
 				 IN const char* a_function) asd_noexcept
+		: Time(std::chrono::system_clock::now())
+		, TID(GetCurrentThreadID())
+		, File(a_file)
+		, Line(a_line)
+		, Function(a_function)
 	{
-		Time = std::chrono::system_clock::now();
-		TID = GetCurrentThreadID();
-		File = a_file;
-		Line = a_line;
-		Function = a_function;
 	}
 
 	MString Trace::ToString() const asd_noexcept
 	{
-		auto now = std::chrono::system_clock::now();
-		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - Time);
-		return MString::Format("[{}ms ago][TID:{}] {}:{} {}",
-							   elapsed.count(),
+		return MString::Format("[{}][{}][{}:{}][{}]",
+							   Elapsed(Time),
 							   TID,
 							   File,
 							   Line,
 							   Function);
+	}
+
+
+
+	const char DebugInfo::ToStringFormat[] = "[{}][{}][{}:{}][{}] {}";
+
+	MString DebugInfo::ToString() const asd_noexcept
+	{
+		return MString::Format(ToStringFormat,
+							   Elapsed(Time),
+							   TID,
+							   File,
+							   Line,
+							   Function,
+							   Comment);
+	}
+
+
+	void PushDebugTrace(REF DebugTracer& a_tracer,
+						MOVE DebugInfo&& a_trace) asd_noexcept
+	{
+		static Mutex s_lock;
+		auto lock = GetLock(s_lock);
+		a_tracer.emplace_back(std::move(a_trace));
 	}
 }

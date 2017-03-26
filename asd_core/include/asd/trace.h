@@ -37,19 +37,22 @@ namespace asd
 	};
 
 
+
 	struct Trace
 	{
-		std::chrono::system_clock::time_point	Time;
-		uint32_t								TID;
-		const char*								File;
-		int										Line;
-		const char*								Function;
+		using TimePoint = std::chrono::system_clock::time_point;
+
+		const TimePoint	Time;
+		const uint32_t	TID;
+		const char*		File;
+		const int		Line;
+		const char*		Function;
 
 		Trace(IN const char* a_file,
 			  IN int a_line,
 			  IN const char* a_function) asd_noexcept;
 
-		MString ToString() const asd_noexcept;
+		virtual MString ToString() const asd_noexcept;
 	};
 
 
@@ -78,7 +81,46 @@ namespace asd
 			a_tracer.pop_front();
 		a_tracer.emplace_back(a_trace);
 	}
-}
-
 #define asd_Trace				asd::Trace(__FILE__, __LINE__, __FUNCTION__)
 #define asd_PushTrace(Tracer)	asd::PushTrace(Tracer, asd_Trace)
+
+
+
+	struct DebugInfo : public Trace
+	{
+		// "[{}][{}][{}:{}][{}] {}"
+		// [Time][TID][File:Line][Function] Comment
+		static const char ToStringFormat[];
+
+		const MString Comment;
+
+		template<typename... ARGS>
+		inline DebugInfo(IN const char* a_file,
+						 IN const int a_line,
+						 IN const char* a_function,
+						 IN const char* a_comment = "",
+						 IN const ARGS&... a_args) asd_noexcept
+			: Trace(a_file, a_line, a_function)
+			, Comment(MString::Format(a_comment, a_args...))
+		{
+		}
+
+		virtual MString ToString() const asd_noexcept override;
+	};
+
+	using DebugTracer = std::deque<DebugInfo>;
+
+	void PushDebugTrace(REF DebugTracer& a_tracer,
+						MOVE DebugInfo&& a_trace) asd_noexcept;
+
+	// __VA_ARGS__ : format, ...
+#define asd_DebugInfo(...)\
+	asd::DebugInfo(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+
+#define asd_DebugTrace(TRACE, ...)\
+	asd::PushDebugTrace(TRACE, asd_DebugInfo(__VA_ARGS__))
+
+#define asd_PrintStdErr(...)\
+	asd::fputs(asd_DebugInfo(__VA_ARGS__).ToString(), stderr)
+}
+

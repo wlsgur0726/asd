@@ -66,15 +66,6 @@ namespace asd
 	public:
 		using Socket::Socket;
 
-
-		void Connect(IN const IpAddress& a_dest,
-					 IN uint32_t a_timeoutMs = 10*1000) asd_noexcept;
-
-
-		bool Listen(IN const IpAddress& a_bind,
-					IN int a_backlog = 1024) asd_noexcept;
-
-
 		bool Send(MOVE std::deque<Buffer_ptr>&& a_data) asd_noexcept;
 
 		inline bool Send(MOVE BufferList&& a_data) asd_noexcept
@@ -117,6 +108,31 @@ namespace asd
 
 		void Stop() asd_noexcept;
 
+
+		bool RegisterListener(IN AsyncSocket_ptr& a_sock,
+							  IN const IpAddress& a_bind,
+							  IN int a_backlog = Socket::DefaultBacklog) asd_noexcept;
+
+		inline bool RegisterListener(IN AsyncSocketHandle a_sockHandle,
+									 IN const IpAddress& a_bind,
+									 IN int a_backlog = Socket::DefaultBacklog) asd_noexcept
+		{
+			auto sock = a_sockHandle.GetObj();
+			return RegisterListener(sock, a_bind, a_backlog);
+		}
+
+
+		bool RegisterConnector(IN AsyncSocket_ptr& a_sock,
+							   IN const IpAddress& a_dst) asd_noexcept;
+
+		inline bool RegisterConnector(IN AsyncSocketHandle a_sockHandle,
+									  IN const IpAddress& a_dst) asd_noexcept
+		{
+			auto sock = a_sockHandle.GetObj();
+			return RegisterConnector(sock, a_dst);
+		}
+
+
 		bool Register(IN AsyncSocket_ptr& a_sock) asd_noexcept;
 
 		inline bool Register(IN AsyncSocketHandle a_sockHandle) asd_noexcept
@@ -124,6 +140,7 @@ namespace asd
 			auto sock = a_sockHandle.GetObj();
 			return Register(sock);
 		}
+
 
 		void Poll(IN uint32_t a_timeoutSec) asd_noexcept;
 
