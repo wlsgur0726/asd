@@ -238,7 +238,7 @@ namespace asd
 		//   a_timeoutMs       :  작업이 없을 때 최대로 대기하는 시간 (밀리초)
 		//   a_procCountLimit  :  처리할 작업의 개수 제한
 		size_t Poll(IN uint32_t a_timeoutMs = std::numeric_limits<uint32_t>::max(),
-					IN size_t a_procCountLimit = std::numeric_limits<size_t>::max()) asd_noexcept
+					IN size_t a_procCountLimit = 1) asd_noexcept
 		{
 			auto data = std::atomic_load(&m_data);
 			if (data == nullptr)
@@ -250,6 +250,12 @@ namespace asd
 									 *worker,
 									 a_timeoutMs,
 									 a_procCountLimit);
+			while (worker->m_readyQueue.size() > 0) {
+				auto task = std::move(worker->m_readyQueue.front());
+				asd_BeginTry();
+				data->OnExecute(task);
+				asd_EndTryUnknown_Default();
+			}
 			t_workers.Free(worker);
 			return ret;
 		}
