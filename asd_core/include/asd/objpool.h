@@ -482,7 +482,7 @@ namespace asd
 		ObjectPoolShardSet(IN size_t a_shardCount = 4*Get_HW_Concurrency(),
 						   IN size_t a_totalLimitCount = std::numeric_limits<size_t>::max(),
 						   IN size_t a_initCount = 0)
-			: m_shardCount(std::max(a_shardCount, size_t(1)))
+			: m_shardCount(max(1, a_shardCount))
 		{
 			m_memory.resize(m_shardCount * sizeof(Pool));
 			m_shards = (Pool*)m_memory.data();

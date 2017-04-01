@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 	std::vector<char*> args;
 	args.emplace_back(argv[0]);
 
-	char* filter = "--gtest_filter=Socket.IPv6_TCP_NonBlocked";
+	char* filter = "--gtest_filter=ThreadPool.*";
 	args.emplace_back(filter);
 
 	argc = args.size();

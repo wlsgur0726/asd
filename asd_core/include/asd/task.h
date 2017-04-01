@@ -14,10 +14,10 @@ namespace asd
 		// 큐잉한 task를 취소
 		// task가 아직 실행되지 않았다면 true 리턴
 		// a_call이 true이면 task가 아직 실행되지 않은 경우 실행
-		bool Cancel(IN bool a_call = false) asd_noexcept;
+		bool Cancel(IN bool a_call = false);
 
 		// 실행 (1회만 실행하는 것을 보장)
-		void Execute() asd_noexcept;
+		void Execute();
 
 	private:
 		virtual void OnExecute() = 0;

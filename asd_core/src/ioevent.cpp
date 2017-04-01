@@ -1152,7 +1152,7 @@ namespace asd
 		virtual int Send(REF AsyncSocket* a_sock) asd_noexcept override
 		{
 			thread_local std::vector<iovec> t_iovec;
-			const size_t count = std::min(a_sock->m_sendQueue.size(), (size_t)IOV_MAX);
+			const size_t count = min(a_sock->m_sendQueue.size(), (size_t)IOV_MAX);
 			t_iovec.resize(count);
 			size_t i = 0;
 			for (auto& data : a_sock->m_sendQueue) {

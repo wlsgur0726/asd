@@ -7,28 +7,28 @@
 
 namespace asd
 {
-	template <typename T>
-	constexpr const T& max(IN const T& a_1,
-						   IN const T& a_2)
+	template <typename T1, typename T2>
+	constexpr T1 max(IN const T1& a_1,
+					 IN const T2& a_2)
 	{
-		return a_1 >= a_2 ? a_1 : a_2;
+		return a_1 >= a_2 ? a_1 : (T1)a_2;
 	}
 	template <typename T, typename... ARGS>
-	constexpr const T& max(IN const T& a_1,
-						   IN const ARGS&... a_args)
+	constexpr T max(IN const T& a_1,
+					IN const ARGS&... a_args)
 	{
 		return max(a_1, max(a_args...));
 	}
 
-	template <typename T>
-	constexpr const T& min(IN const T& a_1,
-						   IN const T& a_2)
+	template <typename T1, typename T2>
+	constexpr T1 min(IN const T1& a_1,
+					 IN const T2& a_2)
 	{
-		return a_1 < a_2 ? a_1 : a_2;
+		return a_1 < a_2 ? a_1 : (T1)a_2;
 	}
 	template <typename T, typename... ARGS>
-	constexpr const T& min(IN const T& a_1,
-						   IN const ARGS&... a_args)
+	constexpr T min(IN const T& a_1,
+					IN const ARGS&... a_args)
 	{
 		return min(a_1, min(a_args...));
 	}

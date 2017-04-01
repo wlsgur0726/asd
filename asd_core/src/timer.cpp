@@ -27,6 +27,18 @@ namespace asd
 #endif
 
 
+	Timer::TimePoint Timer::Now() asd_noexcept
+	{
+		return std::chrono::high_resolution_clock::now();
+	}
+
+
+	Timer::Millisec Timer::Diff(IN TimePoint a_before,
+								IN TimePoint a_after) asd_noexcept
+	{
+		return std::chrono::duration_cast<Millisec>(a_after - a_before);
+	}
+
 
 	Timer::Timer() asd_noexcept
 	{
@@ -38,12 +50,6 @@ namespace asd
 			m_offset = Now();
 			PollLoop();
 		});
-	}
-
-
-	Timer::TimePoint Timer::Now() asd_noexcept
-	{
-		return std::chrono::high_resolution_clock::now();
 	}
 
 
@@ -71,8 +77,11 @@ namespace asd
 					break;
 
 				for (auto& queue : taskList) {
-					for (auto& task : queue)
+					for (auto& task : queue) {
+						asd_BeginTry();
 						task->Execute();
+						asd_EndTryUnknown_Default();
+					}
 				}
 
 				taskList.clear();

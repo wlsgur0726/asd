@@ -19,10 +19,15 @@ namespace asd
 		using Millisec	= std::chrono::milliseconds;
 		using TimePoint	= std::chrono::high_resolution_clock::time_point;
 
-		Timer() asd_noexcept;
+		// 시차 계산
+		static Millisec Diff(IN TimePoint a_before,
+							 IN TimePoint a_after) asd_noexcept;
 
 		// 현재시간
 		static TimePoint Now() asd_noexcept;
+
+
+		Timer() asd_noexcept;
 
 		// 어디까지 실행했는지
 		TimePoint CurrentOffset() asd_noexcept;

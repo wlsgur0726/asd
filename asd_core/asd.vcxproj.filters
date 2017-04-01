@@ -52,7 +52,6 @@
     <ClCompile Include="src\socket.cpp" />
     <ClCompile Include="src\string.cpp" />
     <ClCompile Include="src\sysutil.cpp" />
-    <ClCompile Include="src\threadpool.cpp" />
     <ClCompile Include="src\threadutil.cpp" />
     <ClCompile Include="src\timer.cpp" />
     <ClCompile Include="src\trace.cpp" />

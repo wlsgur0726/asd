@@ -9,7 +9,7 @@
 namespace asdtest_threadpool
 {
 	const int SleepMs = 1000 * 1;
-	const uint64_t ThreadWorkCost = 1
+	const uint64_t ThreadWorkCost = 1			// 1 B
 								* 512 * 2		// 1 KB
 								//* 512 * 2		// 1 MB
 								//* 512 * 2		// 1 GB
@@ -49,12 +49,6 @@ namespace asdtest_threadpool
 		auto rnd = asd::Random::Uniform<uint32_t>(0, 999);
 		tp->PushSeq(rnd, [tp]()
 		{
-			thread_local bool srandInit = false;
-			if (srandInit == false) {
-				srandInit = true;
-				asd::srand();
-			}
-
 			t_counter.Increase();
 			Push_Counter(tp);
 		});
@@ -95,10 +89,11 @@ namespace asdtest_threadpool
 	{
 		asd::SequentialThreadPool<uint32_t> tp;
 		PerformanceTest_PushPop<asd::SequentialThreadPool<uint32_t>>(tp);
-		auto report = tp.GetReport();
-		printf("total          :  %llu\n", report.totalProcCount);
-		printf("conflict       :  %llu\n", report.conflictCount);
-		printf("conflict rate  :  %lf\n", report.GetConflictRate());
+		auto stats = tp.GetStats();
+		printf("total          :  %llu\n", stats.totalProcCount);
+		printf("conflict       :  %llu\n", stats.totalConflictCount);
+		printf("conflict rate  :  %lf\n", stats.TotalConflictRate());
+		printf("waiting time   :  %lf\n", stats.RecentWaitingTimeMs());
 	}
 
 
@@ -129,9 +124,10 @@ namespace asdtest_threadpool
 			EXPECT_EQ(cnt.m_count, TestCount * ThreadWorkCost);
 		}
 
-		auto report = tp.GetReport();
-		printf("total          :  %llu\n", report.totalProcCount);
-		printf("conflict       :  %llu\n", report.conflictCount);
-		printf("conflict rate  :  %lf\n", report.GetConflictRate());
+		auto stats = tp.GetStats();
+		printf("total          :  %llu\n", stats.totalProcCount);
+		printf("conflict       :  %llu\n", stats.totalConflictCount);
+		printf("conflict rate  :  %lf\n", stats.TotalConflictRate());
+		printf("waiting time   :  %lf\n", stats.RecentWaitingTimeMs());
 	}
 }

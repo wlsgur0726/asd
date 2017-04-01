@@ -211,7 +211,7 @@ namespace asd
 		for (; m_readOffset.Row!=0; --m_readOffset.Row) {
 			const auto sz = at(0)->GetSize();
 			m_total_read -= sz;
-			m_total_write -= std::min(m_total_write, sz);
+			m_total_write -= min(m_total_write, sz);
 			pop_front();
 		}
 		assert(m_readOffset.Row == 0);

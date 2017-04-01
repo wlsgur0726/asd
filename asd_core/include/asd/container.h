@@ -44,7 +44,7 @@ namespace asd
 
 		inline ShardSet(IN size_t a_shardCount = 2*Get_HW_Concurrency()) asd_noexcept
 		{
-			m_shardCount = std::max(size_t(1), a_shardCount);
+			m_shardCount = max(a_shardCount, 1);
 			m_memory.resize(sizeof(Container) * m_shardCount);
 			m_shards = (Container*)m_memory.data();
 			for (size_t i=0; i<m_shardCount; ++i)
