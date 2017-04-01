@@ -71,8 +71,13 @@ namespace asdtest_threadpool
 		auto end = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double, std::milli> elapsed = end - start;
 
-		printf("g_count :  %llu\n", (uint64_t)g_count);
-		printf("result  :  %lf count per millisec\n", (g_count/ThreadWorkCost)/elapsed.count());
+		auto stats = tp.GetStats();
+		printf("g_count        :  %llu\n", (uint64_t)g_count);
+		printf("result         :  %lf count per millisec\n", (g_count/ThreadWorkCost)/elapsed.count());
+		printf("total          :  %llu\n", stats.totalProcCount);
+		printf("conflict       :  %llu\n", stats.totalConflictCount);
+		printf("conflict rate  :  %lf\n", stats.TotalConflictRate());
+		printf("waiting time   :  %lf\n", stats.RecentWaitingTimeMs());
 	}
 
 
@@ -89,11 +94,6 @@ namespace asdtest_threadpool
 	{
 		asd::SequentialThreadPool<uint32_t> tp;
 		PerformanceTest_PushPop<asd::SequentialThreadPool<uint32_t>>(tp);
-		auto stats = tp.GetStats();
-		printf("total          :  %llu\n", stats.totalProcCount);
-		printf("conflict       :  %llu\n", stats.totalConflictCount);
-		printf("conflict rate  :  %lf\n", stats.TotalConflictRate());
-		printf("waiting time   :  %lf\n", stats.RecentWaitingTimeMs());
 	}
 
 
