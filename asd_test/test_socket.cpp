@@ -233,7 +233,7 @@ namespace asdtest_socket
 			if (sock != nullptr)
 				sock->Close();
 		}
-		virtual void OnAccept(MOVE asd::AsyncSocket_ptr&& a_newSock) asd_noexcept { FAIL(); }
+		virtual void OnAccept(IN asd::AsyncSocket_ptr& a_newSock) asd_noexcept { FAIL(); }
 		virtual void OnConnect(IN asd::Socket::Error a_err) asd_noexcept { FAIL(); }
 		virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) asd_noexcept { FAIL(); }
 		virtual void OnClose(IN asd::Socket::Error a_err) asd_noexcept { FAIL(); }
@@ -381,7 +381,7 @@ namespace asdtest_socket
 				}
 			};
 
-			virtual void OnAccept(MOVE asd::AsyncSocket_ptr&& a_newSock) asd_noexcept override
+			virtual void OnAccept(IN asd::AsyncSocket_ptr& a_newSock) asd_noexcept override
 			{
 				auto handle = asd::AsyncSocketHandle::GetHandle(a_newSock.get());
 				std::shared_ptr<Peer> peer(new Server::Client);
@@ -408,11 +408,8 @@ namespace asdtest_socket
 				auto handle = asd::AsyncSocketHandle::GetHandle(a_listener);
 				auto listener = m_peerManager.Find(handle);
 				ASSERT_TRUE(listener != nullptr);
+				listener->OnAccept(a_newSock);
 				ASSERT_TRUE(Register(a_newSock));
-				m_peerManager.m_threadPool.PushSeq(handle, [listener, newSock=std::move(a_newSock)]() mutable
-				{
-					listener->OnAccept(std::move(newSock));
-				});
 			}
 
 			virtual void OnConnect(IN asd::AsyncSocket* a_sock,

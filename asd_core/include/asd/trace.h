@@ -88,10 +88,6 @@ namespace asd
 
 	struct DebugInfo : public Trace
 	{
-		// "[{}][{}][{}:{}][{}] {}"
-		// [Time][TID][File:Line][Function] Comment
-		static const char ToStringFormat[];
-
 		const MString Comment;
 
 		template<typename... ARGS>

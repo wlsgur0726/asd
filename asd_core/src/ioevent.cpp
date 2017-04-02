@@ -1351,6 +1351,7 @@ namespace asd
 			a_sock->m_state = AsyncSocket::State::None;
 			return false;
 		}
+		return true;
 	}
 
 

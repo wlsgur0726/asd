@@ -250,11 +250,9 @@ namespace asd
 
 
 
-	const char DebugInfo::ToStringFormat[] = "[{}][{}][{}:{}][{}] {}";
-
 	MString DebugInfo::ToString() const asd_noexcept
 	{
-		return MString::Format(ToStringFormat,
+		return MString::Format("[{}][{}][{}:{}][{}] {}",
 							   Elapsed(Time),
 							   TID,
 							   File,
