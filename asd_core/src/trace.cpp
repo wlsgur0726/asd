@@ -24,11 +24,15 @@ namespace asd
 	{
 		Init()
 		{
+#if 1
 			g_currentProcessHandle = ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, ::GetCurrentProcessId());
 			if (g_currentProcessHandle == NULL) {
 				auto e = ::GetLastError();
 				std::terminate();
 			}
+#else
+			g_currentProcessHandle = ::GetCurrentProcess();
+#endif
 
 			// 실행파일과 pdb파일이 같은 경로에 있다고 가정
 			wchar_t buf[4096];
@@ -50,7 +54,8 @@ namespace asd
 				auto e = ::GetLastError();
 				std::terminate();
 			}
-			::SymSetOptions(SYMOPT_LOAD_LINES);
+			auto orgOpt = ::SymGetOptions();
+			::SymSetOptions(orgOpt | SYMOPT_LOAD_LINES);
 		}
 
 		~Init()

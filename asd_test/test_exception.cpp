@@ -37,13 +37,15 @@ TEST(Exception, MacroFunctionTest2)
 		asd_RaiseException("Test asd_RaiseException");
 	}
 	catch (asd::Exception& e) {
-		puts(e.what());
+		asd::puts(e.what());
+		asd::puts(e.GetStackTrace().ToString());
 	}
 
 	try {
 		asd_RaiseException("Test asd_RaiseException {}", 123);
 	}
 	catch (asd::Exception& e) {
-		puts(e.what());
+		asd::puts(e.what());
+		asd::puts(e.GetStackTrace().ToString());
 	}
 }

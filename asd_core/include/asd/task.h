@@ -93,9 +93,8 @@ namespace asd
 	{
 		using TASK = TaskTemplate<FUNC, PARAMS...>;
 		using POOL = ObjectPoolShardSet< ObjectPool<TASK, Mutex> >;
-		static auto& s_pool = Global<POOL>::Instance();
-		return Task_ptr(s_pool.Alloc(std::forward<FUNC>(a_func),
-									 std::forward<PARAMS>(a_params)...),
-						[](Task* p) { s_pool.Free((TASK*)p); });
+		return Task_ptr(Global<POOL>::Instance().Alloc(std::forward<FUNC>(a_func),
+													   std::forward<PARAMS>(a_params)...),
+						[](Task* p) { Global<POOL>::Instance().Free((TASK*)p); });
 	}
 }
