@@ -16,7 +16,7 @@ namespace asd
 		Task_ptr m_lastTimer;
 
 		uint32_t m_periodMs = 1000;
-		size_t m_sampleCount = 10;
+		size_t m_sampleCount = 5;
 
 		size_t m_offset = 0;
 		std::vector<double> m_samples;
@@ -51,7 +51,7 @@ namespace asd
 
 		void AddSample(IN double a_usage) asd_noexcept
 		{
-			asd_DAssert(0 <= a_usage && a_usage <= 100);
+			asd_DAssert(0 <= a_usage && a_usage <= 1);
 			auto lock = GetLock(m_lock);
 			if (m_samples.size() != m_sampleCount) {
 				auto org = m_samples.size();
@@ -84,75 +84,81 @@ namespace asd
 #if asd_Platform_Windows
 		PDH_HQUERY m_cpuQuery;
 		PDH_HCOUNTER m_cpuTotal;
+		bool m_initNative = false;
 
 		void InitNative() asd_noexcept
 		{
-			::PdhOpenQuery(NULL, NULL, &m_cpuQuery);
-			::PdhAddCounterW(m_cpuQuery, L"\\Processor(_Total)\\% Processor Time", NULL, &m_cpuTotal);
-			::PdhCollectQueryData(m_cpuQuery);
+			if (m_initNative)
+				return;
+			PDH_STATUS ret;
+			ret = ::PdhOpenQuery(NULL, NULL, &m_cpuQuery);
+			asd_ChkErrAndRet(ret != ERROR_SUCCESS, "fail PdhOpenQuery, ret:{}", ret);
+			ret = ::PdhAddCounterW(m_cpuQuery, L"\\Processor(_Total)\\% Processor Time", NULL, &m_cpuTotal);
+			asd_ChkErrAndRet(ret != ERROR_SUCCESS, "fail PdhAddCounter, ret:{}", ret);
+			ret = ::PdhCollectQueryData(m_cpuQuery);
+			asd_ChkErrAndRet(ret != ERROR_SUCCESS, "fail PdhCollectQueryData, ret:{}", ret);
+			m_initNative = true;
 		}
 
 		double GetSample() asd_noexcept
 		{
+			InitNative();
+			PDH_STATUS ret;
 			PDH_FMT_COUNTERVALUE counterVal;
-			::PdhCollectQueryData(m_cpuQuery);
-			::PdhGetFormattedCounterValue(m_cpuTotal, PDH_FMT_DOUBLE, NULL, &counterVal);
-			return counterVal.doubleValue;
+			ret = ::PdhCollectQueryData(m_cpuQuery);
+			asd_ChkErrAndRetVal(ret != ERROR_SUCCESS, Last(), "fail PdhCollectQueryData, ret:{}", ret);
+			ret = ::PdhGetFormattedCounterValue(m_cpuTotal, PDH_FMT_DOUBLE, NULL, &counterVal);
+			asd_ChkErrAndRetVal(ret != ERROR_SUCCESS, Last(), "fail PdhGetFormattedCounterValue, ret:{}", ret);
+			return counterVal.doubleValue / 100;
 		}
 
 #else
-		uint64_t m_lastTotalUser, m_lastTotalUserLow, m_lastTotalSys, m_lastTotalIdle;
-		void InitNative() asd_noexcept
+		struct Stat
+		{
+			uint64_t user;
+			uint64_t nice;
+			uint64_t system;
+			uint64_t idle;
+		};
+
+		Stat m_lastStat;
+
+		static bool GetStat(OUT Stat& a_stat) asd_noexcept
 		{
 			FILE* file = ::fopen("/proc/stat", "r");
-			::fscanf(file,
-					 "cpu %llu %llu %llu %llu",
-					 &m_lastTotalUser,
-					 &m_lastTotalUserLow,
-					 &m_lastTotalSys,
-					 &m_lastTotalIdle);
+			if (file == nullptr)
+				return false;
+			bool ok = 4 == ::fscanf(file,
+									"cpu %llu %llu %llu %llu",
+									&a_stat.user,
+									&a_stat.nice,
+									&a_stat.system,
+									&a_stat.idle);
 			::fclose(file);
+			return ok;
+		}
+
+		void InitNative() asd_noexcept
+		{
+			if (GetStat(m_lastStat) == false)
+				std::memset(&m_lastStat, 0, sizeof(m_lastStat));
 		}
 
 		double GetSample() asd_noexcept
 		{
-			double percent;
-			FILE* file;
-			uint64_t totalUser, totalUserLow, totalSys, totalIdle, total;
+			Stat stat;
+			asd_ChkErrAndRetVal(GetStat(stat) == false, Last(), "fail GetStat, errno:{}", errno);
 
-			file = ::fopen("/proc/stat", "r");
-			::fscanf(file,
-					 "cpu %llu %llu %llu %llu",
-					 &totalUser,
-					 &totalUserLow,
-					 &totalSys,
-					 &totalIdle);
-			::fclose(file);
+			Stat delta;
+			delta.user = stat.user - m_lastStat.user;
+			delta.nice = stat.nice - m_lastStat.nice;
+			delta.system = stat.system - m_lastStat.system;
+			delta.idle = stat.idle - m_lastStat.idle;
+			m_lastStat = stat;
 
-			bool overflow
-				 = totalUser < m_lastTotalUser
-				|| totalUserLow < m_lastTotalUserLow
-				|| totalSys < m_lastTotalSys
-				|| totalIdle < m_lastTotalIdle;
-			if (overflow) {
-				//오버플로우 detection
-				percent = -1.0;
-			}
-			else {
-				total = (totalUser - m_lastTotalUser) + (totalUserLow - m_lastTotalUserLow) +
-					(totalSys - m_lastTotalSys);
-				percent = total;
-				total += (totalIdle - m_lastTotalIdle);
-				percent /= total;
-				percent *= 100;
-			}
-
-			m_lastTotalUser = totalUser;
-			m_lastTotalUserLow = totalUserLow;
-			m_lastTotalSys = totalSys;
-			m_lastTotalIdle = totalIdle;
-
-			return percent;
+			double useage = delta.user + delta.nice + delta.system;
+			useage /= useage + delta.idle;
+			return useage;
 		}
 
 #endif

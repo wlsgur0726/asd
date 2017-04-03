@@ -1,12 +1,11 @@
 ﻿#include "stdafx.h"
 #include "test.h"
 #include "asd/sysres.h"
-#include <conio.h>
+#include <stdio.h>
 #include <thread>
 
 void Test()
 {
-	return;
 	volatile bool run = true;
 	std::thread printer([&]()
 	{
@@ -29,7 +28,7 @@ void Test()
 		}));
 	}
 
-	for (int c=0; c!='q'; c=_getch());
+	for (int c=0; c!='q'; c=getchar());
 	run = false;
 	printer.join();
 	for (auto& t : workers)
