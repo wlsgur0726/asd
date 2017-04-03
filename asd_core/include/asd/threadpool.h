@@ -217,7 +217,7 @@ namespace asd
 				t = std::thread([data]() mutable
 				{
 					auto lock = GetLock(data->m_lock);
-					Data::Worker worker;
+					typename Data::Worker worker;
 					data->m_workers.emplace(GetCurrentThreadID(), &worker);
 					for (; data->Running(worker); lock.lock()) {
 						lock.unlock();
@@ -244,7 +244,7 @@ namespace asd
 			if (data == nullptr)
 				return 0;
 
-			thread_local ObjectPool<Data::Worker, asd::NoLock, true> t_workers;
+			thread_local ObjectPool<typename Data::Worker, asd::NoLock, true> t_workers;
 			auto worker = t_workers.Alloc();
 			auto ret = Poll_Internal(data.get(),
 									 *worker,
@@ -437,7 +437,7 @@ namespace asd
 
 	class DefaultThreadPoolData : public ThreadPoolData<Task_ptr>
 	{
-		virtual void OnExecute(REF TaskObj& a_task)
+		virtual void OnExecute(REF TaskObj& a_task) override
 		{
 			a_task->Execute();
 			a_task.reset();
@@ -502,8 +502,12 @@ namespace asd
 	class SequentialThreadPoolData
 		: public ThreadPoolData< std::tuple<Key, bool, Task_ptr> >
 	{
+	public:
 		using BaseType = ThreadPoolData< std::tuple<Key, bool, Task_ptr> >;
+		using TaskObj = typename BaseType::TaskObj;
+		using Worker = typename BaseType::Worker;
 
+	private:
 		struct Work
 		{
 			size_t m_count = 1;
@@ -513,7 +517,7 @@ namespace asd
 		std::unordered_map<Key, Work, MapOpts...> m_workingMap;
 
 		virtual bool TryPop(REF Worker& a_worker,
-							OUT TaskObj& a_task) asd_noexcept
+							OUT TaskObj& a_task) asd_noexcept override
 		{
 			if (a_worker.m_readyQueue.size() > 0) {
 				a_task = std::move(a_worker.m_readyQueue.front());
@@ -521,11 +525,11 @@ namespace asd
 				return true;
 			}
 
-			if (m_waitQueue.empty())
+			if (this->m_waitQueue.empty())
 				return false;
 
-			a_task = std::move(m_waitQueue.front());
-			m_waitQueue.pop();
+			a_task = std::move(this->m_waitQueue.front());
+			this->m_waitQueue.pop();
 
 			if (std::get<1>(a_task) == false)
 				return true;
@@ -537,20 +541,20 @@ namespace asd
 			auto& work = emplace.first->second;
 			asd_DAssert(work.m_worker != &a_worker);
 
-			m_stats.totalConflictCount++;
+			this->m_stats.totalConflictCount++;
 			work.m_worker->m_readyQueue.emplace(std::move(a_task));
 			work.m_count++;
-			if (m_standby.erase(work.m_worker) == 1)
+			if (this->m_standby.erase(work.m_worker) == 1)
 				work.m_worker->m_event.Post();
 			return false;
 		}
 
-		virtual void OnExecute(REF TaskObj& a_task)
+		virtual void OnExecute(REF TaskObj& a_task) override
 		{
 			std::get<2>(a_task)->Execute();
 		}
 
-		virtual void OnFinish(IN TaskObj& a_task) asd_noexcept
+		virtual void OnFinish(IN TaskObj& a_task) asd_noexcept override
 		{
 			if (std::get<1>(a_task) == false)
 				return;
@@ -570,6 +574,9 @@ namespace asd
 	class SequentialThreadPool 
 		: public ThreadPoolTemplate< SequentialThreadPoolData<Key, MapOpts...> >
 	{
+		using BaseType = ThreadPoolTemplate< SequentialThreadPoolData<Key, MapOpts...> >;
+		using TaskObj = typename BaseType::TaskObj;
+
 	public:
 		template <typename FUNC, typename... PARAMS>
 		inline void Push(FUNC&& a_func,
@@ -578,7 +585,7 @@ namespace asd
 			auto task = CreateTask(std::forward<FUNC>(a_func),
 								   std::forward<PARAMS>(a_params)...);
 			auto taskObj = std::make_tuple(Key(), false, std::move(task));
-			auto data = std::atomic_load(&m_data);
+			auto data = std::atomic_load(&this->m_data);
 			PushTask(data, taskObj);
 		}
 
@@ -601,7 +608,7 @@ namespace asd
 		{
 			auto task = CreateTask(std::forward<FUNC>(a_func),
 								   std::forward<PARAMS>(a_params)...);
-			auto data = std::atomic_load(&m_data);
+			auto data = std::atomic_load(&this->m_data);
 			return PushTimerTask(std::move(data),
 								 a_timepoint,
 								 TaskObj(Key(), false, std::move(task)));
@@ -616,7 +623,7 @@ namespace asd
 			auto task = CreateTask(std::forward<FUNC>(a_func),
 								   std::forward<PARAMS>(a_params)...);
 			TaskObj taskObj(std::forward<KEY>(a_key), true, std::move(task));
-			auto data = std::atomic_load(&m_data);
+			auto data = std::atomic_load(&this->m_data);
 			PushTask(data, taskObj);
 		}
 
@@ -642,7 +649,7 @@ namespace asd
 		{
 			auto task = CreateTask(std::forward<FUNC>(a_func),
 								   std::forward<PARAMS>(a_params)...);
-			auto data = std::atomic_load(&m_data);
+			auto data = std::atomic_load(&this->m_data);
 			return PushTimerTask(std::move(data),
 								 a_timepoint,
 								 TaskObj(std::forward<KEY>(a_key), true, std::move(task)));
