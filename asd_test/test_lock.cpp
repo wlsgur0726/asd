@@ -5,6 +5,8 @@
 #include "asd/handle.h"
 #include <thread>
 #include <typeinfo>
+
+
 namespace asdtest_lock
 {
 	template <typename MutexType, typename Task>
