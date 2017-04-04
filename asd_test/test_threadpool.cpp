@@ -103,7 +103,7 @@ namespace asdtest_threadpool
 		asd::SequentialThreadPool<void*> tp;
 		tp.Start();
 
-		const uint64_t TestCount = 12345;
+		const uint64_t TestCount = 100000;
 		const auto ThreadCount = std::thread::hardware_concurrency();
 		std::vector<Counter> counter;
 		counter.resize(ThreadCount);

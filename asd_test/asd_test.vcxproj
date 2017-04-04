@@ -114,6 +114,7 @@
     <ClCompile Include="test_datetime.cpp" />
     <ClCompile Include="test_exception.cpp" />
     <ClCompile Include="test_iconv.cpp" />
+    <ClCompile Include="test_lock.cpp" />
     <ClCompile Include="test_objpool.cpp" />
     <ClCompile Include="test_odbc.cpp" />
     <ClCompile Include="test_semaphore.cpp" />

@@ -6,7 +6,7 @@
 #include <map>
 
 
-namespace asdtest_testtemplate
+namespace asdtest_timer
 {
 	inline int64_t Tick(asd::Timer::TimePoint now = asd::Timer::Now())
 	{

@@ -573,23 +573,21 @@ namespace std
 		: public asd::hash_String<CharType, asd::BasicString<CharType>::CaseSensitive_Default>
 	{
 	};
-}
 
+	template <typename CharType, typename Traits>
+	inline basic_ostream<CharType, Traits>& operator<<(REF basic_ostream<CharType, Traits>& a_left,
+													   IN const asd::BasicString<CharType>& a_right)
+	{
+		return a_left << a_right.data();
+	}
 
-
-template <typename CharType>
-inline std::basic_ostream<CharType>& operator<<(IN std::basic_ostream<CharType>& a_left,
-												IN const asd::BasicString<CharType>& a_right)
-{
-	return a_left << a_right.data();
-}
-
-template <typename CharType>
-inline std::basic_istream<CharType>& operator>>(IN std::basic_istream<CharType>& a_left,
-												OUT asd::BasicString<CharType>& a_right)
-{
-	std::basic_string<CharType> temp;
-	a_left >> temp;
-	a_right = temp;
-	return a_left;
+	template <typename CharType, typename Traits>
+	inline basic_istream<CharType, Traits>& operator>>(REF basic_istream<CharType, Traits>& a_left,
+													   OUT asd::BasicString<CharType>& a_right)
+	{
+		basic_string<CharType> temp;
+		a_left >> temp;
+		a_right = temp;
+		return a_left;
+	}
 }

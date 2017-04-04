@@ -6,6 +6,7 @@
 
 void Test()
 {
+	return;
 	volatile bool run = true;
 	std::thread printer([&]()
 	{

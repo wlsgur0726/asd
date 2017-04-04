@@ -336,7 +336,7 @@ namespace asd
 				if (a_data->TryPop(a_worker, task) == false) {
 					if (a_data->m_waitQueue.size() > 0) {
 						lock.unlock();
-						std::this_thread::sleep_for(std::chrono::nanoseconds(0));
+						std::this_thread::yield();
 						lock.lock();
 						continue;
 					}

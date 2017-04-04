@@ -39,8 +39,13 @@ namespace asd
 		MutexData()
 		{
 #if defined (asd_Platform_Windows)
-			auto r = InitializeCriticalSectionAndSpinCount(&m_mtx, 5);
-			asd_DAssert(r != 0);
+#	if 1
+			InitializeCriticalSection(&m_mtx);
+#	else
+			asd_RAssert(FALSE != InitializeCriticalSectionAndSpinCount(&m_mtx, 5),
+						"fail InitializeCriticalSectionAndSpinCount, GetLastError:{}",
+						::GetLastError());
+#	endif
 #else
 			pthread_mutexattr_t attr;
 			if (pthread_mutexattr_init(&attr) != 0) {
