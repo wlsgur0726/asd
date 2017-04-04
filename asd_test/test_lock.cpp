@@ -32,8 +32,7 @@ namespace asdtest_lock
 				while (wait);
 				while (run) {
 					auto lock = asd::GetLock(mutex);
-					if (++counts[index] == std::numeric_limits<uint64_t>::max())
-						asd_RaiseException("count overflow");
+					++counts[index];
 					task();
 				}
 			}, i);
