@@ -46,7 +46,7 @@ namespace asd
 
 	class SpinMutex final
 	{
-		std::atomic<bool> m_lock;
+		std::atomic<uint32_t> m_lock;
 
 	public:
 		SpinMutex() asd_noexcept;
