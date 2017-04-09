@@ -1,7 +1,9 @@
 ﻿#pragma once
 #include "asdbase.h"
+#include "exception.h"
 #include <thread>
 #include <mutex>
+
 
 namespace asd
 {
@@ -27,9 +29,6 @@ namespace asd
 	struct MutexData;
 	class Mutex final
 	{
-		std::unique_ptr<MutexData> m_data;
-		Mutex(const Mutex&) = delete;
-
 	public:
 		Mutex();
 
@@ -40,16 +39,16 @@ namespace asd
 		~Mutex() asd_noexcept;
 
 		asd_DeclareMutexInterface;
+
+	private:
+		std::unique_ptr<MutexData> m_data;
+		Mutex(IN const Mutex&) = delete;
 	};
 
 
 
 	class SpinMutex final
 	{
-		std::atomic<uint32_t> m_lock;
-		int m_recursionCount = 0;
-		SpinMutex(const SpinMutex&) = delete;
-
 	public:
 		SpinMutex() asd_noexcept;
 
@@ -58,6 +57,11 @@ namespace asd
 		SpinMutex& operator=(MOVE SpinMutex&& a_rval) asd_noexcept;
 
 		asd_DeclareMutexInterface;
+
+	private:
+		std::atomic<uint32_t> m_lock;
+		int m_recursionCount = 0;
+		SpinMutex(IN const SpinMutex&) = delete;
 	};
 
 
@@ -89,15 +93,15 @@ namespace asd
 			if (m_mutex == nullptr)
 				return;
 
-			assert(m_recursionCount >= 0);
+			asd_DAssert(m_recursionCount >= 0);
 			for (; m_recursionCount > 0; --m_recursionCount)
 				m_mutex->unlock();
 		}
 
 		asd_DeclareMutexInterface;
 
-		Lock(IN const Lock<MUTEX_TYPE>& a_copy) = delete;
-		Lock& operator=(IN const Lock<MUTEX_TYPE>& a_copy) = delete;
+		Lock(IN const Lock<MUTEX_TYPE>&) = delete;
+		Lock& operator=(IN const Lock<MUTEX_TYPE>&) = delete;
 	};
 
 	template <typename MUTEX_TYPE>
@@ -105,7 +109,7 @@ namespace asd
 	{
 		m_mutex->lock();
 		++m_recursionCount;
-		assert(m_recursionCount > 0);
+		asd_DAssert(m_recursionCount > 0);
 	}
 
 	template <typename MUTEX_TYPE>
@@ -114,9 +118,9 @@ namespace asd
 		bool r = m_mutex->try_lock();
 		if (r) {
 			++m_recursionCount;
-			assert(m_recursionCount > 0);
+			asd_DAssert(m_recursionCount > 0);
 		}
-		assert(m_recursionCount >= 0);
+		asd_DAssert(m_recursionCount >= 0);
 		return r;
 	}
 
@@ -127,7 +131,7 @@ namespace asd
 			--m_recursionCount;
 			m_mutex->unlock();
 		}
-		assert(m_recursionCount >= 0);
+		asd_DAssert(m_recursionCount >= 0);
 	}
 
 

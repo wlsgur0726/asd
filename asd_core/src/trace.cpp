@@ -1,6 +1,7 @@
 ﻿#include "asd_pch.h"
 #include "asd/trace.h"
 #include "asd/threadutil.h"
+#include "asd/lock.h"
 
 #if asd_Compiler_MSVC
 #	include "asd/iconvwrap.h"
@@ -251,6 +252,14 @@ namespace asd
 							   File,
 							   Line,
 							   Function);
+	}
+
+	void PushTrace(REF Tracer& a_tracer,
+				   IN const Trace& a_trace) asd_noexcept
+	{
+		if (a_tracer.size() >= a_tracer.m_limit)
+			a_tracer.pop_front();
+		a_tracer.emplace_back(a_trace);
 	}
 
 

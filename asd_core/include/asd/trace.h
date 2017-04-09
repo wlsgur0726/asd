@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "asdbase.h"
 #include "string.h"
-#include "lock.h"
 #include <deque>
 #include <chrono>
 
@@ -56,13 +55,11 @@ namespace asd
 	};
 
 
-	template <typename MUTEX_TYPE = asd::NoLock>
 	struct Tracer : public std::deque<Trace>
 	{
 		typedef std::deque<Trace> Base;
 		using Base::Base;
 
-		mutable MUTEX_TYPE m_lock;
 		size_t m_limit;
 
 		inline Tracer(IN size_t a_limit = std::numeric_limits<size_t>::max())
@@ -72,17 +69,17 @@ namespace asd
 	};
 
 
-	template <typename MUTEX_TYPE>
-	inline void PushTrace(REF Tracer<MUTEX_TYPE>& a_tracer,
-						  IN const Trace& a_trace) asd_noexcept
-	{
-		auto lock = asd::GetLock(a_tracer.m_lock);
-		if (a_tracer.size() >= a_tracer.m_limit)
-			a_tracer.pop_front();
-		a_tracer.emplace_back(a_trace);
-	}
-#define asd_Trace				asd::Trace(__FILE__, __LINE__, __FUNCTION__)
-#define asd_PushTrace(Tracer)	asd::PushTrace(Tracer, asd_Trace)
+	void PushTrace(REF Tracer& a_tracer,
+				   IN const Trace& a_trace) asd_noexcept;
+#define asd_Trace\
+	asd::Trace(__FILE__, __LINE__, __FUNCTION__)
+
+#define asd_PushTrace(Tracer, Lock)				\
+	do {										\
+		Lock.lock();							\
+		asd::PushTrace(Tracer, asd_Trace);		\
+		Lock.unlock();							\
+	} while (false);							\
 
 
 
