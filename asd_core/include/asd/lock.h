@@ -35,7 +35,7 @@ namespace asd
 
 		Mutex(MOVE Mutex&& a_rval);
 
-		Mutex& operator = (MOVE Mutex&& a_rval);
+		Mutex& operator=(MOVE Mutex&& a_rval);
 
 		~Mutex() asd_noexcept;
 
@@ -47,9 +47,15 @@ namespace asd
 	class SpinMutex final
 	{
 		std::atomic<uint32_t> m_lock;
+		int m_recursionCount = 0;
+		SpinMutex(const SpinMutex&) = delete;
 
 	public:
 		SpinMutex() asd_noexcept;
+
+		SpinMutex(MOVE SpinMutex&& a_rval) asd_noexcept;
+
+		SpinMutex& operator=(MOVE SpinMutex&& a_rval) asd_noexcept;
 
 		asd_DeclareMutexInterface;
 	};

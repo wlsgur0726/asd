@@ -26,27 +26,55 @@ namespace asd
 
 
 
-	struct MutexData
-	{
 #if defined (asd_Platform_Windows)
+	struct MutexData final
+	{
 		CRITICAL_SECTION m_mtx;
-#else
-		pthread_mutex_t m_mtx;
-		int m_recursionCount = 0;
-		uint32_t m_ownerThread = 0;
-#endif
 
 		MutexData()
 		{
-#if defined (asd_Platform_Windows)
-#	if 1
+#if 1
 			::InitializeCriticalSection(&m_mtx);
-#	else
+#else
 			asd_RAssert(FALSE != ::InitializeCriticalSectionAndSpinCount(&m_mtx, 5),
 						"fail InitializeCriticalSectionAndSpinCount, GetLastError:{}",
 						::GetLastError());
-#	endif
+#endif
+		}
+
+		void lock()
+		{
+			::EnterCriticalSection(&m_mtx);
+		}
+
+		bool try_lock()
+		{
+			return ::TryEnterCriticalSection(&m_mtx) != 0;
+		}
+
+		void unlock()
+		{
+			::LeaveCriticalSection(&m_mtx);
+		}
+
+		~MutexData() asd_noexcept
+		{
+			asd_DAssert(m_mtx.RecursionCount == 0);
+			asd_DAssert(m_mtx.OwningThread == 0);
+			::DeleteCriticalSection(&m_mtx);
+		}
+	};
+
+
 #else
+	struct MutexData
+	{
+		pthread_mutex_t m_mtx;
+		int m_recursionCount = 0;
+		uint32_t m_ownerThread = 0;
+
+		MutexData()
+		{
 			pthread_mutexattr_t attr;
 			if (::pthread_mutexattr_init(&attr) != 0) {
 				auto e = errno;
@@ -60,26 +88,64 @@ namespace asd
 				auto e = errno;
 				asd_RaiseException("fail pthread_mutex_init(), errno:{}", e);
 			}
-#endif
 		}
 
+		void lock()
+		{
+			if (::pthread_mutex_lock(&m_mtx) != 0) {
+				auto e = errno;
+				asd_RaiseException("fail pthread_mutex_lock(), errno:{}", e);
+			}
+
+			if (++m_recursionCount == 1)
+				m_ownerThread = GetCurrentThreadID();
+			asd_DAssert(m_ownerThread == GetCurrentThreadID());
+		}
+
+		bool try_lock()
+		{
+			if (::pthread_mutex_trylock(&m_mtx) != 0) {
+				auto e = errno;
+				if (e != EBUSY)
+					asd_RaiseException("fail pthread_mutex_trylock(), errno:{}", e);
+				return false;
+			}
+
+			if (++m_recursionCount == 1)
+				m_ownerThread = GetCurrentThreadID();
+			asd_DAssert(m_ownerThread == GetCurrentThreadID());
+			return true;
+		}
+
+		void unlock()
+		{
+			asd_DAssert(m_ownerThread == GetCurrentThreadID());
+			if (--m_recursionCount == 0)
+				m_ownerThread = 0;
+
+			if (::pthread_mutex_unlock(&m_mtx) != 0) {
+				auto e = errno;
+
+				// 롤백
+				if (++m_recursionCount == 1)
+					m_ownerThread = GetCurrentThreadID();
+
+				asd_RaiseException("fail pthread_mutex_unlock(), errno:{}", e);
+			}
+		}
 
 		~MutexData() asd_noexcept
 		{
-#if defined (asd_Platform_Windows)
-			asd_DAssert(m_mtx.RecursionCount == 0);
-			asd_DAssert(m_mtx.OwningThread == 0);
-			::DeleteCriticalSection(&m_mtx);
-#else
 			asd_DAssert(m_recursionCount == 0);
 			asd_DAssert(m_ownerThread == 0);
 			if (::pthread_mutex_destroy(&m_mtx) != 0) {
 				auto e = errno;
 				asd_RaiseException("fail pthread_mutex_destroy(), errno:{}", e);
 			}
-#endif
 		}
 	};
+
+#endif
 
 
 
@@ -88,101 +154,63 @@ namespace asd
 		m_data.reset(new MutexData);
 	}
 
-
-
 	Mutex::Mutex(MOVE Mutex&& a_rval)
 	{
-		(*this) = std::move(a_rval);
+		operator=(std::move(a_rval));
 	}
 
-
-
-	Mutex& Mutex::operator = (MOVE Mutex&& a_rval)
+	Mutex& Mutex::operator=(MOVE Mutex&& a_rval)
 	{
+		auto a = m_data.get();
+		auto b = a_rval.m_data.get();
+		if (a > b)
+			std::swap(a, b);
+
+		if (a != nullptr)
+			a->lock();
+		if (b != nullptr)
+			b->lock();
+
+		auto del = std::move(m_data);
 		m_data = std::move(a_rval.m_data);
+
+		if (a != nullptr)
+			a->unlock();
+		if (b != nullptr)
+			b->unlock();
+
 		return *this;
 	}
 
-
-
-	Mutex::~Mutex() asd_noexcept
-	{
-		asd_BeginDestructor();
-		m_data.reset();
-		asd_EndDestructor();
-	}
-
-
-
 	void Mutex::lock()
 	{
-#if defined (asd_Platform_Windows)
-		::EnterCriticalSection(&m_data->m_mtx);
-
-#else
-		if (::pthread_mutex_lock(&m_data->m_mtx) != 0) {
-			auto e = errno;
-			asd_RaiseException("fail pthread_mutex_lock(), errno:{}", e);
-		}
-		
-		if (++m_data->m_recursionCount == 1)
-			m_data->m_ownerThread = GetCurrentThreadID();
-		asd_DAssert(m_data->m_ownerThread == GetCurrentThreadID());
-
-#endif
+		asd_DAssert(m_data != nullptr);
+		m_data->lock();
 	}
-
-
 
 	bool Mutex::try_lock()
 	{
 		asd_DAssert(m_data != nullptr);
-
-#if defined (asd_Platform_Windows)
-		return ::TryEnterCriticalSection(&m_data->m_mtx) != 0;
-
-#else
-		if (::pthread_mutex_trylock(&m_data->m_mtx) != 0) {
-			auto e = errno;
-			if ( e != EBUSY ) {
-				asd_RaiseException("fail pthread_mutex_trylock(), errno:{}", e);
-			}
-			return false;
-		}
-		
-		if (++m_data->m_recursionCount == 1)
-			m_data->m_ownerThread = GetCurrentThreadID();
-		asd_DAssert(m_data->m_ownerThread == GetCurrentThreadID());
-		return true;
-
-#endif
+		return m_data->try_lock();
 	}
-
-
 
 	void Mutex::unlock()
 	{
 		asd_DAssert(m_data != nullptr);
+		m_data->unlock();
+	}
 
-#if defined (asd_Platform_Windows)
-		::LeaveCriticalSection(&m_data->m_mtx);
+	Mutex::~Mutex() asd_noexcept
+	{
+		if (m_data == nullptr)
+			return;
 
-#else
-		asd_DAssert(m_data->m_ownerThread == GetCurrentThreadID());
-		if (--m_data->m_recursionCount == 0)
-			m_data->m_ownerThread = 0;
-
-		if (::pthread_mutex_unlock(&m_data->m_mtx) != 0) {
-			auto e = errno;
-
-			// 롤백
-			if (++m_data->m_recursionCount == 1)
-				m_data->m_ownerThread = GetCurrentThreadID();
-
-			asd_RaiseException("fail pthread_mutex_unlock(), errno:{}", e);
-		}
-
-#endif
+		asd_BeginDestructor();
+		m_data->lock();
+		auto data = std::move(m_data);
+		data->unlock();
+		data.reset();
+		asd_EndDestructor();
 	}
 
 
@@ -192,44 +220,61 @@ namespace asd
 		m_lock = 0;
 	}
 
+	SpinMutex::SpinMutex(MOVE SpinMutex&& a_rval) asd_noexcept
+	{
+		m_lock = 0;
+		operator=(std::move(a_rval));
+	}
 
+	SpinMutex& SpinMutex::operator=(MOVE SpinMutex&& a_rval) asd_noexcept
+	{
+		auto a = this;
+		auto b = &a_rval;
+		if (a > b)
+			std::swap(a, b);
+
+		a->lock();
+		b->lock();
+		std::swap(a->m_recursionCount, b->m_recursionCount);
+		a->unlock();
+		b->unlock();
+		return *this;
+	}
+
+	inline bool TrySpinLock(REF std::atomic<uint32_t>& a_lock,
+							IN uint32_t a_tid,
+							REF int& a_recursionCount) asd_noexcept
+	{
+		uint32_t lock = a_lock;
+		if (lock == 0) {
+			uint32_t cmp = 0;
+			if (a_lock.compare_exchange_weak(cmp, a_tid, std::memory_order_acquire))
+				goto OK;
+		}
+		else if (lock == a_tid)
+			goto OK;
+
+		return false;
+
+	OK:
+		++a_recursionCount;
+		return true;
+	}
 
 	void SpinMutex::lock()
 	{
 		uint32_t curTID = GetCurrentThreadID();
-		while (true) {
-			uint32_t lock = m_lock;
-			if (lock == 0) {
-				uint32_t cmp = 0;
-				if (m_lock.compare_exchange_weak(cmp, curTID, std::memory_order_acquire))
-					return;
-			}
-			else if (lock == curTID)
-				return;
-		}
+		while (!TrySpinLock(m_lock, curTID, m_recursionCount));
 	}
-
-
 
 	bool SpinMutex::try_lock()
 	{
-		uint32_t curTID = GetCurrentThreadID();
-		uint32_t lock = m_lock;
-		if (lock == 0) {
-			uint32_t cmp = 0;
-			if (m_lock.compare_exchange_weak(cmp, curTID, std::memory_order_acquire))
-				return true;
-		}
-		else if (lock == curTID)
-			return true;
-
-		return false;
+		return TrySpinLock(m_lock, GetCurrentThreadID(), m_recursionCount);
 	}
-
-
 
 	void SpinMutex::unlock()
 	{
-		m_lock.store(0, std::memory_order_release);
+		if (--m_recursionCount == 0)
+			m_lock.store(0, std::memory_order_release);
 	}
 }
