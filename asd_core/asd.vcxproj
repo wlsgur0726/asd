@@ -114,6 +114,7 @@
       <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -224,6 +225,7 @@
     <ClCompile Include="src\threadutil.cpp" />
     <ClCompile Include="src\timer.cpp" />
     <ClCompile Include="src\trace.cpp" />
+    <ClCompile Include="src\util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\libiconv\windows\msvc2017\libiconv.vcxproj">

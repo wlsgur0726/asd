@@ -16,6 +16,12 @@ namespace asd
 									\
 	void unlock();					\
 
+#define asd_DeclareSharedMutexInterface	\
+	void lock_shared();					\
+										\
+	bool try_lock_shared();				\
+										\
+	void unlock_shared();				\
 
 
 	class NoLock
@@ -62,6 +68,29 @@ namespace asd
 		std::atomic<uint32_t> m_lock;
 		int m_recursionCount = 0;
 		SpinMutex(IN const SpinMutex&) = delete;
+	};
+
+
+
+	struct SharedMutexData;
+	class SharedMutex
+	{
+	public:
+		SharedMutex();
+
+		SharedMutex(MOVE SharedMutex&& a_rval);
+
+		SharedMutex& operator=(MOVE SharedMutex&& a_rval);
+
+		~SharedMutex() asd_noexcept;
+
+		asd_DeclareMutexInterface;
+
+		asd_DeclareSharedMutexInterface;
+
+	private:
+		std::unique_ptr<SharedMutexData> m_data;
+		SharedMutex(IN const SharedMutex&) = delete;
 	};
 
 
@@ -135,11 +164,84 @@ namespace asd
 	}
 
 
-
 	template <typename MUTEX_TYPE>
 	inline Lock<MUTEX_TYPE> GetLock(REF MUTEX_TYPE& a_mutex,
-								   IN bool a_getLock = true)
+									IN bool a_getLock = true)
 	{
 		return Lock<MUTEX_TYPE>(a_mutex, a_getLock);
+	}
+
+
+
+	template <typename MUTEX_TYPE>
+	class SharedLock final
+	{
+		MUTEX_TYPE* m_mutex;
+		int m_recursionCount = 0;
+
+	public:
+		SharedLock(REF MUTEX_TYPE& a_mutex,
+				   IN bool a_getLock = true)
+			: m_mutex(&a_mutex)
+		{
+			if (a_getLock)
+				lock_shared();
+		}
+
+		SharedLock(MOVE SharedLock<MUTEX_TYPE>&& a_move) asd_noexcept
+		{
+			m_recursionCount = a_move.m_recursionCount;
+			m_mutex = a_move.m_mutex;
+			a_move.m_mutex = nullptr;
+		}
+
+		~SharedLock() asd_noexcept
+		{
+			if (m_mutex == nullptr)
+				return;
+
+			asd_DAssert(m_recursionCount >= 0);
+			for (; m_recursionCount > 0; --m_recursionCount)
+				m_mutex->unlock_shared();
+		}
+
+		asd_DeclareSharedMutexInterface;
+	};
+
+	template <typename MUTEX_TYPE>
+	void SharedLock<MUTEX_TYPE>::lock_shared()
+	{
+		m_mutex->lock_shared();
+		++m_recursionCount;
+	}
+
+	template <typename MUTEX_TYPE>
+	bool SharedLock<MUTEX_TYPE>::try_lock_shared()
+	{
+		bool r = m_mutex->try_lock_shared();
+		if (r) {
+			++m_recursionCount;
+			asd_DAssert(m_recursionCount > 0);
+		}
+		asd_DAssert(m_recursionCount >= 0);
+		return r;
+	}
+
+	template <typename MUTEX_TYPE>
+	void SharedLock<MUTEX_TYPE>::unlock_shared()
+	{
+		if (m_recursionCount > 0) {
+			--m_recursionCount;
+			m_mutex->unlock_shared();
+		}
+		asd_DAssert(m_recursionCount >= 0);
+	}
+
+
+	template <typename MUTEX_TYPE>
+	inline SharedLock<MUTEX_TYPE> GetSharedLock(REF MUTEX_TYPE& a_mutex,
+												IN bool a_getLock = true)
+	{
+		return SharedLock<MUTEX_TYPE>(a_mutex, a_getLock);
 	}
 }

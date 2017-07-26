@@ -2,6 +2,7 @@
 #include "asd/lock.h"
 #include "asd/threadutil.h"
 #include <thread>
+#include<unordered_map>
 
 #if defined(asd_Platform_Windows)	
 #	include <Windows.h>
@@ -10,7 +11,6 @@
 #	include <pthread.h>
 #
 #endif
-
 
 namespace asd
 {
@@ -36,8 +36,8 @@ namespace asd
 #if 1
 			::InitializeCriticalSection(&m_mtx);
 #else
-			asd_RAssert(FALSE != ::InitializeCriticalSectionAndSpinCount(&m_mtx, 5),
-						"fail InitializeCriticalSectionAndSpinCount, GetLastError:{}",
+			asd_RAssert(FALSE != ::InitializeCriticalSectionEx(&m_mtx, 1, CRITICAL_SECTION_NO_DEBUG_INFO),
+						"fail InitializeCriticalSectionEx, GetLastError:{}",
 						::GetLastError());
 #endif
 		}
@@ -75,16 +75,7 @@ namespace asd
 
 		MutexData()
 		{
-			pthread_mutexattr_t attr;
-			if (::pthread_mutexattr_init(&attr) != 0) {
-				auto e = errno;
-				asd_RaiseException("fail pthread_mutexattr_init(), errno:{}", e);
-			}
-			if (::pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0) {
-				auto e = errno;
-				asd_RaiseException("fail pthread_mutexattr_settype(), errno:{}", e);
-			}
-			if (::pthread_mutex_init(&m_mtx, &attr) != 0) {
+			if (::pthread_mutex_init(&m_mtx, nullptr) != 0) {
 				auto e = errno;
 				asd_RaiseException("fail pthread_mutex_init(), errno:{}", e);
 			}
@@ -92,18 +83,29 @@ namespace asd
 
 		void lock()
 		{
+			auto curTID = GetCurrentThreadID();
+			if (m_ownerThread == curTID) {
+				++m_recursionCount;
+				return;
+			}
+
 			if (::pthread_mutex_lock(&m_mtx) != 0) {
 				auto e = errno;
 				asd_RaiseException("fail pthread_mutex_lock(), errno:{}", e);
 			}
 
-			if (++m_recursionCount == 1)
-				m_ownerThread = GetCurrentThreadID();
-			asd_DAssert(m_ownerThread == GetCurrentThreadID());
+			m_recursionCount = 1;
+			m_ownerThread = curTID;
 		}
 
 		bool try_lock()
 		{
+			auto curTID = GetCurrentThreadID();
+			if (m_ownerThread == curTID) {
+				++m_recursionCount;
+				return true;
+			}
+
 			if (::pthread_mutex_trylock(&m_mtx) != 0) {
 				auto e = errno;
 				if (e != EBUSY)
@@ -111,24 +113,24 @@ namespace asd
 				return false;
 			}
 
-			if (++m_recursionCount == 1)
-				m_ownerThread = GetCurrentThreadID();
-			asd_DAssert(m_ownerThread == GetCurrentThreadID());
+			m_recursionCount = 1;
+			m_ownerThread = curTID;
 			return true;
 		}
 
 		void unlock()
 		{
 			asd_DAssert(m_ownerThread == GetCurrentThreadID());
-			if (--m_recursionCount == 0)
-				m_ownerThread = 0;
+			if (--m_recursionCount > 0)
+				return;
 
+			m_ownerThread = 0;
 			if (::pthread_mutex_unlock(&m_mtx) != 0) {
 				auto e = errno;
 
 				// 롤백
-				if (++m_recursionCount == 1)
-					m_ownerThread = GetCurrentThreadID();
+				m_recursionCount = 1;
+				m_ownerThread = GetCurrentThreadID();
 
 				asd_RaiseException("fail pthread_mutex_unlock(), errno:{}", e);
 			}
@@ -276,5 +278,318 @@ namespace asd
 	{
 		if (--m_recursionCount == 0)
 			m_lock.store(0, std::memory_order_release);
+	}
+
+
+#define asd_SharedMutex_DebugReader 0
+#if defined (asd_Platform_Windows)
+	struct SharedMutexData final
+	{
+		SRWLOCK m_lock;
+		std::atomic<int> m_readerCount;
+		uint32_t m_writer = 0;
+		int m_writerRecursionCount = 0;
+
+#if asd_SharedMutex_DebugReader
+		SpinMutex m_readerLock;
+		std::unordered_map<uint32_t, int> m_readers;
+#endif
+
+		SharedMutexData()
+		{
+			::InitializeSRWLock(&m_lock);
+			m_readerCount = 0;
+		}
+
+		void lock()
+		{
+			uint32_t tid = GetCurrentThreadID();
+			if (m_writer == tid) {
+				++m_writerRecursionCount;
+				return;
+			}
+
+			::AcquireSRWLockExclusive(&m_lock);
+			asd_RAssert(m_writer == 0, "unknown error");
+			m_writer = tid;
+			++m_writerRecursionCount;
+		}
+
+		bool try_lock()
+		{
+			uint32_t tid = GetCurrentThreadID();
+			if (m_writer == tid) {
+				++m_writerRecursionCount;
+				return true;
+			}
+
+			if (::TryAcquireSRWLockExclusive(&m_lock)) {
+				asd_RAssert(m_writer == 0, "unknown error");
+				m_writer = tid;
+				++m_writerRecursionCount;
+				return true;
+			}
+			return false;
+		}
+
+		void unlock()
+		{
+			if (--m_writerRecursionCount == 0) {
+				m_writer = 0;
+				::ReleaseSRWLockExclusive(&m_lock);
+			}
+		}
+
+		void lock_shared()
+		{
+			::AcquireSRWLockShared(&m_lock);
+			++m_readerCount;
+
+#if asd_SharedMutex_DebugReader
+			auto lock = GetLock(m_readerLock);
+			m_readers[GetCurrentThreadID()]++;
+#endif
+		}
+
+		bool try_lock_shared()
+		{
+			if (::TryAcquireSRWLockShared(&m_lock)) {
+				++m_readerCount;
+
+#if asd_SharedMutex_DebugReader
+				auto lock = GetLock(m_readerLock);
+				m_readers[GetCurrentThreadID()]++;
+#endif
+				return true;
+			}
+			return false;
+		}
+
+		void unlock_shared()
+		{
+#if asd_SharedMutex_DebugReader
+			{
+				auto lock = GetLock(m_readerLock);
+				if (--m_readers[GetCurrentThreadID()] == 0)
+					m_readers.erase(GetCurrentThreadID());
+			}
+#endif
+			--m_readerCount;
+			::ReleaseSRWLockShared(&m_lock);
+		}
+	};
+
+#else
+	struct SharedMutexData final
+	{
+		pthread_rwlock_t m_lock;
+		std::atomic<int> m_readerCount;
+		uint32_t m_writer = 0;
+		int m_writerRecursionCount = 0;
+
+#if asd_SharedMutex_DebugReader
+		SpinMutex m_readerLock;
+		std::unordered_map<uint32_t, int> m_readers;
+#endif
+
+		static void IsDeadLock(IN int a_line)
+		{
+			asd_RAssert(false, "deadlock detected({})", a_line);
+			for (;;)
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+		}
+
+		SharedMutexData()
+		{
+			int e = ::pthread_rwlock_init(&m_lock, nullptr);
+			if (e != 0)
+				asd_RaiseException("fail pthread_rwlock_init(), errno:{}", e);
+		}
+
+		~SharedMutexData()
+		{
+			int e = ::pthread_rwlock_destroy(&m_lock);
+			if (e != 0)
+				asd_RaiseException("fail pthread_rwlock_destroy(), errno:{}", e);
+		}
+
+		void lock()
+		{
+			uint32_t tid = GetCurrentThreadID();
+			if (m_writer == tid) {
+				++m_writerRecursionCount;
+				return;
+			}
+
+			int e = ::pthread_rwlock_wrlock(&m_lock);
+			if (e == EDEADLK)
+				IsDeadLock(__LINE__);
+			else if (e != 0)
+				asd_RaiseException("fail pthread_rwlock_wrlock(), errno:{}", e);
+
+			asd_RAssert(m_writer == 0, "unknown error");
+			m_writer = tid;
+			++m_writerRecursionCount;
+		}
+
+		bool try_lock()
+		{
+			uint32_t tid = GetCurrentThreadID();
+			if (m_writer == tid) {
+				++m_writerRecursionCount;
+				return true;
+			}
+
+			if (0 == ::pthread_rwlock_trywrlock(&m_lock)) {
+				asd_RAssert(m_writer == 0, "unknown error");
+				m_writer = tid;
+				++m_writerRecursionCount;
+				return true;
+			}
+			return false;
+		}
+
+		void unlock()
+		{
+			if (--m_writerRecursionCount == 0) {
+				m_writer = 0;
+				int e = ::pthread_rwlock_unlock(&m_lock);
+				if (e != 0)
+					asd_RaiseException("fail pthread_rwlock_unlock(), errno:{}", e);
+			}
+		}
+
+		void lock_shared()
+		{
+			for (int tryCnt=1;; ++tryCnt) {
+				int e = ::pthread_rwlock_rdlock(&m_lock);
+				switch (e) {
+					case 0:
+						break;
+					case EAGAIN:
+						std::this_thread::yield();
+						continue;
+					case EDEADLK:
+						IsDeadLock(__LINE__);
+						continue;
+					default:
+						asd_RaiseException("fail pthread_rwlock_rdlock(), errno:{}", e);
+				}
+				break;
+			}
+			++m_readerCount;
+
+#if asd_SharedMutex_DebugReader
+			auto lock = GetLock(m_readerLock);
+			m_readers[GetCurrentThreadID()]++;
+#endif
+		}
+
+		bool try_lock_shared()
+		{
+			if (0 == ::pthread_rwlock_tryrdlock(&m_lock)) {
+				++m_readerCount;
+
+#if asd_SharedMutex_DebugReader
+				auto lock = GetLock(m_readerLock);
+				m_readers[GetCurrentThreadID()]++;
+#endif
+				return true;
+			}
+			return false;
+		}
+
+		void unlock_shared()
+		{
+#if asd_SharedMutex_DebugReader
+			{
+				auto lock = GetLock(m_readerLock);
+				if (--m_readers[GetCurrentThreadID()] == 0)
+					m_readers.erase(GetCurrentThreadID());
+			}
+#endif
+			--m_readerCount;
+			int e = ::pthread_rwlock_unlock(&m_lock);
+			if (e != 0)
+				asd_RaiseException("fail pthread_rwlock_unlock(), errno:{}", e);
+		}
+	};
+
+#endif
+
+	SharedMutex::SharedMutex()
+	{
+		m_data.reset(new SharedMutexData);
+	}
+
+	SharedMutex::SharedMutex(MOVE SharedMutex&& a_rval)
+	{
+		operator=(std::move(a_rval));
+	}
+
+	SharedMutex& SharedMutex::operator=(MOVE SharedMutex&& a_rval)
+	{
+		auto a = m_data.get();
+		auto b = a_rval.m_data.get();
+		if (a > b)
+			std::swap(a, b);
+
+		if (a != nullptr)
+			a->lock();
+		if (b != nullptr)
+			b->lock();
+
+		auto del = std::move(m_data);
+		m_data = std::move(a_rval.m_data);
+
+		if (a != nullptr)
+			a->unlock();
+		if (b != nullptr)
+			b->unlock();
+
+		return *this;
+	}
+
+	SharedMutex::~SharedMutex() asd_noexcept
+	{
+		if (m_data == nullptr)
+			return;
+
+		asd_BeginDestructor();
+		m_data->lock();
+		auto data = std::move(m_data);
+		data->unlock();
+		data.reset();
+		asd_EndDestructor();
+	}
+
+	void SharedMutex::lock()
+	{
+		m_data->lock();
+	}
+
+	bool SharedMutex::try_lock()
+	{
+		return m_data->try_lock();
+	}
+
+	void SharedMutex::unlock()
+	{
+		m_data->unlock();
+	}
+
+	void SharedMutex::lock_shared()
+	{
+		m_data->lock_shared();
+	}
+
+	bool SharedMutex::try_lock_shared()
+	{
+		return m_data->try_lock_shared();
+	}
+
+	void SharedMutex::unlock_shared()
+	{
+		m_data->unlock_shared();
 	}
 }

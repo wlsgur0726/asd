@@ -52,7 +52,17 @@ namespace asd
 #endif
 
 
+	auto Logger_writer_option = []()
+	{
+		ThreadPoolOption option;
+		option.StartThreadCount = 1;
+		option.AutoScaling.Use = false;
+		option.UseNotifier = true;
+		return option;
+	};
+
 	Logger::Logger()
+		: m_writer(Logger_writer_option())
 	{
 		m_writer.Start();
 		Init(_F(""), _F("log"));
@@ -61,7 +71,7 @@ namespace asd
 
 	Logger::~Logger() asd_noexcept
 	{
-		m_writer.Stop(true);
+		m_writer.Stop();
 	}
 
 

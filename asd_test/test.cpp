@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "test.h"
 #include "asd/sysres.h"
+#include "asd/util.h"
 #include <stdio.h>
 #include <thread>
 

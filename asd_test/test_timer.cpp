@@ -30,7 +30,7 @@ namespace asdtest_timer
 		const auto Start = asd::Timer::Now();
 
 		for (int i=TestTimeMs; i>10; --i) {
-			auto task = globalTimer.PushAfter(i, [i, &eventHistory]()
+			auto task = globalTimer.PushAfter(asd::Timer::Millisec(i), [i, &eventHistory]()
 			{
 				eventHistory[Tick()].emplace_back(i);
 			});

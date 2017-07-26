@@ -11,6 +11,8 @@ namespace asd
 
 	uint32_t Get_HW_Concurrency() asd_noexcept;
 
+	size_t GetAliveThreadCount() asd_noexcept;
+
 	void KillThread(IN uint32_t a_threadSequence) asd_noexcept;
 
 	void srand() asd_noexcept;

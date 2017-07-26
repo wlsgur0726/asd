@@ -35,11 +35,11 @@ namespace asd
 		// a_afterMs 후에 수행할 task를 큐잉
 		// 큐잉된 task 리턴 (nullptr이면 실패)
 		template <typename FUNC, typename... PARAMS>
-		inline Task_ptr PushAfter(IN uint32_t a_afterMs,
+		inline Task_ptr PushAfter(IN Millisec a_after,
 								  FUNC&& a_func,
 								  PARAMS&&... a_params) asd_noexcept
 		{
-			return PushAt(Now() + Millisec(a_afterMs),
+			return PushAt(Now() + a_after,
 						  std::forward<FUNC>(a_func),
 						  std::forward<PARAMS>(a_params)...);
 		}

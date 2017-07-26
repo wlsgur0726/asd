@@ -61,10 +61,8 @@ namespace asd
 			Object* ret = nullptr;
 
 			auto lock = GetLock(m_lock, true);
-			if (m_pool.empty() == false) {
-				ret = m_pool.top();
-				m_pool.pop();
-			}
+			if (m_pool.empty() == false)
+				ret = m_pool.pop();
 			lock.unlock();
 
 			if (ret == nullptr) {
@@ -118,10 +116,8 @@ namespace asd
 			do {
 				auto lock = GetLock(m_lock, true);
 				int i;
-				for (i=0; m_pool.empty()==false && i<BufSize; ++i) {
-					buf[i] = m_pool.top();
-					m_pool.pop();
-				}
+				for (i=0; m_pool.empty()==false && i<BufSize; ++i)
+					buf[i] = m_pool.pop();
 				loop = m_pool.empty() == false;
 				lock.unlock();
 
@@ -184,8 +180,28 @@ namespace asd
 			::operator delete(block);
 		}
 
+		class Pool : public std::vector<Object*>
+		{
+		public:
+			inline Object* pop() asd_noexcept
+			{
+				size_t s = size();
+				if (s == 0)
+					return nullptr;
+
+				size_t i = s - 1;
+				Object* ret = data()[i];
+				resize(i);
+				return ret;
+			}
+
+			inline void push(IN Object* a_obj) asd_noexcept
+			{
+				emplace_back(a_obj);
+			}
+		};
 		const size_t m_limitCount;
-		std::stack<Object*> m_pool;
+		Pool m_pool;
 		Mutex m_lock;
 
 	};

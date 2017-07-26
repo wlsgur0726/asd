@@ -21,6 +21,7 @@ namespace asdtest_lock
 		volatile bool run = true;
 		std::vector<std::thread> threads;
 		std::vector<uint64_t> counts;
+		uint64_t totalCount = 0;
 		threads.resize(threadCount);
 		counts.resize(threadCount);
 
@@ -32,6 +33,7 @@ namespace asdtest_lock
 				while (wait);
 				while (run) {
 					auto lock = asd::GetLock(mutex);
+					++totalCount;
 					++counts[index];
 					task();
 				}
@@ -59,8 +61,10 @@ namespace asdtest_lock
 				max = c;
 			total += c;
 		}
+		ASSERT_EQ(total, totalCount);
 
-		asd::puts(asd::MString::Format("    total  :  {} count per millisec", total / elapsedMs.count()));
+		asd::puts(asd::MString::Format("    total  :  {}", totalCount));
+		asd::puts(asd::MString::Format("    speed  :  {} count per millisec", total / elapsedMs.count()));
 		if (max != 0 && threadCount > 1) {
 			asd::puts("    histogram");
 			for (size_t i=0; i<threadCount; ++i) {

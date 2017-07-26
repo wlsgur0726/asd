@@ -58,5 +58,6 @@
     <ClCompile Include="src\trace.cpp" />
     <ClCompile Include="src\task.cpp" />
     <ClCompile Include="src\sysres.cpp" />
+    <ClCompile Include="src\util.cpp" />
   </ItemGroup>
 </Project>

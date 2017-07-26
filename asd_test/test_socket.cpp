@@ -243,7 +243,7 @@ namespace asdtest_socket
 	{
 		asd::Mutex m_lock;
 		std::unordered_map<asd::AsyncSocketHandle, std::shared_ptr<Peer>> m_peers;
-		asd::SequentialThreadPool<asd::AsyncSocketHandle> m_threadPool;
+		asd::ThreadPool<asd::AsyncSocketHandle> m_threadPool = asd::ThreadPool<asd::AsyncSocketHandle>(asd::ThreadPoolOption());
 
 		bool Add(std::shared_ptr<Peer> peer)
 		{
@@ -344,8 +344,8 @@ namespace asdtest_socket
 					if (m_sendComplete && m_offset==m_expect.size()) {
 						Finish();
 						auto sock = m_sock.GetObj();
-						ASSERT_NE(sock, nullptr);
-						sock->Close();
+						if (sock != nullptr)
+							sock->Close();
 					}
 				});
 			}

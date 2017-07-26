@@ -66,4 +66,15 @@ namespace asd
 		return _FinallyTask<Task>(std::move(a_task));
 	}
 
+
+	const std::vector<uint16_t>& GetPrimeNumbers();
+
+	inline uint16_t FindNearPrimeNumber(IN uint16_t a_val)
+	{
+		auto& list = asd::GetPrimeNumbers();
+		auto it = std::lower_bound(list.begin(), list.end(), a_val);
+		if (it == list.end())
+			return *list.rbegin();
+		return *it;
+	}
 }

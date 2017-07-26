@@ -41,12 +41,19 @@ namespace asd
 			m_map[seq] = tid;
 		}
 
+		size_t Count() asd_noexcept
+		{
+			auto lock = GetLock(m_lock);
+			return m_map.size();
+		}
+
 		void Unregister() asd_noexcept
 		{
 			uint32_t seq = GetCurrentThreadSequence();
 			auto lock = GetLock(m_lock);
 			m_map.erase(seq);
 		}
+
 	} g_threadManager;
 
 	struct ThreadInit
@@ -115,6 +122,13 @@ namespace asd
 		::pthread_cancel(it->second);
 
 #endif
+	}
+
+
+
+	size_t GetAliveThreadCount() asd_noexcept
+	{
+		return g_threadManager.Count();
 	}
 
 

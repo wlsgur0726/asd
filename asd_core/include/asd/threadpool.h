@@ -3,6 +3,8 @@
 #include "lock.h"
 #include "timer.h"
 #include "semaphore.h"
+#include "sysres.h"
+#include "util.h"
 #include <functional>
 #include <thread>
 #include <queue>
@@ -12,479 +14,137 @@
 
 namespace asd
 {
-	struct QueueStats
+	struct ThreadPoolOption
 	{
-		uint64_t totalPushCount = 0;
-		uint64_t totalProcCount = 0;
-		uint64_t totalConflictCount = 0;
+		uint32_t StartThreadCount = Get_HW_Concurrency();
 
-		uint64_t curMinQueueLenth = 0;
-		uint64_t curMaxQueueLenth = 0;
+		struct AutoScaling
+		{
+			bool Use = false;
+			double CpuUsageHigh = 0.95; // 95%
+			double CpuUsageLow = (1.0 / Get_HW_Concurrency()) * (Get_HW_Concurrency() - 1);
+			size_t MinThreadCount = 1;
+			size_t MaxThreadCount = std::numeric_limits<size_t>::max();
+			Timer::Millisec Cycle = Timer::Millisec(1000);
+			size_t IncreaseCount = Get_HW_Concurrency();
+		} AutoScaling;
 
-		uint64_t recentPushCount = 0;
-		uint64_t recentTotalPushCount = 0;
-		uint64_t recentMinQueueLenth = 0;
-		uint64_t recentMaxQueueLenth = 0;
+		bool CollectStats = false;
+		Timer::Millisec CollectStats_Cycle = Timer::Millisec(1000);
 
-		Timer::Millisec recentPeriod = Timer::Millisec(0);
-		Timer::TimePoint recentRefreshTime = Timer::Now();
+		bool UseNotifier = false;
+		int SpinWaitCount = 5;
+
+		bool UseEmbeddedTimer = false;
 
 
-		uint64_t WatingCount() const
+		inline bool UseCenterQueue() const asd_noexcept
+		{
+			return AutoScaling.Use;
+		}
+	};
+
+
+
+	struct ThreadPoolStats
+	{
+		struct atomic_t : public std::atomic<uint64_t>
+		{
+			using Base = std::atomic<uint64_t>;
+			using Base::Base;
+			using Base::operator=;
+
+			atomic_t() asd_noexcept
+			{
+				Base::operator=(0);
+			}
+
+			atomic_t(IN const atomic_t& a_copy) asd_noexcept
+			{
+				Base::operator=(a_copy.load());
+			}
+
+			atomic_t& operator=(IN const atomic_t& a_copy) asd_noexcept
+			{
+				Base::operator=(a_copy.load());
+				return *this;
+			}
+		};
+
+		uint64_t WaitingCount() const asd_noexcept
 		{
 			return totalPushCount - totalProcCount;
 		}
 
-		double RecentWaitingTimeMs() const
+		double RecentWaitingTimeMs() const asd_noexcept
 		{
-			double avgLen;
-			if (recentMinQueueLenth <= recentMaxQueueLenth)
-				avgLen = (recentMinQueueLenth + recentMaxQueueLenth) / 2.0;
-			else
-				avgLen = 0;
+			if (recentPushCount == 0)
+				return 0;
 
-			double period = recentPeriod.count();
+			double period = (double)recentPeriod.count();
 			if (period == 0)
 				return std::numeric_limits<double>::max();
 
-			return avgLen / (recentPushCount / period);
+			return (double)recentWaitingCount / (recentPushCount / period);
 		}
 
-		double TotalConflictRate() const
+		double TotalConflictRate() const asd_noexcept
 		{
 			if (totalProcCount == 0)
 				return 0;
 			return totalConflictCount / (double)totalProcCount;
 		}
 
-		void Refresh()
+		void Refresh() asd_noexcept
 		{
 			auto now = Timer::Now();
 			recentPeriod = Timer::Diff(recentRefreshTime, now);
 			recentRefreshTime = now;
 
 			recentPushCount = totalPushCount - recentTotalPushCount;
-			recentTotalPushCount = totalProcCount;
-			recentMinQueueLenth = curMinQueueLenth;
-			recentMaxQueueLenth = curMaxQueueLenth;
+			recentTotalPushCount = totalPushCount;
 
-			curMinQueueLenth = curMaxQueueLenth = WatingCount();
+			recentWaitingCount = WaitingCount();
 		}
 
-		void Push()
+		void Push() asd_noexcept
 		{
-			totalPushCount++;
-			curMaxQueueLenth = max(curMaxQueueLenth, WatingCount());
+			++totalPushCount;
 		}
 
-		void Pop()
+		void Pop() asd_noexcept
 		{
-			totalProcCount++;
-			curMinQueueLenth = min(curMinQueueLenth, WatingCount());
+			++totalProcCount;
 		}
+
+		atomic_t totalPushCount;
+		atomic_t totalProcCount;
+		atomic_t totalConflictCount;
+
+		uint64_t recentPushCount = 0;
+		uint64_t recentTotalPushCount = 0;
+		uint64_t recentWaitingCount = 0;
+
+		Timer::Millisec recentPeriod = Timer::Millisec(0);
+		Timer::TimePoint recentRefreshTime = Timer::Now();
+
+		uint64_t threadCount = 0;
+		atomic_t sleepingThreadCount;
 	};
 
 
 
-	template <typename TASK_TYPE>
-	class ThreadPoolData
-	{
-	protected:
-		template <typename T>
-		friend class ThreadPoolTemplate;
-
-		using TaskObj = TASK_TYPE;
-		using TaskQueue = std::queue<TaskObj>;
-
-		struct Worker
-		{
-			Semaphore m_event;
-			TaskQueue m_readyQueue;
-		};
-
-		virtual ~ThreadPoolData() asd_noexcept
-		{
-			if (m_refreshTask != nullptr)
-				m_refreshTask->Cancel();
-		}
-
-		virtual bool TryPop(REF Worker& a_worker,
-							OUT TaskObj& a_task) asd_noexcept
-		{
-			if (a_worker.m_readyQueue.size() > 0) {
-				a_task = std::move(a_worker.m_readyQueue.front());
-				a_worker.m_readyQueue.pop();
-				return true;
-			}
-			if (m_waitQueue.size() > 0) {
-				a_task = std::move(m_waitQueue.front());
-				m_waitQueue.pop();
-				return true;
-			}
-			return false;
-		}
-
-		virtual void OnExecute(REF TaskObj& a_task)
-		{
-			asd_RAssert(false, "not impl");
-		}
-
-		virtual void OnFinish(IN TaskObj& a_task) asd_noexcept
-		{
-		}
-
-		bool Running(IN const Worker& a_worker) const asd_noexcept
-		{
-			if (m_run)
-				return true;
-			if (m_overtime == false)
-				return false;
-			if (m_waitQueue.size() > 0)
-				return true;
-			if (a_worker.m_readyQueue.size() > 0)
-				return true;
-			return false;
-		}
-
-
-		// 아래 모든 데이터들을 보호하는 락
-		mutable Mutex m_lock;
-
-		// 작업 큐
-		TaskQueue m_waitQueue;
-
-		// 동작 상태
-		bool m_run = false;
-
-		// 이 변수가 true이면 
-		// 종료명령이 떨어져도 남은 작업을 모두 처리한 후 종료한다.
-		bool m_overtime = true;
-
-		// 작업을 수행하는 쓰레드 관련
-		std::unordered_map<uint32_t, Worker*>	m_workers;
-		std::unordered_set<Worker*>				m_standby;
-		size_t									m_threadCount;
-		std::vector<std::thread>				m_threads;
-		Timer									m_timer;
-
-		// 통계정보
-		QueueStats m_stats;
-		Task_ptr m_refreshTask;
-	};
-
-
-	template <typename THREAD_POOL_DATA>
-	class ThreadPoolTemplate
-	{
-	protected:
-		using DataImpl = THREAD_POOL_DATA;
-		using ThisType = ThreadPoolTemplate<DataImpl>;
-		using TaskObj = typename DataImpl::TaskObj;
-		using TaskQueue = typename DataImpl::TaskQueue;
-		using Data = ThreadPoolData<TaskObj>;
-
-
-	public:
-		// 초기화
-		ThreadPoolTemplate(IN uint32_t a_threadCount = Get_HW_Concurrency())
-		{
-			Reset(a_threadCount);
-		}
-
-
-		ThisType& Reset(IN uint32_t a_threadCount = Get_HW_Concurrency())
-		{
-			Stop();
-			m_data.reset(new DataImpl);
-			m_data->m_threadCount = a_threadCount;
-			return *this;
-		}
-
-
-		ThisType& Start()
-		{
-			auto data = std::atomic_load(&m_data);
-			if (data == nullptr)
-				asd_RaiseException("stoped thread pool");
-
-			auto lock = GetLock(data->m_lock);
-			if (data->m_run)
-				asd_RaiseException("already running");
-
-			data->m_run = true;
-			data->m_threads.resize(m_data->m_threadCount);
-			for (auto& t : data->m_threads) {
-				t = std::thread([data]() mutable
-				{
-					auto lock = GetLock(data->m_lock);
-					typename Data::Worker worker;
-					data->m_workers.emplace(GetCurrentThreadID(), &worker);
-					for (; data->Running(worker); lock.lock()) {
-						lock.unlock();
-						Poll_Internal(data.get(),
-									  worker,
-									  std::numeric_limits<uint32_t>::max(),
-									  std::numeric_limits<size_t>::max());
-					}
-				});
-			}
-
-			PushStatTask(data);
-			return *this;
-		}
-
-
-		// 작업을 기다리고 처리하는 함수
-		//   a_timeoutMs       :  작업이 없을 때 최대로 대기하는 시간 (밀리초)
-		//   a_procCountLimit  :  처리할 작업의 개수 제한
-		size_t Poll(IN uint32_t a_timeoutMs = std::numeric_limits<uint32_t>::max(),
-					IN size_t a_procCountLimit = 1) asd_noexcept
-		{
-			auto data = std::atomic_load(&m_data);
-			if (data == nullptr)
-				return 0;
-
-			thread_local ObjectPool<typename Data::Worker, asd::NoLock, true> t_workers;
-			auto worker = t_workers.Alloc();
-			auto ret = Poll_Internal(data.get(),
-									 *worker,
-									 a_timeoutMs,
-									 a_procCountLimit);
-			while (worker->m_readyQueue.size() > 0) {
-				auto task = std::move(worker->m_readyQueue.front());
-				asd_BeginTry();
-				data->OnExecute(task);
-				asd_EndTryUnknown_Default();
-			}
-			t_workers.Free(worker);
-			return ret;
-		}
-
-
-		// 종료
-		// a_overtime이 true이면 남은 작업을 모두 처리할 때까지 기다린다.
-		void Stop(IN bool a_overtime = true)
-		{
-			auto data = std::atomic_exchange(&m_data, std::shared_ptr<DataImpl>());
-			if (data == nullptr)
-				return;
-
-			auto lock = GetLock(data->m_lock);
-			if (data->m_run == false)
-				return;
-
-			if (data->m_workers.find(GetCurrentThreadID()) != data->m_workers.end())
-				asd_RaiseException("deadlock");
-
-			data->m_run = false;
-			data->m_overtime = a_overtime;
-
-			if (data->m_refreshTask != nullptr)
-				data->m_refreshTask->Cancel(data->m_stats.recentPeriod.count() == 0);
-
-			while (data->m_threads.size() > 0) {
-				while (data->m_standby.size() > 0) {
-					auto it = data->m_standby.begin();
-					(*it)->m_event.Post();
-					data->m_standby.erase(it);
-				}
-				auto thread = std::move(*data->m_threads.rbegin());
-				data->m_threads.resize(data->m_threads.size() - 1);
-				lock.unlock();
-				thread.join();
-				lock.lock();
-			}
-
-			m_lastStats = data->m_stats;
-		}
-
-
-		QueueStats GetStats() const
-		{
-			auto data = std::atomic_load(&m_data);
-			if (data == nullptr)
-				return m_lastStats;
-
-			auto lock = GetLock(data->m_lock);
-			auto stats = data->m_stats;
-			lock.unlock();
-			return stats;
-		}
-
-
-		virtual ~ThreadPoolTemplate() asd_noexcept
-		{
-			asd_BeginDestructor();
-			Stop();
-			asd_EndDestructor();
-		}
-
-
-	protected:
-		static size_t Poll_Internal(REF Data* a_data,
-									REF typename Data::Worker& a_worker,
-									IN uint32_t a_timeoutMs,
-									IN size_t a_procCountLimit) asd_noexcept
-		{
-			if (a_procCountLimit <= 0)
-				return 0;
-
-			size_t procCount = 0;
-			for (auto lock=GetLock(a_data->m_lock); a_data->Running(a_worker); ) {
-				// 작업 확인
-				TaskObj task;
-				if (a_data->TryPop(a_worker, task) == false) {
-					if (a_data->m_waitQueue.size() > 0) {
-						lock.unlock();
-						std::this_thread::yield();
-						lock.lock();
-						continue;
-					}
-					else {
-						a_data->m_standby.emplace(&a_worker);
-						lock.unlock();
-						bool on = a_worker.m_event.Wait(a_timeoutMs);
-						lock.lock();
-						if (on)
-							continue;
-
-						// 타임아웃
-						a_data->m_standby.erase(&a_worker);
-						break;
-					}
-				}
-
-				// 작업 수행
-				lock.unlock();
-				asd_BeginTry();
-				a_data->OnExecute(task);
-				asd_EndTryUnknown_Default();
-
-				lock.lock();
-				a_data->OnFinish(task);
-				a_data->m_stats.Pop();
-				if (++procCount >= a_procCountLimit)
-					break;
-			}
-			return procCount;
-		}
-
-
-		// 작업 등록
-		static void PushTask(REF std::shared_ptr<DataImpl>& a_data,
-							 MOVE TaskObj& a_task) asd_noexcept
-		{
-			if (a_data == nullptr)
-				return;
-
-			auto lock = GetLock(a_data->m_lock);
-			if (a_data->m_run == false)
-				return;
-
-			a_data->m_waitQueue.emplace(std::move(a_task));
-			a_data->m_stats.Push();
-
-			if (a_data->m_standby.size() > 0) {
-				auto it = a_data->m_standby.begin();
-				(*it)->m_event.Post();
-				a_data->m_standby.erase(it);
-			}
-		}
-
-
-		// 타이머 작업 등록
-		static Task_ptr PushTimerTask(MOVE std::shared_ptr<DataImpl>&& a_data,
-									  IN Timer::TimePoint a_timePoint,
-									  MOVE TaskObj&& a_task) asd_noexcept
-		{
-			if (a_data == nullptr)
-				return nullptr;
-
-			auto lock = GetLock(a_data->m_lock);
-			if (a_data->m_run == false)
-				return nullptr;
-
-			return a_data->m_timer.PushAt(a_timePoint,
-										  &ThisType::PushTask,
-										  std::move(a_data),
-										  std::move(a_task));
-		}
-
-
-		// 통계
-		static void PushStatTask(IN std::shared_ptr<DataImpl> a_data)
-		{
-			if (a_data == nullptr)
-				return;
-
-			if (a_data->m_run == false)
-				return;
-
-			a_data->m_refreshTask = a_data->m_timer.PushAfter(1000, [a_data]() mutable
-			{
-				auto lock = GetLock(a_data->m_lock);
-				a_data->m_stats.Refresh();
-				PushStatTask(a_data);
-			});
-		}
-
-
-		std::shared_ptr<DataImpl> m_data;
-		QueueStats m_lastStats;
-	};
-
-
-
-	class DefaultThreadPoolData : public ThreadPoolData<Task_ptr>
-	{
-		virtual void OnExecute(REF TaskObj& a_task) override
-		{
-			a_task->Execute();
-			a_task.reset();
-		}
-	};
-
-	class ThreadPool : public ThreadPoolTemplate<DefaultThreadPoolData>
+	template <typename SEQ_KEY, typename HASH=std::hash<SEQ_KEY>, typename EQ=std::equal_to<SEQ_KEY>>
+	class ThreadPool
 	{
 	public:
-		using BaseType = ThreadPoolTemplate<DefaultThreadPoolData>;
+		using ThisType = ThreadPool<SEQ_KEY, HASH, EQ>;
+		using SeqKey = SEQ_KEY;
 
-		using BaseType::BaseType;
 
-
-		template <typename FUNC, typename... PARAMS>
-		inline void Push(FUNC&& a_func,
-						 PARAMS&&... a_params) asd_noexcept
+		ThreadPool(IN const ThreadPoolOption& a_option)
 		{
-			auto task = CreateTask(std::forward<FUNC>(a_func),
-								   std::forward<PARAMS>(a_params)...);
-			auto data = std::atomic_load(&m_data);
-			PushTask(data, task);
-		}
-
-
-		template <typename FUNC, typename... PARAMS>
-		inline Task_ptr PushAfter(IN uint32_t a_afterMs,
-								  FUNC&& a_func,
-								  PARAMS&&... a_params) asd_noexcept
-		{
-			return PushAt(Timer::Now() + Timer::Millisec(a_afterMs),
-						  std::forward<FUNC>(a_func),
-						  std::forward<PARAMS>(a_params)...);
-		}
-
-
-		template <typename FUNC, typename... PARAMS>
-		inline Task_ptr PushAt(IN Timer::TimePoint a_timepoint,
-							   FUNC&& a_func,
-							   PARAMS&&... a_params) asd_noexcept
-		{
-			auto task = CreateTask(std::forward<FUNC>(a_func),
-								   std::forward<PARAMS>(a_params)...);
-			auto data = std::atomic_load(&m_data);
-			return PushTimerTask(std::move(data),
-								 a_timepoint,
-								 std::move(task));
+			Reset(a_option);
 		}
 
 
@@ -494,108 +154,125 @@ namespace asd
 			Stop();
 			asd_EndDestructor();
 		}
-	};
 
 
-
-	template <typename Key, typename... MapOpts>
-	class SequentialThreadPoolData
-		: public ThreadPoolData< std::tuple<Key, bool, Task_ptr> >
-	{
-	public:
-		using BaseType = ThreadPoolData< std::tuple<Key, bool, Task_ptr> >;
-		using TaskObj = typename BaseType::TaskObj;
-		using Worker = typename BaseType::Worker;
-
-	private:
-		struct Work
+		ThreadPoolStats Reset(IN const ThreadPoolOption& a_option)
 		{
-			size_t m_count = 1;
-			Worker* m_worker;
-			Work(Worker* worker = nullptr) : m_worker(worker) {}
-		};
-		std::unordered_map<Key, Work, MapOpts...> m_workingMap;
+			auto stats = Stop();
+			std::shared_ptr<Data> data(new Data(a_option));
+			std::atomic_exchange(&m_data, data);
+			return stats;
+		}
 
-		virtual bool TryPop(REF Worker& a_worker,
-							OUT TaskObj& a_task) asd_noexcept override
+
+		ThreadPoolStats Stop()
 		{
-			if (a_worker.m_readyQueue.size() > 0) {
-				a_task = std::move(a_worker.m_readyQueue.front());
-				a_worker.m_readyQueue.pop();
-				return true;
+			auto data = std::atomic_exchange(&m_data, std::shared_ptr<Data>());
+			if (data == nullptr)
+				return ThreadPoolStats();
+
+			auto lock = GetLock(data->lock);
+			if (data->run == false)
+				return data->stats;
+
+			if (data->workers.find(GetCurrentThreadID()) != data->workers.end())
+				asd_RaiseException("self-deadlock");
+
+			data->run = false;
+
+			if (data->timer != nullptr)
+				data->timer.reset();
+
+			if (data->option.UseCenterQueue()) {
+				lock.unlock();
+				for (auto centerQueueLock=GetLock(data->centerQueueLock); data->centerQueue.size()>0; centerQueueLock.lock()) {
+					while (data->standby.size() > 0) {
+						auto it = data->standby.begin();
+						Worker* worker = *it;
+						data->standby.erase(it);
+						auto workerLock = GetLock(worker->lock);
+						worker->NeedNotify(data->option.UseNotifier).Notify();
+					}
+					centerQueueLock.unlock();
+					std::this_thread::sleep_for(Timer::Millisec(1));
+				}
+				lock.lock();
 			}
 
-			if (this->m_waitQueue.empty())
-				return false;
+			while (data->workers.size() > 0) {
+				for (Worker* worker : data->workerList) {
+					auto workerLock = GetLock(worker->lock);
+					worker->run = false;
+					worker->NeedNotify(data->option.UseNotifier).Notify();
+				}
+				lock.unlock();
+				std::this_thread::sleep_for(Timer::Millisec(1));
+				lock.lock();
+			}
 
-			a_task = std::move(this->m_waitQueue.front());
-			this->m_waitQueue.pop();
-
-			if (std::get<1>(a_task) == false)
-				return true;
-
-			auto emplace = m_workingMap.emplace(std::get<0>(a_task), Work(&a_worker));
-			if (emplace.second)
-				return true;
-
-			auto& work = emplace.first->second;
-			asd_DAssert(work.m_worker != &a_worker);
-
-			this->m_stats.totalConflictCount++;
-			work.m_worker->m_readyQueue.emplace(std::move(a_task));
-			work.m_count++;
-			if (this->m_standby.erase(work.m_worker) == 1)
-				work.m_worker->m_event.Post();
-			return false;
+			return data->stats;
 		}
 
-		virtual void OnExecute(REF TaskObj& a_task) override
-		{
-			std::get<2>(a_task)->Execute();
-		}
 
-		virtual void OnFinish(IN TaskObj& a_task) asd_noexcept override
+		void Start()
 		{
-			if (std::get<1>(a_task) == false)
+			auto data = std::atomic_load(&m_data);
+			if (data == nullptr)
 				return;
 
-			auto it = m_workingMap.find(std::get<0>(a_task));
-			asd_ChkErrAndRet(it == m_workingMap.end(), "unknown error");
-			auto& work = it->second;
-			if (--work.m_count == 0)
-				m_workingMap.erase(it);
+			auto lock = GetLock(data->lock);
+			asd_ChkErrAndRet(data->run, "already started");
+			data->run = true;
+			lock.unlock();
+
+			if (data->option.AutoScaling.Use)
+				CpuUsage(); // 인스턴스 초기화를 위해 호출
+
+			auto startThreadCount = max(data->option.StartThreadCount, 1);
+			AddWorker(data, startThreadCount);
+
+			if (data->option.UseEmbeddedTimer)
+				data->timer.reset(new Timer);
+
+			if (data->option.CollectStats)
+				PushStatTask(data);
+
+			if (data->option.AutoScaling.Use)
+				PushAutoScalingTask(data);
 		}
-	};
 
-	// Key가 동일한 작업이 수행중인 경우 
-	// 선작업이 끝날 때까지 실행을 보류하여 
-	// 실행순서를 보장해주는 쓰레드풀
-	template <typename Key, typename... MapOpts>
-	class SequentialThreadPool 
-		: public ThreadPoolTemplate< SequentialThreadPoolData<Key, MapOpts...> >
-	{
-		using BaseType = ThreadPoolTemplate< SequentialThreadPoolData<Key, MapOpts...> >;
-		using TaskObj = typename BaseType::TaskObj;
 
-	public:
-		template <typename FUNC, typename... PARAMS>
-		inline void Push(FUNC&& a_func,
-						 PARAMS&&... a_params) asd_noexcept
+		ThreadPoolStats GetStats() const
 		{
-			auto task = CreateTask(std::forward<FUNC>(a_func),
-								   std::forward<PARAMS>(a_params)...);
-			auto taskObj = std::make_tuple(Key(), false, std::move(task));
-			auto data = std::atomic_load(&this->m_data);
-			PushTask(data, taskObj);
-		}
+			auto data = std::atomic_load(&m_data);
+			if (data == nullptr)
+				return ThreadPoolStats();
 
+			auto lock = GetSharedLock(data->lock);
+			auto stats = data->stats;
+			lock.unlock_shared();
+			return stats;
+		}
+		
 
 		template <typename FUNC, typename... PARAMS>
-		inline Task_ptr PushAfter(IN uint32_t a_afterMs,
+		inline Task_ptr Push(FUNC&& a_func,
+							 PARAMS&&... a_params) asd_noexcept
+		{
+			TaskObj taskObj;
+			taskObj.seq = false;
+			taskObj.task = CreateTask(std::forward<FUNC>(a_func),
+									  std::forward<PARAMS>(a_params)...);
+			auto data = std::atomic_load(&m_data);
+			return PushTask(data, taskObj);
+		}
+
+		template <typename FUNC, typename... PARAMS>
+		inline Task_ptr PushAfter(IN Timer::Millisec a_afterMs,
 								  FUNC&& a_func,
 								  PARAMS&&... a_params) asd_noexcept
 		{
-			return PushAt(Timer::Now() + Timer::Millisec(a_afterMs),
+			return PushAt(Timer::Now() + a_afterMs,
 						  std::forward<FUNC>(a_func),
 						  std::forward<PARAMS>(a_params)...);
 		}
@@ -606,35 +283,40 @@ namespace asd
 							   FUNC&& a_func,
 							   PARAMS&&... a_params) asd_noexcept
 		{
-			auto task = CreateTask(std::forward<FUNC>(a_func),
-								   std::forward<PARAMS>(a_params)...);
-			auto data = std::atomic_load(&this->m_data);
+			TaskObj taskObj;
+			taskObj.seq = false;
+			taskObj.task = CreateTask(std::forward<FUNC>(a_func),
+									  std::forward<PARAMS>(a_params)...);
+			auto data = std::atomic_load(&m_data);
 			return PushTimerTask(std::move(data),
 								 a_timepoint,
-								 TaskObj(Key(), false, std::move(task)));
+								 std::move(taskObj));
 		}
 
 
 		template <typename KEY, typename FUNC, typename... PARAMS>
-		inline void PushSeq(KEY&& a_key,
-							FUNC&& a_func,
-							PARAMS&&... a_params) asd_noexcept
+		inline Task_ptr PushSeq(KEY&& a_key,
+								FUNC&& a_func,
+								PARAMS&&... a_params) asd_noexcept
 		{
-			auto task = CreateTask(std::forward<FUNC>(a_func),
-								   std::forward<PARAMS>(a_params)...);
-			TaskObj taskObj(std::forward<KEY>(a_key), true, std::move(task));
-			auto data = std::atomic_load(&this->m_data);
-			PushTask(data, taskObj);
+			TaskObj taskObj;
+			taskObj.seq = true;
+			taskObj.keyInfo.hash = HASH()(a_key);
+			taskObj.keyInfo.key = std::forward<KEY>(a_key);
+			taskObj.task = CreateTask(std::forward<FUNC>(a_func),
+									  std::forward<PARAMS>(a_params)...);
+			auto data = std::atomic_load(&m_data);
+			return PushTask(data, taskObj);
 		}
 
 
 		template <typename KEY, typename FUNC, typename... PARAMS>
-		inline Task_ptr PushSeqAfter(IN uint32_t a_afterMs,
+		inline Task_ptr PushSeqAfter(IN Timer::Millisec a_afterMs,
 									 KEY&& a_key,
 									 FUNC&& a_func,
 									 PARAMS&&... a_params) asd_noexcept
 		{
-			return PushSeqAt(Timer::Now() + Timer::Millisec(a_afterMs),
+			return PushSeqAt(Timer::Now() + a_afterMs,
 							 std::forward<KEY>(a_key),
 							 std::forward<FUNC>(a_func),
 							 std::forward<PARAMS>(a_params)...);
@@ -647,22 +329,616 @@ namespace asd
 								  FUNC&& a_func,
 								  PARAMS&&... a_params) asd_noexcept
 		{
-			auto task = CreateTask(std::forward<FUNC>(a_func),
-								   std::forward<PARAMS>(a_params)...);
-			auto data = std::atomic_load(&this->m_data);
+			TaskObj taskObj;
+			taskObj.seq = true;
+			taskObj.keyInfo.hash = HASH()(a_key);
+			taskObj.keyInfo.key = std::forward<KEY>(a_key);
+			taskObj.task = CreateTask(std::forward<FUNC>(a_func),
+									  std::forward<PARAMS>(a_params)...);
+			auto data = std::atomic_load(&m_data);
 			return PushTimerTask(std::move(data),
 								 a_timepoint,
-								 TaskObj(std::forward<KEY>(a_key), true, std::move(task)));
+								 std::move(taskObj));
 		}
 
 
-		virtual ~SequentialThreadPool() asd_noexcept
+	private:
+		struct SeqKeyInfo
 		{
-			asd_BeginDestructor();
-			Stop();
-			asd_EndDestructor();
+			SeqKey key;
+			size_t hash;
+		};
+
+		struct TaskObj
+		{
+			Task_ptr task;
+			bool seq;
+			SeqKeyInfo keyInfo;
+		};
+
+		class TaskQueue
+		{
+		public:
+			size_t size() const asd_noexcept
+			{
+				return m_size;
+			}
+
+			bool empty() const asd_noexcept
+			{
+				return m_size == 0;
+			}
+
+			void emplace_back(MOVE TaskObj&& a_data) asd_noexcept
+			{
+				Node* newNode = m_nodePool.Alloc(std::move(a_data));
+				push(newNode, newNode, 1);
+			}
+
+			TaskObj& front() asd_noexcept
+			{
+				return m_head->data;
+			}
+
+			void pop_front() asd_noexcept
+			{
+				if (m_head == nullptr)
+					return;
+				Node* head = m_head;
+				m_head = head->next;
+				if (m_tail == head)
+					m_tail = nullptr;
+				m_nodePool.Free(head);
+				--m_size;
+			}
+
+			void clear() asd_noexcept
+			{
+				while (size() > 0)
+					pop_front();
+			}
+
+			~TaskQueue() asd_noexcept
+			{
+				clear();
+			}
+
+		private:
+			struct Node
+			{
+				TaskObj data;
+				Node* next = nullptr;
+				Node(MOVE TaskObj&& a_mv) : data(std::move(a_mv)) {}
+			};
+
+			inline void push(IN Node* a_head,
+							 IN Node* a_tail,
+							 IN size_t a_size) asd_noexcept
+			{
+				if (m_tail != nullptr)
+					m_tail->next = a_head;
+				else
+					m_head = a_head;
+				m_tail = a_tail;
+				m_size += a_size;
+			}
+
+			ObjectPool<Node> m_nodePool;
+
+			size_t m_size = 0;
+			Node* m_head = nullptr;
+			Node* m_tail = nullptr;
+		};//TaskQueue
+
+
+
+		struct Worker
+		{
+			mutable Mutex lock;
+
+			uint32_t tid = 0;
+			size_t index = std::numeric_limits<size_t>::max();
+
+			bool run = true;
+			TaskQueue queue[2];
+			TaskQueue* publicQueue = &queue[0];
+			TaskQueue* privateQueue = &queue[1];
+
+			bool sleep = false;
+			Semaphore notify;
+
+			struct Notifier
+			{
+				Semaphore* notify = nullptr;
+				void Notify()
+				{
+					if (notify)
+						notify->Post();
+				}
+			};
+
+			inline Notifier NeedNotify(IN bool a_useNotifier) asd_noexcept
+			{
+				Notifier ret;
+				if (a_useNotifier && sleep) {
+					sleep = false;
+					ret.notify = &notify;
+				}
+				return ret;
+			}
+		};
+
+		struct Work
+		{
+			Worker* worker = nullptr;
+			int reserveCount = 0;
+			int procCount = 0;
+		};
+
+
+		struct Data;
+
+
+		class WorkingMap
+		{
+		public:
+			WorkingMap()
+				: ShardCount(FindNearPrimeNumber(min(std::numeric_limits<uint16_t>::max(), 2*Get_HW_Concurrency())))
+			{
+				m_shards.resize(ShardCount);
+				m_locks.resize(ShardCount);
+			}
+
+
+#define asd_ThreadPool_WorkingMap_FindShard(a_keyInfo, shard)		\
+			const size_t idx = a_keyInfo.hash % ShardCount;			\
+			auto lock = GetLock(m_locks[idx]);						\
+			auto& shard = m_shards[idx];							\
+
+#define asd_ThreadPool_WorkingMap_FindWork(a_keyInfo, work)			\
+			asd_ThreadPool_WorkingMap_FindShard(a_keyInfo, shard)	\
+			auto& work = shard[a_keyInfo];							\
+
+
+			Worker* Reserve(IN const SeqKeyInfo& a_keyInfo,
+							REF Data* a_data)
+			{
+				asd_ThreadPool_WorkingMap_FindWork(a_keyInfo, work);
+
+				if (a_data == nullptr) {
+					++work.reserveCount;
+				}
+				else {
+					++work.procCount;
+					if (work.worker == nullptr)
+						work.worker = a_data->PickWorker();
+					else
+						++a_data->stats.totalConflictCount;
+				}
+				return work.worker;
+			}
+
+			Worker* SetWorker(IN const SeqKeyInfo& a_keyInfo,
+							  REF Worker* a_worker)
+			{
+				asd_ThreadPool_WorkingMap_FindWork(a_keyInfo, work);
+
+				--work.reserveCount;
+				++work.procCount;
+
+				if (work.worker == nullptr)
+					work.worker = a_worker;
+
+				return work.worker;
+			}
+
+			void Finish(IN const SeqKeyInfo& a_keyInfo)
+			{
+				asd_ThreadPool_WorkingMap_FindShard(a_keyInfo, shard);
+
+				auto it = shard.find(a_keyInfo);
+				asd_ChkErrAndRet(it == shard.end(), "unknown error");
+				auto& work = it->second;
+
+				if (--work.procCount == 0) {
+					if (work.reserveCount == 0)
+						shard.erase(it);
+					else
+						work.worker = nullptr;
+				}
+			}
+
+		private:
+			const size_t ShardCount;
+
+			struct SeqKeyInfoHash
+			{
+				inline size_t operator()(IN const SeqKeyInfo& a_keyInfo) const
+				{
+					return a_keyInfo.hash;
+				}
+			};
+			struct SeqKeyInfoEqual
+			{
+				inline bool operator()(IN const SeqKeyInfo& a_keyInfo1,
+									   IN const SeqKeyInfo& a_keyInfo2) const
+				{
+					return EQ()(a_keyInfo1.key, a_keyInfo2.key);
+				}
+			};
+			using Map = std::unordered_map<SeqKeyInfo, Work, SeqKeyInfoHash, SeqKeyInfoEqual>;
+
+			std::vector<Map> m_shards;
+			std::vector<Mutex> m_locks;
+		}; //WorkingMap
+
+
+		struct Data
+		{
+			const ThreadPoolOption option;
+
+			// 작업쓰레드 목록 관련
+			mutable SharedMutex lock;
+			std::unordered_map<uint32_t, Worker*> workers;
+			std::vector<Worker*> workerList;
+			std::atomic<size_t> RRSeq;
+			bool run = false; // 종료 중 Push를 막기 위한 플래그
+
+			// SeqKey 별 담당 현황
+			WorkingMap workingMap;
+
+			// 통계
+			ThreadPoolStats stats;
+
+			// 내장 타이머 (UseEmbeddedTimer == true)
+			std::unique_ptr<Timer> timer;
+
+			// 중앙큐 관련 (AutoScaling.Use == true)
+			mutable Mutex centerQueueLock;
+			TaskQueue centerQueue;
+			std::unordered_set<Worker*> standby;
+
+			Data(IN const ThreadPoolOption& a_option) asd_noexcept
+				: option(a_option)
+			{
+				RRSeq = 0;
+			}
+
+			Worker* PickWorker()
+			{
+				return workerList[++RRSeq % workerList.size()];
+			}
+		};
+		std::shared_ptr<Data> m_data;
+
+
+		// 작업쓰레드 추가
+		static void AddWorker(REF std::shared_ptr<Data> a_data,
+							  IN size_t a_count) asd_noexcept
+		{
+			for (size_t i=0; i<a_count; ++i) {
+				asd_BeginTry();
+				std::thread(&ThisType::Working, a_data).detach();
+				asd_EndTryUnknown_Default();
+			}
 		}
 
-	}; // SequentialThreadPool
+
+		// 타이머 작업 예약
+		static Task_ptr PushTimerTask(MOVE std::shared_ptr<Data>&& a_data,
+									  IN Timer::TimePoint a_timePoint,
+									  MOVE TaskObj&& a_task) asd_noexcept
+		{
+			if (a_data == nullptr)
+				return nullptr;
+
+			auto lock = GetSharedLock(a_data->lock);
+			if (a_data->run == false)
+				return nullptr;
+
+			auto timer = a_data->timer ? a_data->timer.get() : &Timer::GlobalInstance();
+			return timer->PushAt(a_timePoint,
+								 &ThisType::PushTask,
+								 std::move(a_data),
+								 std::move(a_task));
+		}
+
+
+		// 작업 등록
+		static Task_ptr PushTask(REF std::shared_ptr<Data>& a_data,
+								 REF TaskObj& a_task) asd_noexcept
+		{
+			auto task = a_task.task;
+			if (a_data == nullptr)
+				return nullptr;
+
+			auto lock = GetSharedLock(a_data->lock);
+
+			if (!a_data->run || a_data->workerList.empty())
+				return nullptr;
+
+			typename Worker::Notifier notifier;
+			if (a_data->option.UseCenterQueue()) {
+				if (a_task.seq)
+					a_data->workingMap.Reserve(a_task.keyInfo, nullptr);
+
+				auto centerQueueLock = GetLock(a_data->centerQueueLock);
+				a_data->centerQueue.emplace_back(std::move(a_task));
+				if (a_data->standby.size() > 0) {
+					auto it = a_data->standby.begin();
+					Worker* worker = *it;
+					a_data->standby.erase(it);
+					auto workerLock = GetLock(worker->lock);
+					notifier = worker->NeedNotify(a_data->option.UseNotifier);
+				}
+				lock.unlock_shared();
+			}
+			else {
+				Worker* worker;
+				if (a_task.seq)
+					worker = a_data->workingMap.Reserve(a_task.keyInfo, a_data.get());
+				else
+					worker = a_data->PickWorker();
+
+				auto workerLock = GetLock(worker->lock);
+				lock.unlock_shared();
+
+				worker->publicQueue->emplace_back(std::move(a_task));
+				notifier = worker->NeedNotify(a_data->option.UseNotifier);
+			}
+
+			notifier.Notify();
+			a_data->stats.Push();
+			return task;
+		}
+
+
+		static bool Ready(REF std::shared_ptr<Data>& a_data,
+						  REF Worker* a_worker)
+		{
+			auto workerLock = GetLock(a_worker->lock);
+
+			asd_RAssert(a_worker->privateQueue->empty(), "unknown error");
+
+			int spinCount = a_data->option.SpinWaitCount;
+			for (; a_worker->publicQueue->empty(); workerLock.lock()) {
+				if (!a_worker->run)
+					return false;
+
+				bool spin = false;
+				if (spinCount > 0) {
+					spin = true;
+					--spinCount;
+				}
+				a_worker->sleep = !spin && a_data->option.UseNotifier;
+
+				workerLock.unlock();
+
+				typename Worker::Notifier notifier;
+				if (a_data->option.UseCenterQueue()) {
+					Worker* responsibleWorker = nullptr;
+					auto centerQueueLock = GetLock(a_data->centerQueueLock);
+					if (a_data->centerQueue.size() > 0) {
+						TaskObj& taskObj = a_data->centerQueue.front();
+						if (taskObj.seq)
+							responsibleWorker = a_data->workingMap.SetWorker(taskObj.keyInfo, a_worker);
+						else
+							responsibleWorker = a_worker;
+
+						auto responsibleWorkerLock = GetLock(responsibleWorker->lock);
+						responsibleWorker->publicQueue->emplace_back(std::move(taskObj));
+						a_data->centerQueue.pop_front();
+						notifier = responsibleWorker->NeedNotify(a_data->option.UseNotifier);
+
+						if (responsibleWorker == a_worker)
+							continue;
+						else
+							++a_data->stats.totalConflictCount;
+					}
+
+					if (responsibleWorker!=nullptr && a_data->option.UseNotifier)
+						a_data->standby.erase(responsibleWorker);
+
+					if (a_data->centerQueue.size() > 0)
+						spin = true;
+					else if (!spin && a_data->option.UseNotifier)
+						a_data->standby.emplace(a_worker);
+				}
+				notifier.Notify();
+
+				if (spin) {
+					std::this_thread::yield();
+				}
+				else {
+					++a_data->stats.sleepingThreadCount;
+					if (a_data->option.UseNotifier)
+						a_worker->notify.Wait();
+					else
+						std::this_thread::sleep_for(Timer::Millisec(1));
+					--a_data->stats.sleepingThreadCount;
+				}
+			}
+
+			a_worker->sleep = false;
+			std::swap(a_worker->publicQueue, a_worker->privateQueue);
+			return true;
+		}
+
+
+		// 작업쓰레드 메인루프
+		static void Working(REF std::shared_ptr<Data> a_data)
+		{
+			if (a_data == nullptr)
+				return;
+
+			auto lock = GetLock(a_data->lock);
+			if (a_data->workers.size() >= a_data->option.AutoScaling.MaxThreadCount)
+				return;
+
+			Worker curWorker;
+			curWorker.tid = GetCurrentThreadID();
+
+			asd_ChkErrAndRet(!a_data->workers.emplace(curWorker.tid, &curWorker).second, "already registered thread");
+			a_data->workerList.emplace_back(&curWorker);
+			asd_RAssert(a_data->workers.size() == a_data->workerList.size(), "unknown error");
+			a_data->stats.threadCount = a_data->workers.size();
+
+			curWorker.index = a_data->workerList.size() - 1;
+
+			lock.unlock();
+
+			while (Ready(a_data, &curWorker)) {
+				while (curWorker.privateQueue->size() > 0) {
+					asd_BeginTry();
+
+					TaskObj& taskObj = curWorker.privateQueue->front();
+
+					taskObj.task->Execute();
+					taskObj.task.reset();
+
+					if (taskObj.seq)
+						a_data->workingMap.Finish(taskObj.keyInfo);
+					a_data->stats.Pop();
+					curWorker.privateQueue->pop_front();
+
+					asd_EndTryUnknown_Default();
+				}
+			}
+
+			DeleteWorker(a_data, &curWorker);
+
+			auto workerLock = GetLock(curWorker.lock);
+			asd_RAssert(curWorker.publicQueue->empty(), "exist remain task");
+			asd_RAssert(curWorker.privateQueue->empty(), "exist remain task");
+		}
+
+
+		// 작업쓰레드 제거
+		static void DeleteWorker(IN std::shared_ptr<Data>& a_data,
+								 REF Worker* a_worker)
+		{
+			auto lock = GetLock(a_data->lock);
+
+			const bool autoScaling = a_worker == nullptr;
+			const size_t last = a_data->workerList.size() - 1;
+
+			if (autoScaling) {
+				if (a_data->workerList.size() <= max(a_data->option.AutoScaling.MinThreadCount, 1))
+					return;
+				a_worker = a_data->workerList[last];
+			}
+
+			auto it = a_data->workers.find(a_worker->tid);
+			if (it == a_data->workers.end())
+				return;
+
+			asd_ChkErrAndRet(a_worker != it->second, "unknown error");
+
+			{
+				auto centerQueueLock = GetLock(a_data->centerQueueLock);
+				a_data->standby.erase(a_worker);
+
+				auto workerLock = GetLock(a_worker->lock);
+				if (a_worker->run) {
+					a_worker->run = false;
+					a_worker->NeedNotify(a_data->option.UseNotifier).Notify();
+				}
+			}
+
+			std::swap(a_data->workerList[a_worker->index], a_data->workerList[last]);
+
+			a_data->workerList[a_worker->index]->index = a_worker->index;
+			a_data->workerList.resize(last);
+
+			a_data->workers.erase(it);
+			a_data->stats.threadCount = a_data->workers.size();
+			asd_RAssert(a_data->workers.size() == a_data->workerList.size(), "unknown error");
+		}
+
+
+		// AutoScaling 기능
+		static void PushAutoScalingTask(IN std::shared_ptr<Data> a_data)
+		{
+			if (a_data == nullptr)
+				return;
+
+			auto task = CreateTask([a_data]() mutable
+			{
+				auto lock = GetSharedLock(a_data->lock);
+
+				if (!a_data->run || a_data->workers.empty())
+					return;
+
+				auto proc([&]() -> std::function<void()>
+				{
+					static const auto s_none = [](){};
+					double cpu = CpuUsage();
+					if (cpu < a_data->option.AutoScaling.CpuUsageLow) {
+						uint64_t sleepingThreadCount = a_data->stats.sleepingThreadCount;
+						if (sleepingThreadCount > max(0.1*a_data->workers.size(), 1))
+							return [&](){ DeleteWorker(a_data, nullptr); };
+						if (sleepingThreadCount > 0)
+							return s_none;
+						return [&](){ AddWorker(a_data, a_data->option.AutoScaling.IncreaseCount); };
+					}
+					else if (cpu > a_data->option.AutoScaling.CpuUsageHigh) {
+						if (a_data->workers.size() <= 1)
+							return s_none;
+						return [&](){ DeleteWorker(a_data, nullptr); };
+					}
+					return s_none;
+				}());
+				lock.unlock_shared();
+				proc();
+				PushAutoScalingTask(a_data);
+			});
+
+			auto at = Timer::Now() + max(GetCpuUsageCheckCycle(), a_data->option.AutoScaling.Cycle);
+			if (a_data->timer != nullptr) {
+				a_data->timer->PushTask(at, task);
+			}
+			else {
+				TaskObj taskObj;
+				taskObj.seq = true;
+				taskObj.keyInfo.key = SeqKey();
+				taskObj.keyInfo.hash = HASH()(taskObj.keyInfo.key);
+				taskObj.task = std::move(task);
+				PushTimerTask(std::move(a_data), at, std::move(taskObj));
+			}
+		}
+
+
+		// 통계 수집
+		static void PushStatTask(IN std::shared_ptr<Data> a_data)
+		{
+			if (a_data == nullptr)
+				return;
+
+			auto task = CreateTask([a_data]() mutable
+			{
+				auto lock = GetLock(a_data->lock);
+
+				if (!a_data->run)
+					return;
+
+				a_data->stats.Refresh();
+
+				lock.unlock();
+				PushStatTask(a_data);
+			});
+
+			auto at = Timer::Now() + a_data->option.CollectStats_Cycle;
+			if (a_data->timer != nullptr) {
+				a_data->timer->PushTask(at, task);
+			}
+			else {
+				TaskObj taskObj;
+				taskObj.seq = false;
+				taskObj.task = std::move(task);
+				PushTimerTask(std::move(a_data), at, std::move(taskObj));
+			}
+		}
+
+	};
 }
 

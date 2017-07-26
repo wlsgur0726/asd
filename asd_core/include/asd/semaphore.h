@@ -27,5 +27,6 @@ namespace asd
 		bool Wait(IN uint32_t a_timeoutMs = Infinite);
 
 		void Post(IN uint32_t a_count = 1);
+
 	};
 }

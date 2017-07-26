@@ -12,7 +12,8 @@ namespace asd
 	struct SemaphoreData
 	{
 		HANDLE m_handle;
-		std::atomic<uint32_t> m_count;
+		std::atomic<uint32_t> m_postCount;
+		std::atomic<uint32_t> m_waitCount;
 
 		SemaphoreData(IN uint32_t a_initCount)
 		{
@@ -24,7 +25,8 @@ namespace asd
 				auto e = ::GetLastError();
 				asd_RaiseException("fail CreateSemaphore(), GetLastError:{}", e);
 			}
-			m_count = a_initCount;
+			m_postCount = a_initCount;
+			m_waitCount = 0;
 		}
 
 		~SemaphoreData() asd_noexcept
@@ -40,6 +42,7 @@ namespace asd
 	struct SemaphoreData
 	{
 		sem_t m_handle;
+		std::atomic<uint32_t> m_waitCount;
 
 		SemaphoreData(IN uint32_t a_initCount)
 		{
@@ -47,6 +50,7 @@ namespace asd
 				auto e = errno;
 				asd_RaiseException("fail sem_init(), errno:{}", e);
 			}
+			m_waitCount = 0;
 		}
 
 		~SemaphoreData() asd_noexcept
@@ -97,15 +101,13 @@ namespace asd
 		asd_DAssert(m_data != nullptr);
 
 #if defined(asd_Platform_Windows)
-		asd_DAssert(m_data->m_count >= 0);
-		return m_data->m_count;
+		return m_data->m_postCount;
 #else
 		int sval;
 		if (::sem_getvalue(&m_data->m_handle, &sval) != 0) {
 			auto e = errno;
 			asd_RaiseException("errno:{}", e);
 		}
-		asd_DAssert(sval >= 0);
 		return sval;
 #endif
 	}
@@ -118,11 +120,13 @@ namespace asd
 
 #if defined(asd_Platform_Windows)
 		static_assert(INFINITE == Infinite, "unexpected INFINITE value");
+		++m_data->m_waitCount;
 		auto r = ::WaitForSingleObject(m_data->m_handle, a_timeoutMs);
+		--m_data->m_waitCount;
 		switch (r) {
 			case WAIT_OBJECT_0:
-				--m_data->m_count;
-				asd_DAssert(m_data->m_count >= 0);
+				--m_data->m_postCount;
+				asd_DAssert(m_data->m_postCount >= 0);
 				return true;
 			case WAIT_TIMEOUT:
 				break;
@@ -132,9 +136,9 @@ namespace asd
 				asd_RaiseException("GetLastError:{}", e);
 				break;
 		}
-		asd_DAssert(GetCount() >= 0);
 		return false;
 #else
+		++m_data->m_waitCount;
 		int r;
 		switch (a_timeoutMs) {
 			case 0:
@@ -157,6 +161,7 @@ namespace asd
 				break;
 			}
 		}
+		--m_data->m_waitCount;
 
 		if (r != 0) {
 			auto e = errno;
@@ -172,7 +177,6 @@ namespace asd
 			asd_DAssert(GetCount() >= 0);
 			return false;
 		}
-		asd_DAssert(GetCount() >= 0);
 		return true;
 #endif
 	}
@@ -186,10 +190,10 @@ namespace asd
 			return;
 
 #if defined(asd_Platform_Windows)
-		m_data->m_count += a_count;
+		m_data->m_postCount += a_count;
 		if (::ReleaseSemaphore(m_data->m_handle, a_count, NULL) == 0) {
 			auto e = ::GetLastError();
-			m_data->m_count -= a_count;
+			m_data->m_postCount -= a_count;
 			asd_RaiseException("GetLastError:{}", e);
 		}
 #else
@@ -200,6 +204,5 @@ namespace asd
 			}
 		}
 #endif
-		asd_DAssert(GetCount() >= 0);
 	}
 }

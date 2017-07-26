@@ -13,7 +13,7 @@ namespace asd
 
 		// 큐잉한 task를 취소
 		// task가 아직 실행되지 않았다면 true 리턴
-		// a_call이 true이면 task가 아직 실행되지 않은 경우 실행
+		// a_call에 true를 넘기면 task가 아직 실행되지 않은 경우 실행
 		bool Cancel(IN bool a_call = false);
 
 		// 실행 (1회만 실행하는 것을 보장)
@@ -92,9 +92,15 @@ namespace asd
 							   PARAMS&&... a_params) asd_noexcept
 	{
 		using TASK = TaskTemplate<FUNC, PARAMS...>;
+#if 0
+		return Task_ptr(new TASK(std::forward<FUNC>(a_func),
+								 std::forward<PARAMS>(a_params)...));
+#else
 		using POOL = ObjectPoolShardSet< ObjectPool<TASK, Mutex> >;
-		return Task_ptr(Global<POOL>::Instance().Alloc(std::forward<FUNC>(a_func),
-													   std::forward<PARAMS>(a_params)...),
-						[](Task* p) { Global<POOL>::Instance().Free((TASK*)p); });
+		static auto& s_pool = Global<POOL>::Instance();
+		auto task = s_pool.Alloc(std::forward<FUNC>(a_func),
+								 std::forward<PARAMS>(a_params)...);
+		return Task_ptr(task, [](Task* p) { s_pool.Free((TASK*)p); });
+#endif
 	}
 }
