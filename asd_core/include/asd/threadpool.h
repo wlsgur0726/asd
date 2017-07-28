@@ -23,10 +23,10 @@ namespace asd
 			bool Use = false;
 			double CpuUsageHigh = 0.95; // 95%
 			double CpuUsageLow = (1.0 / Get_HW_Concurrency()) * (Get_HW_Concurrency() - 1);
-			size_t MinThreadCount = 1;
-			size_t MaxThreadCount = std::numeric_limits<size_t>::max();
+			uint32_t MinThreadCount = 1;
+			uint32_t MaxThreadCount = std::numeric_limits<uint32_t>::max();
 			Timer::Millisec Cycle = Timer::Millisec(1000);
-			size_t IncreaseCount = Get_HW_Concurrency();
+			uint32_t IncreaseCount = Get_HW_Concurrency();
 		} AutoScaling;
 
 		bool CollectStats = false;
@@ -186,13 +186,8 @@ namespace asd
 			if (data->option.UseCenterQueue()) {
 				lock.unlock();
 				for (auto centerQueueLock=GetLock(data->centerQueueLock); data->centerQueue.size()>0; centerQueueLock.lock()) {
-					while (data->standby.size() > 0) {
-						auto it = data->standby.begin();
-						Worker* worker = *it;
-						data->standby.erase(it);
-						auto workerLock = GetLock(worker->lock);
-						worker->NeedNotify(data->option.UseNotifier).Notify();
-					}
+					while (data->standby.size() > 0)
+						NeedNotify(data, nullptr).Notify();
 					centerQueueLock.unlock();
 					std::this_thread::sleep_for(Timer::Millisec(1));
 				}
@@ -203,7 +198,7 @@ namespace asd
 				for (Worker* worker : data->workerList) {
 					auto workerLock = GetLock(worker->lock);
 					worker->run = false;
-					worker->NeedNotify(data->option.UseNotifier).Notify();
+					NeedNotify(data, worker).Notify();
 				}
 				lock.unlock();
 				std::this_thread::sleep_for(Timer::Millisec(1));
@@ -228,7 +223,15 @@ namespace asd
 			if (data->option.AutoScaling.Use)
 				CpuUsage(); // 인스턴스 초기화를 위해 호출
 
-			auto startThreadCount = max(data->option.StartThreadCount, 1);
+			uint32_t startThreadCount = max(data->option.StartThreadCount, 1);
+			if (data->option.AutoScaling.Use) {
+				auto MinCnt = data->option.AutoScaling.MinThreadCount;
+				auto MaxCnt = data->option.AutoScaling.MaxThreadCount;
+				if (MinCnt > MaxCnt || MaxCnt == 0)
+					asd_RaiseException("invalid AutoScaling option");
+				startThreadCount = max(startThreadCount, MinCnt);
+				startThreadCount = min(startThreadCount, MaxCnt);
+			}
 			AddWorker(data, startThreadCount);
 
 			if (data->option.UseEmbeddedTimer)
@@ -343,6 +346,9 @@ namespace asd
 
 
 	private:
+		struct Data;
+
+
 		struct SeqKeyInfo
 		{
 			SeqKey key;
@@ -431,6 +437,15 @@ namespace asd
 		};//TaskQueue
 
 
+		struct Notifier
+		{
+			Semaphore* notify = nullptr;
+			void Notify()
+			{
+				if (notify)
+					notify->Post();
+			}
+		};
 
 		struct Worker
 		{
@@ -444,28 +459,8 @@ namespace asd
 			TaskQueue* publicQueue = &queue[0];
 			TaskQueue* privateQueue = &queue[1];
 
-			bool sleep = false;
+			bool sleep = false; // UseCenterQueue() == false 일 때만 사용
 			Semaphore notify;
-
-			struct Notifier
-			{
-				Semaphore* notify = nullptr;
-				void Notify()
-				{
-					if (notify)
-						notify->Post();
-				}
-			};
-
-			inline Notifier NeedNotify(IN bool a_useNotifier) asd_noexcept
-			{
-				Notifier ret;
-				if (a_useNotifier && sleep) {
-					sleep = false;
-					ret.notify = &notify;
-				}
-				return ret;
-			}
 		};
 
 		struct Work
@@ -474,9 +469,6 @@ namespace asd
 			int reserveCount = 0;
 			int procCount = 0;
 		};
-
-
-		struct Data;
 
 
 		class WorkingMap
@@ -614,9 +606,9 @@ namespace asd
 
 		// 작업쓰레드 추가
 		static void AddWorker(REF std::shared_ptr<Data> a_data,
-							  IN size_t a_count) asd_noexcept
+							  IN uint32_t a_count) asd_noexcept
 		{
-			for (size_t i=0; i<a_count; ++i) {
+			for (uint32_t i=0; i<a_count; ++i) {
 				asd_BeginTry();
 				std::thread(&ThisType::Working, a_data).detach();
 				asd_EndTryUnknown_Default();
@@ -657,20 +649,15 @@ namespace asd
 			if (!a_data->run || a_data->workerList.empty())
 				return nullptr;
 
-			typename Worker::Notifier notifier;
+			Notifier notifier;
 			if (a_data->option.UseCenterQueue()) {
 				if (a_task.seq)
 					a_data->workingMap.Reserve(a_task.keyInfo, nullptr);
 
 				auto centerQueueLock = GetLock(a_data->centerQueueLock);
 				a_data->centerQueue.emplace_back(std::move(a_task));
-				if (a_data->standby.size() > 0) {
-					auto it = a_data->standby.begin();
-					Worker* worker = *it;
-					a_data->standby.erase(it);
-					auto workerLock = GetLock(worker->lock);
-					notifier = worker->NeedNotify(a_data->option.UseNotifier);
-				}
+
+				notifier = NeedNotify(a_data, nullptr);
 				lock.unlock_shared();
 			}
 			else {
@@ -684,7 +671,7 @@ namespace asd
 				lock.unlock_shared();
 
 				worker->publicQueue->emplace_back(std::move(a_task));
-				notifier = worker->NeedNotify(a_data->option.UseNotifier);
+				notifier = NeedNotify(a_data, worker);
 			}
 
 			notifier.Notify();
@@ -693,6 +680,46 @@ namespace asd
 		}
 
 
+		// 작업 알림
+		static Notifier NeedNotify(REF std::shared_ptr<Data>& a_data,
+								   REF Worker* a_worker) asd_noexcept
+		{
+			Notifier ret;
+			if (!a_data->option.UseNotifier)
+				return ret;
+
+			if (a_data->option.UseCenterQueue()) {
+				// acquired a_data->centerQueueLock
+				Worker* worker = a_worker;
+				if (worker == nullptr) {
+					if (a_data->standby.empty())
+						return ret;
+					auto it = a_data->standby.begin();
+					worker = *it;
+					a_data->standby.erase(it);
+					ret.notify = &worker->notify;
+					return ret;
+				}
+				else {
+					if (1 == a_data->standby.erase(worker))
+						ret.notify = &worker->notify;
+					return ret;
+				}
+			}
+			else {
+				// acquired a_worker->lock
+				asd_DAssert(a_worker != nullptr);
+				if (a_worker->sleep) {
+					a_worker->sleep = false;
+					ret.notify = &a_worker->notify;
+				}
+				return ret;
+			}
+			return ret;
+		}
+
+
+		// 작업 대기
 		static bool Ready(REF std::shared_ptr<Data>& a_data,
 						  REF Worker* a_worker)
 		{
@@ -714,7 +741,7 @@ namespace asd
 
 				workerLock.unlock();
 
-				typename Worker::Notifier notifier;
+				Notifier notifier;
 				if (a_data->option.UseCenterQueue()) {
 					Worker* responsibleWorker = nullptr;
 					auto centerQueueLock = GetLock(a_data->centerQueueLock);
@@ -728,16 +755,14 @@ namespace asd
 						auto responsibleWorkerLock = GetLock(responsibleWorker->lock);
 						responsibleWorker->publicQueue->emplace_back(std::move(taskObj));
 						a_data->centerQueue.pop_front();
-						notifier = responsibleWorker->NeedNotify(a_data->option.UseNotifier);
+						responsibleWorkerLock.unlock();
 
 						if (responsibleWorker == a_worker)
 							continue;
-						else
-							++a_data->stats.totalConflictCount;
-					}
 
-					if (responsibleWorker!=nullptr && a_data->option.UseNotifier)
-						a_data->standby.erase(responsibleWorker);
+						++a_data->stats.totalConflictCount;
+						notifier = NeedNotify(a_data, responsibleWorker);
+					}
 
 					if (a_data->centerQueue.size() > 0)
 						spin = true;
@@ -766,8 +791,9 @@ namespace asd
 
 
 		// 작업쓰레드 메인루프
-		static void Working(REF std::shared_ptr<Data> a_data)
+		static void Working(REF std::shared_ptr<Data> a_data) asd_noexcept
 		{
+			asd_BeginTry();
 			if (a_data == nullptr)
 				return;
 
@@ -810,6 +836,7 @@ namespace asd
 			auto workerLock = GetLock(curWorker.lock);
 			asd_RAssert(curWorker.publicQueue->empty(), "exist remain task");
 			asd_RAssert(curWorker.privateQueue->empty(), "exist remain task");
+			asd_EndTryUnknown_Default();
 		}
 
 
@@ -819,10 +846,10 @@ namespace asd
 		{
 			auto lock = GetLock(a_data->lock);
 
-			const bool autoScaling = a_worker == nullptr;
+			const bool AutoScalingProc = a_worker == nullptr;
 			const size_t last = a_data->workerList.size() - 1;
 
-			if (autoScaling) {
+			if (AutoScalingProc) {
 				if (a_data->workerList.size() <= max(a_data->option.AutoScaling.MinThreadCount, 1))
 					return;
 				a_worker = a_data->workerList[last];
@@ -834,16 +861,14 @@ namespace asd
 
 			asd_ChkErrAndRet(a_worker != it->second, "unknown error");
 
+			Notifier notifier;
 			{
 				auto centerQueueLock = GetLock(a_data->centerQueueLock);
-				a_data->standby.erase(a_worker);
-
 				auto workerLock = GetLock(a_worker->lock);
-				if (a_worker->run) {
-					a_worker->run = false;
-					a_worker->NeedNotify(a_data->option.UseNotifier).Notify();
-				}
+				a_worker->run = false;
+				notifier = NeedNotify(a_data, a_worker);
 			}
+			notifier.Notify();
 
 			std::swap(a_data->workerList[a_worker->index], a_data->workerList[last]);
 

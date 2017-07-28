@@ -75,14 +75,14 @@ namespace asd
 
 	Semaphore::Semaphore(MOVE Semaphore&& a_rval)
 	{
-		(*this) = std::move(a_rval);
+		operator=(std::move(a_rval));
 	}
 
 
 
-	Semaphore& Semaphore::operator = (MOVE Semaphore&& a_rval)
+	Semaphore& Semaphore::operator=(MOVE Semaphore&& a_rval)
 	{
-		m_data.swap(a_rval.m_data);
+		m_data = std::move(a_rval.m_data);
 		return *this;
 	}
 
@@ -168,8 +168,7 @@ namespace asd
 			switch (e) {
 				case ETIMEDOUT:
 				case EAGAIN:
-				case EINTR:
-					asd_DAssert(a_timeoutMs != Infinite);
+					asd_RAssert(a_timeoutMs != Infinite, "unknown error");
 					break;
 				default:
 					asd_RaiseException("errno:{}", e);

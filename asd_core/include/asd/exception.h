@@ -28,6 +28,14 @@ namespace asd
 	protected:
 		MString m_what;
 		const StackTrace m_stackTrace = StackTrace(1);
+
+#if asd_Exception_Enable_DumpCreator
+	private:
+		struct DumpCreator
+		{
+			DumpCreator() asd_noexcept;
+		} m_dumpCreator;
+#endif
 	};
 
 	struct UnknownException

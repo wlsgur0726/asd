@@ -26,7 +26,7 @@ namespace asdtest_threadpool
 
 
 	const uint64_t ThreadWorkCost = 1			// 1
-								* 512 * 2		// 1K
+								//* 512 * 2		// 1K
 								//* 512 * 2		// 1M
 								//* 512 * 2		// 1G
 								;

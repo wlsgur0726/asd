@@ -3,6 +3,11 @@
 #include "asd/log.h"
 #include <atomic>
 
+#if asd_Exception_Enable_DumpCreator
+#	include "asd/memdump.h"
+#
+#endif
+
 
 namespace asd
 {
@@ -60,7 +65,13 @@ namespace asd
 		return m_stackTrace;
 	}
 
+#if asd_Exception_Enable_DumpCreator
+	Exception::DumpCreator::DumpCreator() asd_noexcept
+	{
+		MemDump::Create();
+	}
 
+#endif
 
 	void DefaultExceptionHandler::operator()(IN ExceptionPtrInterface* a_exception,
 											 IN const DebugInfo& a_catchPosInfo) const asd_noexcept
