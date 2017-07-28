@@ -187,7 +187,7 @@ namespace asd
 				lock.unlock();
 				for (auto centerQueueLock=GetLock(data->centerQueueLock); data->centerQueue.size()>0; centerQueueLock.lock()) {
 					while (data->standby.size() > 0)
-						NeedNotify(data, nullptr).Notify();
+						NeedNotify(data.get(), nullptr).Notify();
 					centerQueueLock.unlock();
 					std::this_thread::sleep_for(Timer::Millisec(1));
 				}
@@ -198,7 +198,7 @@ namespace asd
 				for (Worker* worker : data->workerList) {
 					auto workerLock = GetLock(worker->lock);
 					worker->run = false;
-					NeedNotify(data, worker).Notify();
+					NeedNotify(data.get(), worker).Notify();
 				}
 				lock.unlock();
 				std::this_thread::sleep_for(Timer::Millisec(1));
@@ -459,7 +459,7 @@ namespace asd
 			TaskQueue* publicQueue = &queue[0];
 			TaskQueue* privateQueue = &queue[1];
 
-			bool sleep = false; // UseCenterQueue() == false 일 때만 사용
+			bool sleep = false; // UseCenterQueue() == false 경우에만 사용
 			Semaphore notify;
 		};
 
@@ -497,7 +497,7 @@ namespace asd
 			{
 				asd_ThreadPool_WorkingMap_FindWork(a_keyInfo, work);
 
-				if (a_data == nullptr) {
+				if (a_data->option.UseCenterQueue()) {
 					++work.reserveCount;
 				}
 				else {
@@ -582,13 +582,14 @@ namespace asd
 			// 통계
 			ThreadPoolStats stats;
 
-			// 내장 타이머 (UseEmbeddedTimer == true)
+			// 내장 타이머 (UseEmbeddedTimer == true 경우에만 사용)
 			std::unique_ptr<Timer> timer;
 
-			// 중앙큐 관련 (AutoScaling.Use == true)
+			// 중앙큐 관련 (AutoScaling.Use == true 경우에만 사용)
 			mutable Mutex centerQueueLock;
 			TaskQueue centerQueue;
 			std::unordered_set<Worker*> standby;
+
 
 			Data(IN const ThreadPoolOption& a_option) asd_noexcept
 				: option(a_option)
@@ -605,7 +606,7 @@ namespace asd
 
 
 		// 작업쓰레드 추가
-		static void AddWorker(REF std::shared_ptr<Data> a_data,
+		static void AddWorker(IN std::shared_ptr<Data> a_data,
 							  IN uint32_t a_count) asd_noexcept
 		{
 			for (uint32_t i=0; i<a_count; ++i) {
@@ -652,12 +653,12 @@ namespace asd
 			Notifier notifier;
 			if (a_data->option.UseCenterQueue()) {
 				if (a_task.seq)
-					a_data->workingMap.Reserve(a_task.keyInfo, nullptr);
+					a_data->workingMap.Reserve(a_task.keyInfo, a_data.get());
 
 				auto centerQueueLock = GetLock(a_data->centerQueueLock);
 				a_data->centerQueue.emplace_back(std::move(a_task));
 
-				notifier = NeedNotify(a_data, nullptr);
+				notifier = NeedNotify(a_data.get(), nullptr);
 				lock.unlock_shared();
 			}
 			else {
@@ -671,7 +672,7 @@ namespace asd
 				lock.unlock_shared();
 
 				worker->publicQueue->emplace_back(std::move(a_task));
-				notifier = NeedNotify(a_data, worker);
+				notifier = NeedNotify(a_data.get(), worker);
 			}
 
 			notifier.Notify();
@@ -681,7 +682,7 @@ namespace asd
 
 
 		// 작업 알림
-		static Notifier NeedNotify(REF std::shared_ptr<Data>& a_data,
+		static Notifier NeedNotify(REF Data* a_data,
 								   REF Worker* a_worker) asd_noexcept
 		{
 			Notifier ret;
@@ -720,7 +721,7 @@ namespace asd
 
 
 		// 작업 대기
-		static bool Ready(REF std::shared_ptr<Data>& a_data,
+		static bool Ready(REF Data* a_data,
 						  REF Worker* a_worker)
 		{
 			auto workerLock = GetLock(a_worker->lock);
@@ -797,23 +798,23 @@ namespace asd
 			if (a_data == nullptr)
 				return;
 
-			auto lock = GetLock(a_data->lock);
-			if (a_data->workers.size() >= a_data->option.AutoScaling.MaxThreadCount)
-				return;
-
 			Worker curWorker;
-			curWorker.tid = GetCurrentThreadID();
+			{
+				auto lock = GetLock(a_data->lock);
+				if (a_data->workers.size() >= a_data->option.AutoScaling.MaxThreadCount)
+					return;
 
-			asd_ChkErrAndRet(!a_data->workers.emplace(curWorker.tid, &curWorker).second, "already registered thread");
-			a_data->workerList.emplace_back(&curWorker);
-			asd_RAssert(a_data->workers.size() == a_data->workerList.size(), "unknown error");
-			a_data->stats.threadCount = a_data->workers.size();
+				curWorker.tid = GetCurrentThreadID();
 
-			curWorker.index = a_data->workerList.size() - 1;
+				asd_ChkErrAndRet(!a_data->workers.emplace(curWorker.tid, &curWorker).second, "already registered thread");
+				a_data->workerList.emplace_back(&curWorker);
+				asd_RAssert(a_data->workers.size() == a_data->workerList.size(), "unknown error");
+				a_data->stats.threadCount = a_data->workers.size();
 
-			lock.unlock();
+				curWorker.index = a_data->workerList.size() - 1;
+			}
 
-			while (Ready(a_data, &curWorker)) {
+			while (Ready(a_data.get(), &curWorker)) {
 				while (curWorker.privateQueue->size() > 0) {
 					asd_BeginTry();
 
@@ -824,6 +825,7 @@ namespace asd
 
 					if (taskObj.seq)
 						a_data->workingMap.Finish(taskObj.keyInfo);
+
 					a_data->stats.Pop();
 					curWorker.privateQueue->pop_front();
 
@@ -831,7 +833,7 @@ namespace asd
 				}
 			}
 
-			DeleteWorker(a_data, &curWorker);
+			DeleteWorker(a_data.get(), &curWorker);
 
 			auto workerLock = GetLock(curWorker.lock);
 			asd_RAssert(curWorker.publicQueue->empty(), "exist remain task");
@@ -841,7 +843,7 @@ namespace asd
 
 
 		// 작업쓰레드 제거
-		static void DeleteWorker(IN std::shared_ptr<Data>& a_data,
+		static void DeleteWorker(REF Data* a_data,
 								 REF Worker* a_worker)
 		{
 			auto lock = GetLock(a_data->lock);
@@ -901,7 +903,7 @@ namespace asd
 					if (cpu < a_data->option.AutoScaling.CpuUsageLow) {
 						uint64_t sleepingThreadCount = a_data->stats.sleepingThreadCount;
 						if (sleepingThreadCount > max(0.1*a_data->workers.size(), 1))
-							return [&](){ DeleteWorker(a_data, nullptr); };
+							return [&](){ DeleteWorker(a_data.get(), nullptr); };
 						if (sleepingThreadCount > 0)
 							return s_none;
 						return [&](){ AddWorker(a_data, a_data->option.AutoScaling.IncreaseCount); };
@@ -909,7 +911,7 @@ namespace asd
 					else if (cpu > a_data->option.AutoScaling.CpuUsageHigh) {
 						if (a_data->workers.size() <= 1)
 							return s_none;
-						return [&](){ DeleteWorker(a_data, nullptr); };
+						return [&](){ DeleteWorker(a_data.get(), nullptr); };
 					}
 					return s_none;
 				}());
