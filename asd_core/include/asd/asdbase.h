@@ -144,6 +144,15 @@
 	}																		\
 
 
+#if asd_Platform_Windows
+#	define DllExport __declspec(dllexport)
+#
+#else
+#	define DllExport 
+#
+#endif
+
+
 namespace asd
 {
 }

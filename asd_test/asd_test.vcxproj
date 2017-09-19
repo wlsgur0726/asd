@@ -76,7 +76,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\asd_core\include;..\..\googletest\googletest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\asd_core\include;$(ProjectDir)..\asd_redis\include;$(ProjectDir)..\..\googletest\googletest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalOptions>
       </AdditionalOptions>
@@ -90,9 +90,10 @@
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
       <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
+      <ImportLibrary>$(OutDir)$(TargetName).lib</ImportLibrary>
     </Link>
     <PreBuildEvent>
-      <Command>$(ProjectDir)..\Copy_ICONV_DLL.bat "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
+      <Command>$(ProjectDir)..\CopyDLL.bat "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -103,7 +104,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\asd_core\include;..\..\googletest\googletest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\asd_core\include;$(ProjectDir)..\asd_redis\include;$(ProjectDir)..\..\googletest\googletest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalOptions>
       </AdditionalOptions>
@@ -119,9 +120,10 @@
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
       <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
+      <ImportLibrary>$(OutDir)$(TargetName).lib</ImportLibrary>
     </Link>
     <PreBuildEvent>
-      <Command>$(ProjectDir)..\Copy_ICONV_DLL.bat "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
+      <Command>$(ProjectDir)..\CopyDLL.bat "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Profiling|x64'">
@@ -132,7 +134,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\asd_core\include;..\..\googletest\googletest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\asd_core\include;$(ProjectDir)..\asd_redis\include;$(ProjectDir)..\..\googletest\googletest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalOptions>
       </AdditionalOptions>
@@ -149,9 +151,10 @@
       </AdditionalLibraryDirectories>
       <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
       <Profile>true</Profile>
+      <ImportLibrary>$(OutDir)$(TargetName).lib</ImportLibrary>
     </Link>
     <PreBuildEvent>
-      <Command>$(ProjectDir)..\Copy_ICONV_DLL.bat "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
+      <Command>$(ProjectDir)..\CopyDLL.bat "$(Platform)" "$(Configuration)" "$(OutDir)"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -169,6 +172,7 @@
     <ClCompile Include="test_lock.cpp" />
     <ClCompile Include="test_objpool.cpp" />
     <ClCompile Include="test_odbc.cpp" />
+    <ClCompile Include="test_redis.cpp" />
     <ClCompile Include="test_semaphore.cpp" />
     <ClCompile Include="test_serialize.cpp" />
     <ClCompile Include="test_socket.cpp" />
@@ -183,6 +187,9 @@
     </ProjectReference>
     <ProjectReference Include="..\asd_core\asd.vcxproj">
       <Project>{bed6683e-0eb1-4e30-8e45-8b8290b7c8c4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\asd_redis\asd_redis.vcxproj">
+      <Project>{ab33719a-7a27-4642-9522-3e2d8c22840d}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
