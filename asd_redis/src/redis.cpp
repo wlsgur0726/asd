@@ -1,6 +1,9 @@
 #include "asd/redis.h"
 #include "hiredis/hiredis.h"
+
+#if asd_Platform_Windows
 #include <WinSock2.h>
+#endif
 
 
 namespace asd
@@ -14,10 +17,17 @@ namespace asd
 		reset(reply);
 	}
 
-	RedisReply::RedisReply(const RedisReply& share)
-		: BaseType(share)
-		, m_lastError(share.m_lastError)
+	RedisReply::RedisReply(RedisReply&& share)
 	{
+		operator=(std::forward<RedisReply>(share));
+	}
+
+
+	RedisReply& RedisReply::operator=(RedisReply&& share)
+	{
+		BaseType::operator=(std::forward<RedisReply>(share));
+		m_lastError = share.m_lastError;
+		return *this;
 	}
 
 
@@ -32,7 +42,7 @@ namespace asd
 		m_lastError = nullptr;
 
 		if (reply == nullptr) {
-			m_lastError = "unknown error";
+			m_lastError = "null";
 			return;
 		}
 
@@ -57,13 +67,13 @@ namespace asd
 	}
 
 
-	RedisReply::Type type(redisReply* reply)
+	RedisReply::Type RedisReply::type(redisReply* reply)
 	{
 #define asd_StaticAssert_TypeCheck(A, B) static_assert(A == B, "unexpected RedisReply::Type value")
 		asd_StaticAssert_TypeCheck(RedisReply::Type_String,		REDIS_REPLY_STRING);
 		asd_StaticAssert_TypeCheck(RedisReply::Type_Array,		REDIS_REPLY_ARRAY);
 		asd_StaticAssert_TypeCheck(RedisReply::Type_Integer,	REDIS_REPLY_INTEGER);
-		asd_StaticAssert_TypeCheck(RedisReply::Type_NIL,		REDIS_REPLY_NIL);
+		asd_StaticAssert_TypeCheck(RedisReply::Type_Nil,		REDIS_REPLY_NIL);
 		asd_StaticAssert_TypeCheck(RedisReply::Type_Status,		REDIS_REPLY_STATUS);
 		asd_StaticAssert_TypeCheck(RedisReply::Type_Error,		REDIS_REPLY_ERROR);
 
@@ -72,7 +82,13 @@ namespace asd
 
 	int64_t RedisReply::integer(redisReply* reply)
 	{
-		return reply ? reply->integer : 0;
+		switch (type(reply)) {
+			case RedisReply::Type_Integer:
+				return reply->integer;
+			case RedisReply::Type_String:
+				return std::atoll(reply->str);
+		}
+		return 0;
 	}
 
 	int RedisReply::len(redisReply* reply)
@@ -94,7 +110,6 @@ namespace asd
 	{
 		return reply ? reply->element : nullptr;
 	}
-
 
 
 	RedisContext::RedisContext()

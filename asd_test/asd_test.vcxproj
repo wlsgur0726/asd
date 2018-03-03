@@ -17,6 +17,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{9935ABB3-0104-4184-AA70-2A0A48D9C9CC}</ProjectGuid>
     <RootNamespace>asd_test</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -182,7 +183,7 @@
     <ClCompile Include="test_timer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\googletest\googletest\msvc2017\gtest-md.vcxproj">
+    <ProjectReference Include="..\..\googletest\googletest\msvc\2017\gtest-md.vcxproj">
       <Project>{c8f6c172-56f2-4e76-b5fa-c3b423b31be8}</Project>
     </ProjectReference>
     <ProjectReference Include="..\asd_core\asd.vcxproj">

@@ -24,6 +24,7 @@
 								<option id="gnu.c.compiler.option.debugging.level.992244175" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.810783855" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../asd_core/include"/>
+									<listOptionValue builtIn="false" value="../../asd_redis/include"/>
 									<listOptionValue builtIn="false" value="../../../googletest/googletest/include"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.235469983" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fpermissive -Wno-narrowing" valueType="string"/>
@@ -38,6 +39,7 @@
 								<option id="gnu.cpp.compiler.option.debugging.level.1937193141" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.919214054" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../asd_core/include"/>
+									<listOptionValue builtIn="false" value="../../asd_redis/include"/>
 									<listOptionValue builtIn="false" value="../../../googletest/googletest/include"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1593836535" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++14 -fpermissive -Wno-narrowing" valueType="string"/>
@@ -50,13 +52,17 @@
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.660140778" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
 								<option id="gnu.cpp.link.option.paths.2121578129" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;../../asd_core/lib/linux/${ConfigName}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;../../asd_redis/${ConfigName}&quot;"/>
 									<listOptionValue builtIn="false" value="../../../googletest/googletest/make"/>
+									<listOptionValue builtIn="false" value="../../../hiredis"/>
 								</option>
 								<option id="gnu.cpp.link.option.libs.1572672720" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="asd"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="pthread"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gtest"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="odbc"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="asd_redis"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="hiredis"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.2393561" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -97,6 +103,7 @@
 								<option id="gnu.c.compiler.option.debugging.level.1832265599" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.822931509" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../asd_core/include"/>
+									<listOptionValue builtIn="false" value="../../asd_redis/include"/>
 									<listOptionValue builtIn="false" value="../../../googletest/googletest/include"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.461612782" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fpermissive -Wno-narrowing" valueType="string"/>
@@ -108,6 +115,7 @@
 								<option id="gnu.cpp.compiler.option.debugging.level.654530522" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.160483471" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../asd_core/include"/>
+									<listOptionValue builtIn="false" value="../../asd_redis/include"/>
 									<listOptionValue builtIn="false" value="../../../googletest/googletest/include"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1814147347" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++14 -fpermissive -Wno-narrowing" valueType="string"/>
@@ -117,13 +125,17 @@
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1190481370" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
 								<option id="gnu.cpp.link.option.paths.2007526594" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;../../asd_core/lib/linux/${ConfigName}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;../../asd_redis/${ConfigName}&quot;"/>
 									<listOptionValue builtIn="false" value="../../../googletest/googletest/make"/>
+									<listOptionValue builtIn="false" value="../../../hiredis"/>
 								</option>
 								<option id="gnu.cpp.link.option.libs.614699031" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="asd"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="pthread"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gtest"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="odbc"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="asd_redis"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="hiredis"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.394496170" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>

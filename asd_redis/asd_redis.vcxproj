@@ -16,6 +16,17 @@
   <ItemGroup>
     <ClInclude Include="include\asd\redis.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\redis\msvs\hiredis\hiredis.vcxproj">
+      <Project>{13e85053-54b3-487b-8ddb-3430b1c1b3bf}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\redis\src\Win32_Interop\Win32_Interop.vcxproj">
+      <Project>{8c07f811-c81c-432c-b334-1ae6faecf951}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="PreBuildEvent.bat" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{AB33719A-7A27-4642-9522-3E2D8C22840D}</ProjectGuid>
     <RootNamespace>asd_redis</RootNamespace>
@@ -59,21 +70,26 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\redis\deps;$(ProjectDir)include;$(ProjectDir)..\asd_core\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Lib>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\redis\msvs\$(Platform)\$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>hiredis.lib;Win32_Interop.lib</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\redis\msvs\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>hiredis.lib;Win32_Interop.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
     </Link>
+    <PreBuildEvent>
+      <Command>call "$(ProjectDir)PreBuildEvent.bat"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -83,22 +99,27 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\redis\deps;$(ProjectDir)include;$(ProjectDir)..\asd_core\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\redis\msvs\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>hiredis.lib;Win32_Interop.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
     </Link>
     <Lib>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\redis\msvs\$(Platform)\$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>hiredis.lib;Win32_Interop.lib</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
+    <PreBuildEvent>
+      <Command>call "$(ProjectDir)PreBuildEvent.bat"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
