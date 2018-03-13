@@ -223,7 +223,7 @@ namespace asd
 			if (data->option.AutoScaling.Use)
 				CpuUsage(); // 인스턴스 초기화를 위해 호출
 
-			uint32_t startThreadCount = max(data->option.StartThreadCount, 1);
+			uint32_t startThreadCount = max(data->option.StartThreadCount, 1U);
 			if (data->option.AutoScaling.Use) {
 				auto MinCnt = data->option.AutoScaling.MinThreadCount;
 				auto MaxCnt = data->option.AutoScaling.MaxThreadCount;
@@ -852,7 +852,7 @@ namespace asd
 			const size_t last = a_data->workerList.size() - 1;
 
 			if (AutoScalingProc) {
-				if (a_data->workerList.size() <= max(a_data->option.AutoScaling.MinThreadCount, 1))
+				if (a_data->workerList.size() <= max(a_data->option.AutoScaling.MinThreadCount, 1U))
 					return;
 				a_worker = a_data->workerList[last];
 			}

@@ -30,7 +30,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{AB33719A-7A27-4642-9522-3E2D8C22840D}</ProjectGuid>
     <RootNamespace>asd_redis</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">

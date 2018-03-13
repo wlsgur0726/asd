@@ -35,6 +35,27 @@
     <ClInclude Include="include\asd\container.h" />
     <ClInclude Include="include\asd\task.h" />
     <ClInclude Include="include\asd\sysres.h" />
+    <ClInclude Include="built-in\cppformat\fmt\ostream.h">
+      <Filter>built-in\cppformat</Filter>
+    </ClInclude>
+    <ClInclude Include="built-in\cppformat\fmt\posix.h">
+      <Filter>built-in\cppformat</Filter>
+    </ClInclude>
+    <ClInclude Include="built-in\cppformat\fmt\printf.h">
+      <Filter>built-in\cppformat</Filter>
+    </ClInclude>
+    <ClInclude Include="built-in\cppformat\fmt\string.h">
+      <Filter>built-in\cppformat</Filter>
+    </ClInclude>
+    <ClInclude Include="built-in\cppformat\fmt\time.h">
+      <Filter>built-in\cppformat</Filter>
+    </ClInclude>
+    <ClInclude Include="built-in\cppformat\fmt\container.h">
+      <Filter>built-in\cppformat</Filter>
+    </ClInclude>
+    <ClInclude Include="built-in\cppformat\fmt\format.h">
+      <Filter>built-in\cppformat</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\address.cpp" />
@@ -59,5 +80,25 @@
     <ClCompile Include="src\task.cpp" />
     <ClCompile Include="src\sysres.cpp" />
     <ClCompile Include="src\util.cpp" />
+    <ClCompile Include="built-in\cppformat\fmt\ostream.cc">
+      <Filter>built-in\cppformat</Filter>
+    </ClCompile>
+    <ClCompile Include="built-in\cppformat\fmt\posix.cc">
+      <Filter>built-in\cppformat</Filter>
+    </ClCompile>
+    <ClCompile Include="built-in\cppformat\fmt\printf.cc">
+      <Filter>built-in\cppformat</Filter>
+    </ClCompile>
+    <ClCompile Include="built-in\cppformat\fmt\format.cc">
+      <Filter>built-in\cppformat</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="built-in">
+      <UniqueIdentifier>{6dfb012f-308e-426d-bd4a-994f477002dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="built-in\cppformat">
+      <UniqueIdentifier>{be32cbf2-94cf-49c7-9549-5d0c54420d93}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
