@@ -40,20 +40,20 @@ namespace asd
 		bool m_call = false;
 		const Task m_task;
 
-		_FinallyTask(MOVE Task&& a_task) asd_noexcept
+		_FinallyTask(MOVE Task&& a_task)
 			: m_task(std::move(a_task))
 		{
 			m_call = true;
 		}
 
-		_FinallyTask(MOVE _FinallyTask&& a_task) asd_noexcept
+		_FinallyTask(MOVE _FinallyTask&& a_task)
 			: m_task(std::move(a_task.m_task))
 		{
 			m_call = true;
 			a_task.m_call = false;
 		}
 
-		~_FinallyTask() asd_noexcept
+		~_FinallyTask()
 		{
 			if (m_call)
 				m_task();
@@ -61,7 +61,7 @@ namespace asd
 	};
 
 	template <typename Task>
-	inline _FinallyTask<Task> FinallyTask(MOVE Task&& a_task) asd_noexcept
+	inline _FinallyTask<Task> FinallyTask(MOVE Task&& a_task)
 	{
 		return _FinallyTask<Task>(std::move(a_task));
 	}

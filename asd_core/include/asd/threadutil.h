@@ -5,16 +5,16 @@
 
 namespace asd
 {
-	uint32_t GetCurrentThreadID() asd_noexcept;
+	uint32_t GetCurrentThreadID();
 
-	uint32_t GetCurrentThreadSequence() asd_noexcept;
+	uint32_t GetCurrentThreadSequence();
 
-	uint32_t Get_HW_Concurrency() asd_noexcept;
+	uint32_t Get_HW_Concurrency();
 
-	size_t GetAliveThreadCount() asd_noexcept;
+	size_t GetAliveThreadCount();
 
-	void KillThread(IN uint32_t a_threadSequence) asd_noexcept;
+	void KillThread(IN uint32_t a_threadSequence);
 
-	void srand() asd_noexcept;
+	void srand();
 
 }

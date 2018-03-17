@@ -16,7 +16,7 @@ namespace asd
 
 
 	protected:
-		inline ArrayType* GetArrayPtr(IN bool a_preservation = true) asd_noexcept
+		inline ArrayType* GetArrayPtr(IN bool a_preservation = true)
 		{
 			ArrayType* orgptr = BaseType::get();
 			if (orgptr == nullptr) {
@@ -37,7 +37,7 @@ namespace asd
 		}
 
 
-		inline const ArrayType* GetArrayPtr() const asd_noexcept
+		inline const ArrayType* GetArrayPtr() const
 		{
 			ArrayType* ptr = BaseType::get();
 			if (ptr == nullptr)
@@ -65,22 +65,22 @@ namespace asd
 		asd_SharedArray_Define_StdStyleType(ArrayType, const_reverse_iterator);
 
 
-		inline size_type size() const asd_noexcept
+		inline size_type size() const
 		{
 			return GetArrayPtr()->size();
 		}
 
-		inline bool empty() const asd_noexcept
+		inline bool empty() const
 		{
 			return GetArrayPtr()->empty();
 		}
 
-		inline const value_type* data() const asd_noexcept
+		inline const value_type* data() const
 		{
 			return GetArrayPtr()->data();
 		}
 
-		inline value_type* data() asd_noexcept
+		inline value_type* data()
 		{
 			return (value_type*)GetArrayPtr()->data();
 		}
@@ -95,53 +95,53 @@ namespace asd
 			return GetArrayPtr()->at(a_index);
 		}
 
-		inline void resize(IN size_type a_count) asd_noexcept
+		inline void resize(IN size_type a_count)
 		{
 			return GetArrayPtr()->resize(a_count);
 		}
 
 		inline void resize(IN size_type a_count,
-						   IN value_type a_fill) asd_noexcept
+						   IN value_type a_fill)
 		{
 			return GetArrayPtr()->resize(a_count, a_fill);
 		}
 
-		inline iterator begin() asd_noexcept
+		inline iterator begin()
 		{
 			return GetArrayPtr()->begin();
 		}
 
-		inline const_iterator begin() const asd_noexcept
+		inline const_iterator begin() const
 		{
 			return GetArrayPtr()->begin();
 		}
 
-		inline iterator end() asd_noexcept
+		inline iterator end()
 		{
 			return GetArrayPtr()->end();
 		}
 
-		inline const_iterator end() const asd_noexcept
+		inline const_iterator end() const
 		{
 			return GetArrayPtr()->end();
 		}
 
-		inline reverse_iterator rbegin() asd_noexcept
+		inline reverse_iterator rbegin()
 		{
 			return GetArrayPtr()->rbegin();
 		}
 
-		inline const_reverse_iterator rbegin() const asd_noexcept
+		inline const_reverse_iterator rbegin() const
 		{
 			return GetArrayPtr()->rbegin();
 		}
 
-		inline reverse_iterator rend() asd_noexcept
+		inline reverse_iterator rend()
 		{
 			return GetArrayPtr()->rend();
 		}
 
-		inline const_reverse_iterator rend() const asd_noexcept
+		inline const_reverse_iterator rend() const
 		{
 			return GetArrayPtr()->rend();
 		}

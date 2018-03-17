@@ -10,12 +10,12 @@ namespace asd
 		Big,
 	};
 
-	Endian GetNativeEndian() asd_noexcept;
+	Endian GetNativeEndian();
 
 
-	uint32_t GetCurrentProcessID() asd_noexcept;
+	uint32_t GetCurrentProcessID();
 
 
 	// 아무키나 입력을 기다리며 대기
-	void Pause() asd_noexcept;
+	void Pause();
 }

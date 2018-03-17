@@ -3,12 +3,12 @@
 
 namespace asd
 {
-	Task::Task() asd_noexcept
+	Task::Task()
 	{
 		m_cancel = false;
 	}
 
-	Task::~Task() asd_noexcept
+	Task::~Task()
 	{
 		Cancel(false);
 	}

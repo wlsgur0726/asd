@@ -31,27 +31,27 @@ namespace asd
 
 #endif
 
-	Exception::Exception()  asd_noexcept
+	Exception::Exception() 
 	{
 		m_what = "unknown asd::Exception ";
 	}
 
-	Exception::Exception(const char* a_what) asd_noexcept
+	Exception::Exception(const char* a_what)
 	{
 		m_what = a_what;
 	}
 
-	Exception::Exception(const MString& a_what) asd_noexcept
+	Exception::Exception(const MString& a_what)
 	{
 		m_what = a_what;
 	}
 
-	Exception::Exception(const DebugInfo& a_dbginfo) asd_noexcept
+	Exception::Exception(const DebugInfo& a_dbginfo)
 	{
 		m_what = a_dbginfo.ToString();
 	}
 	
-	Exception::~Exception() asd_noexcept
+	Exception::~Exception()
 	{
 	}
 
@@ -60,13 +60,13 @@ namespace asd
 		return m_what;
 	}
 
-	const StackTrace& Exception::GetStackTrace() const asd_noexcept
+	const StackTrace& Exception::GetStackTrace() const
 	{
 		return m_stackTrace;
 	}
 
 #if asd_Exception_Enable_DumpCreator
-	Exception::DumpCreator::DumpCreator() asd_noexcept
+	Exception::DumpCreator::DumpCreator()
 	{
 		MemDump::Create();
 	}
@@ -74,7 +74,7 @@ namespace asd
 #endif
 
 	void DefaultExceptionHandler::operator()(IN ExceptionPtrInterface* a_exception,
-											 IN const DebugInfo& a_catchPosInfo) const asd_noexcept
+											 IN const DebugInfo& a_catchPosInfo) const
 	{
 		static const char* MsgFormat =
 			"on exception({}), {}\n"
@@ -102,7 +102,7 @@ namespace asd
 	std::shared_ptr<AssertHandler> g_currentAssertHandler = nullptr;
 
 
-	void AssertHandler::OnError(IN const DebugInfo& a_info) asd_noexcept
+	void AssertHandler::OnError(IN const DebugInfo& a_info)
 	{
 		MString msg;
 		msg << "assert fail, " << a_info.Comment;
@@ -118,7 +118,7 @@ namespace asd
 	}
 
 
-	std::shared_ptr<AssertHandler> GetAssertHandler() asd_noexcept
+	std::shared_ptr<AssertHandler> GetAssertHandler()
 	{
 		auto ret = std::atomic_load(&g_currentAssertHandler);
 		if (ret != nullptr)
@@ -126,7 +126,7 @@ namespace asd
 		return g_defaultAssertHandler;
 	}
 
-	void SetAssertHandler(IN std::shared_ptr<AssertHandler> a_handler) asd_noexcept
+	void SetAssertHandler(IN std::shared_ptr<AssertHandler> a_handler)
 	{
 		std::atomic_exchange(&g_currentAssertHandler, a_handler);
 	}

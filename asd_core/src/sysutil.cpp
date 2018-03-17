@@ -10,7 +10,7 @@
 
 namespace asd
 {
-	Endian GetNativeEndian() asd_noexcept
+	Endian GetNativeEndian()
 	{
 		struct EndianCheck
 		{
@@ -39,7 +39,7 @@ namespace asd
 
 
 
-	uint32_t GetCurrentProcessID() asd_noexcept
+	uint32_t GetCurrentProcessID()
 	{
 		static uint32_t g_pid = 0;
 		if (g_pid == 0) {
@@ -54,7 +54,7 @@ namespace asd
 
 
 
-	void Pause() asd_noexcept
+	void Pause()
 	{
 #if asd_Platform_Windows
 		system("pause");

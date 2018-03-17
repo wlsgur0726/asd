@@ -28,19 +28,19 @@ namespace asd
 		int m_errorCount = 0;
 
 	public:
-		CPU() asd_noexcept
+		CPU()
 		{
 			InitNative();
 			RegisterSamplingEvemt();
 		}
 
-		~CPU() asd_noexcept
+		~CPU()
 		{
 			if (m_lastTimer != nullptr)
 				m_lastTimer->Cancel();
 		}
 
-		void RegisterSamplingEvemt() asd_noexcept
+		void RegisterSamplingEvemt()
 		{
 			m_lastTimer = Timer::Instance().PushAt(m_timerOffset, [this]()
 			{
@@ -54,7 +54,7 @@ namespace asd
 			});
 		}
 
-		void AddSample(IN double a_usage) asd_noexcept
+		void AddSample(IN double a_usage)
 		{
 			asd_DAssert(0 <= a_usage && a_usage <= 1);
 			auto lock = GetLock(m_lock);
@@ -75,7 +75,7 @@ namespace asd
 			m_recentAvg = sum / m_sampleCount;
 		}
 
-		Timer::Millisec SetCycle(IN Timer::Millisec a_cycle) asd_noexcept
+		Timer::Millisec SetCycle(IN Timer::Millisec a_cycle)
 		{
 			auto lock = GetLock(m_lock);
 			auto org = m_cycle;
@@ -83,17 +83,17 @@ namespace asd
 			return org;
 		}
 
-		Timer::Millisec GetCycle() const asd_noexcept
+		Timer::Millisec GetCycle() const
 		{
 			return m_cycle;
 		}
 
-		double RecentAvg() const asd_noexcept
+		double RecentAvg() const
 		{
 			return m_recentAvg;
 		}
 
-		double Last() const asd_noexcept
+		double Last() const
 		{
 			return m_last;
 		}
@@ -105,7 +105,7 @@ namespace asd
 		PDH_HCOUNTER m_cpuTotal;
 		bool m_initNative = false;
 
-		void InitNative() asd_noexcept
+		void InitNative()
 		{
 			if (m_initNative)
 				return;
@@ -119,7 +119,7 @@ namespace asd
 			m_initNative = true;
 		}
 
-		double GetSample() asd_noexcept
+		double GetSample()
 		{
 			InitNative();
 			PDH_STATUS ret;
@@ -154,7 +154,7 @@ namespace asd
 
 		Stat m_lastStat;
 
-		static bool GetStat(OUT Stat& a_stat) asd_noexcept
+		static bool GetStat(OUT Stat& a_stat)
 		{
 			FILE* file = ::fopen("/proc/stat", "r");
 			if (file == nullptr)
@@ -169,13 +169,13 @@ namespace asd
 			return ok;
 		}
 
-		void InitNative() asd_noexcept
+		void InitNative()
 		{
 			if (GetStat(m_lastStat) == false)
 				std::memset(&m_lastStat, 0, sizeof(m_lastStat));
 		}
 
-		double GetSample() asd_noexcept
+		double GetSample()
 		{
 			Stat stat;
 			asd_ChkErrAndRetVal(GetStat(stat) == false, -1, "fail GetStat, errno:{}", errno);
@@ -197,17 +197,17 @@ namespace asd
 
 
 
-	double CpuUsage() asd_noexcept
+	double CpuUsage()
 	{
 		return CPU::Instance().RecentAvg();
 	}
 
-	Timer::Millisec GetCpuUsageCheckCycle() asd_noexcept
+	Timer::Millisec GetCpuUsageCheckCycle()
 	{
 		return CPU::Instance().GetCycle();
 	}
 
-	Timer::Millisec SetCpuUsageCheckCycle(IN Timer::Millisec a_cycle) asd_noexcept
+	Timer::Millisec SetCpuUsageCheckCycle(IN Timer::Millisec a_cycle)
 	{
 		return CPU::Instance().SetCycle(a_cycle);
 	}

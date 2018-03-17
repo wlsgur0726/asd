@@ -69,13 +69,13 @@ namespace asd
 	}
 
 
-	Logger::~Logger() asd_noexcept
+	Logger::~Logger()
 	{
 		m_writer.Stop();
 	}
 
 
-	std::shared_ptr<FILE> Logger::RefreshLogFile(IN const Date& a_today) asd_noexcept
+	std::shared_ptr<FILE> Logger::RefreshLogFile(IN const Date& a_today)
 	{
 		if (a_today != m_today) {
 			m_today = a_today;
@@ -91,7 +91,7 @@ namespace asd
 	}
 
 
-	void Logger::SetGenHeadDelegate(MOVE GenText&& a_delegate) asd_noexcept
+	void Logger::SetGenHeadDelegate(MOVE GenText&& a_delegate)
 	{
 		auto lock = GetLock(m_lock);
 		if (a_delegate == nullptr)
@@ -101,7 +101,7 @@ namespace asd
 	}
 
 
-	void Logger::SetGenTailDelegate(MOVE GenText&& a_delegate) asd_noexcept
+	void Logger::SetGenTailDelegate(MOVE GenText&& a_delegate)
 	{
 		auto lock = GetLock(m_lock);
 		if (a_delegate == nullptr)
@@ -111,7 +111,7 @@ namespace asd
 	}
 
 
-	void Logger::PushLog(MOVE asd::Log&& a_log) asd_noexcept
+	void Logger::PushLog(MOVE asd::Log&& a_log)
 	{
 		auto lock = GetLock(m_lock);
 		asd::Log* log = m_logObjPool.Alloc();
@@ -124,7 +124,7 @@ namespace asd
 	}
 
 
-	void Logger::Print(IN asd::Log* a_log) asd_noexcept
+	void Logger::Print(IN asd::Log* a_log)
 	{
 		auto lock = GetLock(m_lock);
 

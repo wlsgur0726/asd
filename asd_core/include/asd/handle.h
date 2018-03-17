@@ -39,26 +39,26 @@ namespace asd
 		{
 		}
 
-		inline Handle(IN const HandleType&) asd_noexcept = default;
-		inline Handle(MOVE HandleType&& a_mv) asd_noexcept
+		inline Handle(IN const HandleType&) = default;
+		inline Handle(MOVE HandleType&& a_mv)
 		{
 			operator=(std::move(a_mv));
 		}
 
-		inline HandleType& operator=(IN const HandleType&) asd_noexcept = default;
-		inline HandleType& operator=(MOVE HandleType&& a_mv) asd_noexcept
+		inline HandleType& operator=(IN const HandleType&) = default;
+		inline HandleType& operator=(MOVE HandleType&& a_mv)
 		{
 			m_id = a_mv.m_id;
 			a_mv.m_id = Null;
 			return *this;
 		}
 
-		inline static HandleType GetHandle(IN Object* a_obj) asd_noexcept
+		inline static HandleType GetHandle(IN Object* a_obj)
 		{
 			return HandleType(GetID(a_obj));
 		}
 
-		inline static ID GetID(IN Object* a_obj) asd_noexcept
+		inline static ID GetID(IN Object* a_obj)
 		{
 			if (a_obj == nullptr)
 				return Null;
@@ -70,29 +70,29 @@ namespace asd
 			return header->ID;
 		}
 
-		inline ID GetID() const asd_noexcept
+		inline ID GetID() const
 		{
 			return m_id;
 		}
 
-		inline operator ID() const asd_noexcept
+		inline operator ID() const
 		{
 			return GetID();
 		}
 
-		inline Object_ptr GetObj() const asd_noexcept
+		inline Object_ptr GetObj() const
 		{
 			if (m_id == Null)
 				return Object_ptr();
 			return Manager::Instance().Find(m_id);
 		}
 
-		inline operator Object_ptr() const asd_noexcept
+		inline operator Object_ptr() const
 		{
 			return GetObj();
 		}
 
-		inline bool IsValid() const asd_noexcept
+		inline bool IsValid() const
 		{
 			return GetObj() != nullptr;
 		}
@@ -115,7 +115,7 @@ namespace asd
 			return obj;
 		}
 
-		Object_ptr Free() asd_noexcept
+		Object_ptr Free()
 		{
 			if (m_id == Null)
 				return nullptr;
@@ -130,7 +130,7 @@ namespace asd
 		}
 
 		inline static int Compare(IN ID a_left,
-								  IN ID a_right) asd_noexcept
+								  IN ID a_right)
 		{
 			if (a_left < a_right)
 				return -1;
@@ -169,7 +169,7 @@ namespace std
 	template <typename OBJECT_TYPE, typename ID_TYPE>
 	struct hash< asd::Handle<OBJECT_TYPE, ID_TYPE> >
 	{
-		inline size_t operator()(IN const asd::Handle<OBJECT_TYPE, ID_TYPE>& a_handle) const asd_noexcept
+		inline size_t operator()(IN const asd::Handle<OBJECT_TYPE, ID_TYPE>& a_handle) const
 		{
 			return std::hash<ID_TYPE>()(a_handle.GetID());
 		}

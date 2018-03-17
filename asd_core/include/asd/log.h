@@ -36,12 +36,12 @@ namespace asd
 		const char*				m_file = nullptr;
 		int						m_line = 0;
 
-		inline void SetMsg(IN const MString& a_msg) asd_noexcept
+		inline void SetMsg(IN const MString& a_msg)
 		{
 			m_msgM = a_msg;
 		}
 
-		inline void SetMsg(IN const WString& a_msg) asd_noexcept
+		inline void SetMsg(IN const WString& a_msg)
 		{
 			m_msgW = a_msg;
 		}
@@ -127,14 +127,14 @@ namespace asd
 		std::shared_ptr<GenText> m_genHead;
 		std::shared_ptr<GenText> m_genTail;
 
-		std::shared_ptr<FILE> RefreshLogFile(IN const Date& a_today) asd_noexcept;
-		void PushLog(MOVE Log&& a_log) asd_noexcept;
-		void Print(IN Log* a_log) asd_noexcept;
+		std::shared_ptr<FILE> RefreshLogFile(IN const Date& a_today);
+		void PushLog(MOVE Log&& a_log);
+		void Print(IN Log* a_log);
 
 
 	public:
 		Logger();
-		virtual ~Logger() asd_noexcept;
+		virtual ~Logger();
 
 
 		template <typename CharType>
@@ -149,20 +149,20 @@ namespace asd
 		}
 
 
-		void SetGenHeadDelegate(MOVE GenText&& a_delegate) asd_noexcept;
-		void SetGenTailDelegate(MOVE GenText&& a_delegate) asd_noexcept;
+		void SetGenHeadDelegate(MOVE GenText&& a_delegate);
+		void SetGenTailDelegate(MOVE GenText&& a_delegate);
 
 
 		template <typename CharType, typename... Args>
 		inline void Log(IN const BasicString<CharType>& a_format,
-						IN const Args&... a_args) asd_noexcept
+						IN const Args&... a_args)
 		{
 			Log(a_format.c_str(), a_args...);
 		}
 
 		template <typename CharType, typename... Args>
 		inline void Log(IN const CharType* a_format,
-						IN const Args&... a_args) asd_noexcept
+						IN const Args&... a_args)
 		{
 			asd::Log log;
 			log.SetMsg(BasicString<CharType>::Format(a_format, a_args...));

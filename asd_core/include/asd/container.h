@@ -42,7 +42,7 @@ namespace asd
 		};
 
 
-		inline ShardSet(IN size_t a_shardCount = 2*Get_HW_Concurrency()) asd_noexcept
+		inline ShardSet(IN size_t a_shardCount = 2*Get_HW_Concurrency())
 		{
 			m_shardCount = max(a_shardCount, 1);
 			m_memory.resize(sizeof(Container) * m_shardCount);
@@ -52,13 +52,13 @@ namespace asd
 		}
 
 
-		inline Container* GetShard(IN const ShardKey& a_shardKey) asd_noexcept
+		inline Container* GetShard(IN const ShardKey& a_shardKey)
 		{
 			return &m_shards[a_shardKey % m_shardCount];
 		}
 
 
-		inline const Container* GetShard(IN const ShardKey& a_shardKey) const asd_noexcept
+		inline const Container* GetShard(IN const ShardKey& a_shardKey) const
 		{
 			return &m_shards[a_shardKey % m_shardCount];
 		}
@@ -71,7 +71,7 @@ namespace asd
 		}
 
 
-		virtual ~ShardSet() asd_noexcept
+		virtual ~ShardSet()
 		{
 			for (size_t i=0; i<m_shardCount; ++i)
 				m_shards[i].~Container();
@@ -105,7 +105,7 @@ namespace asd
 
 
 		bool Insert(IN const key_type& a_key,
-					IN const mapped_type& a_val) asd_noexcept
+					IN const mapped_type& a_val)
 		{
 			auto shard = GetShard(a_key);
 			auto lock = shard->GetLock();
@@ -113,7 +113,7 @@ namespace asd
 		}
 
 
-		mapped_type Find(IN const key_type& a_key) asd_noexcept
+		mapped_type Find(IN const key_type& a_key)
 		{
 			auto shard = GetShard(a_key);
 			auto lock = shard->GetLock();
@@ -124,7 +124,7 @@ namespace asd
 		}
 
 
-		const mapped_type Find(IN const key_type& a_key) const asd_noexcept
+		const mapped_type Find(IN const key_type& a_key) const
 		{
 			auto shard = GetShard(a_key);
 			auto lock = shard->GetLock();
@@ -135,7 +135,7 @@ namespace asd
 		}
 
 
-		mapped_type Erase(IN const key_type& a_key) asd_noexcept
+		mapped_type Erase(IN const key_type& a_key)
 		{
 			auto shard = GetShard(a_key);
 			auto lock = shard->GetLock();

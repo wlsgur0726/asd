@@ -3,7 +3,7 @@
 
 namespace asd
 {
-	BufferList_ptr BufferList::New() asd_noexcept
+	BufferList_ptr BufferList::New()
 	{
 		typedef ObjectPool2<BufferList, true> BufferListPool; // deque의 capacity를 보존하기 위해 소멸자 호출을 하지 않는다.
 		static ObjectPoolShardSet<BufferListPool> g_bufferListPool;
@@ -19,18 +19,18 @@ namespace asd
 	}
 
 
-	BufferList::BufferList() asd_noexcept
+	BufferList::BufferList()
 	{
 		Clear();
 	}
 
 
-	BufferList::~BufferList() asd_noexcept
+	BufferList::~BufferList()
 	{
 	}
 
 
-	void BufferList::Clear() asd_noexcept
+	void BufferList::Clear()
 	{
 		const size_t CapacityLimit = 1024;
 		if (size() <= CapacityLimit)
@@ -48,13 +48,13 @@ namespace asd
 	}
 
 
-	size_t BufferList::GetTotalSize() const asd_noexcept
+	size_t BufferList::GetTotalSize() const
 	{
 		return m_total_write;
 	}
 
 
-	void BufferList::ReserveBuffer(IN size_t a_bytes /*= asd_BufferList_DefaultWriteBufferSize*/) asd_noexcept
+	void BufferList::ReserveBuffer(IN size_t a_bytes /*= asd_BufferList_DefaultWriteBufferSize*/)
 	{
 		assert(m_total_capacity >= m_total_write);
 		assert(size() >= m_writeOffset);
@@ -66,7 +66,7 @@ namespace asd
 	}
 
 
-	void BufferList::ReserveBuffer(MOVE Buffer_ptr&& a_buffer) asd_noexcept
+	void BufferList::ReserveBuffer(MOVE Buffer_ptr&& a_buffer)
 	{
 		assert(m_total_capacity >= m_total_write);
 		assert(size() >= m_writeOffset);
@@ -86,7 +86,7 @@ namespace asd
 	}
 
 
-	void BufferList::PushBack(MOVE Buffer_ptr&& a_buffer) asd_noexcept
+	void BufferList::PushBack(MOVE Buffer_ptr&& a_buffer)
 	{
 		assert(size() >= m_writeOffset);
 		if (a_buffer == nullptr)
@@ -134,7 +134,7 @@ namespace asd
 	}
 
 
-	void BufferList::PushBack(MOVE BufferList&& a_bufferList) asd_noexcept
+	void BufferList::PushBack(MOVE BufferList&& a_bufferList)
 	{
 		for (auto& e : a_bufferList)
 			PushBack(std::move(e));
@@ -142,7 +142,7 @@ namespace asd
 	}
 
 
-	void BufferList::PushBack(MOVE BaseType&& a_bufferList) asd_noexcept
+	void BufferList::PushBack(MOVE BaseType&& a_bufferList)
 	{
 		for (auto& e : a_bufferList)
 			PushBack(std::move(e));
@@ -150,7 +150,7 @@ namespace asd
 	}
 
 
-	void BufferList::PushFront(MOVE Buffer_ptr&& a_buffer) asd_noexcept
+	void BufferList::PushFront(MOVE Buffer_ptr&& a_buffer)
 	{
 		assert(m_readOffset == Offset());
 		assert(size() >= m_writeOffset);
@@ -189,7 +189,7 @@ namespace asd
 	}
 
 
-	void BufferList::PushFront(MOVE BufferList&& a_bufferList) asd_noexcept
+	void BufferList::PushFront(MOVE BufferList&& a_bufferList)
 	{
 		for (auto it=a_bufferList.rbegin(); it!=a_bufferList.rend(); ++it)
 			PushFront(std::move(*it));
@@ -197,7 +197,7 @@ namespace asd
 	}
 
 
-	void BufferList::PushFront(MOVE BaseType&& a_bufferList) asd_noexcept
+	void BufferList::PushFront(MOVE BaseType&& a_bufferList)
 	{
 		for (auto it=a_bufferList.rbegin(); it!=a_bufferList.rend(); ++it)
 			PushFront(std::move(*it));
@@ -205,7 +205,7 @@ namespace asd
 	}
 
 
-	void BufferList::Flush() asd_noexcept
+	void BufferList::Flush()
 	{
 		assert(size() >= m_readOffset.Row);
 		for (; m_readOffset.Row!=0; --m_readOffset.Row) {
@@ -219,7 +219,7 @@ namespace asd
 	}
 
 
-	bool BufferList::Readable(IN size_t a_bytes) const asd_noexcept
+	bool BufferList::Readable(IN size_t a_bytes) const
 	{
 		assert(size() >= m_readOffset.Row);
 		assert(m_total_capacity >= m_total_write);
@@ -245,7 +245,7 @@ namespace asd
 
 
 	size_t BufferList::Write(IN const void* a_data,
-							 IN const size_t a_bytes) asd_noexcept
+							 IN const size_t a_bytes)
 	{
 		ReserveBuffer(a_bytes);
 
@@ -283,7 +283,7 @@ namespace asd
 
 
 	size_t BufferList::Read(OUT void* a_data,
-							IN const size_t a_bytes) asd_noexcept
+							IN const size_t a_bytes)
 	{
 		if (Readable(a_bytes) == false)
 			return 0;
@@ -319,7 +319,7 @@ namespace asd
 
 
 	template<>
-	Transactional<BufOp::Write>::Transactional(REF BufferList& a_bufferList) asd_noexcept
+	Transactional<BufOp::Write>::Transactional(REF BufferList& a_bufferList)
 		: m_bufferList(a_bufferList)
 	{
 		auto& rb = const_cast<Offset&>(m_rollbackPoint);
@@ -331,14 +331,14 @@ namespace asd
 	}
 
 	template<>
-	Transactional<BufOp::Read>::Transactional(REF BufferList& a_bufferList) asd_noexcept
+	Transactional<BufOp::Read>::Transactional(REF BufferList& a_bufferList)
 		: m_bufferList(a_bufferList)
 		, m_rollbackPoint(a_bufferList.m_readOffset)
 	{
 	}
 
 	template<>
-	void Transactional<BufOp::Write>::Rollback() asd_noexcept
+	void Transactional<BufOp::Write>::Rollback()
 	{
 		for (size_t i = 1 + m_rollbackPoint.Row;
 			 i <= m_bufferList.m_writeOffset && i < m_bufferList.size();
@@ -353,7 +353,7 @@ namespace asd
 	}
 
 	template<>
-	void Transactional<BufOp::Read>::Rollback() asd_noexcept
+	void Transactional<BufOp::Read>::Rollback()
 	{
 		m_bufferList.m_readOffset = m_rollbackPoint;
 	}

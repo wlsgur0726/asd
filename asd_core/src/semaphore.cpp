@@ -29,7 +29,7 @@ namespace asd
 			m_waitCount = 0;
 		}
 
-		~SemaphoreData() asd_noexcept
+		~SemaphoreData()
 		{
 			if (::CloseHandle(m_handle) == 0) {
 				auto e = ::GetLastError();
@@ -53,7 +53,7 @@ namespace asd
 			m_waitCount = 0;
 		}
 
-		~SemaphoreData() asd_noexcept
+		~SemaphoreData()
 		{
 			if (0 != ::sem_destroy(&m_handle)) {
 				auto e = errno;
@@ -88,7 +88,7 @@ namespace asd
 
 
 
-	Semaphore::~Semaphore() asd_noexcept
+	Semaphore::~Semaphore()
 	{
 		asd_DAssert(GetCount() >= 0);
 		m_data.reset();

@@ -38,7 +38,7 @@ namespace asd
 		bool UseEmbeddedTimer = false;
 
 
-		inline bool UseCenterQueue() const asd_noexcept
+		inline bool UseCenterQueue() const
 		{
 			return AutoScaling.Use;
 		}
@@ -54,29 +54,29 @@ namespace asd
 			using Base::Base;
 			using Base::operator=;
 
-			atomic_t() asd_noexcept
+			atomic_t()
 			{
 				Base::operator=(0);
 			}
 
-			atomic_t(IN const atomic_t& a_copy) asd_noexcept
+			atomic_t(IN const atomic_t& a_copy)
 			{
 				Base::operator=(a_copy.load());
 			}
 
-			atomic_t& operator=(IN const atomic_t& a_copy) asd_noexcept
+			atomic_t& operator=(IN const atomic_t& a_copy)
 			{
 				Base::operator=(a_copy.load());
 				return *this;
 			}
 		};
 
-		uint64_t WaitingCount() const asd_noexcept
+		uint64_t WaitingCount() const
 		{
 			return totalPushCount - totalProcCount;
 		}
 
-		double RecentWaitingTimeMs() const asd_noexcept
+		double RecentWaitingTimeMs() const
 		{
 			if (recentPushCount == 0)
 				return 0;
@@ -88,14 +88,14 @@ namespace asd
 			return (double)recentWaitingCount / (recentPushCount / period);
 		}
 
-		double TotalConflictRate() const asd_noexcept
+		double TotalConflictRate() const
 		{
 			if (totalProcCount == 0)
 				return 0;
 			return totalConflictCount / (double)totalProcCount;
 		}
 
-		void Refresh() asd_noexcept
+		void Refresh()
 		{
 			auto now = Timer::Now();
 			recentPeriod = Timer::Diff(recentRefreshTime, now);
@@ -107,12 +107,12 @@ namespace asd
 			recentWaitingCount = WaitingCount();
 		}
 
-		void Push() asd_noexcept
+		void Push()
 		{
 			++totalPushCount;
 		}
 
-		void Pop() asd_noexcept
+		void Pop()
 		{
 			++totalProcCount;
 		}
@@ -148,7 +148,7 @@ namespace asd
 		}
 
 
-		virtual ~ThreadPool() asd_noexcept
+		virtual ~ThreadPool()
 		{
 			asd_BeginDestructor();
 			Stop();
@@ -260,7 +260,7 @@ namespace asd
 
 		template <typename FUNC, typename... PARAMS>
 		inline Task_ptr Push(FUNC&& a_func,
-							 PARAMS&&... a_params) asd_noexcept
+							 PARAMS&&... a_params)
 		{
 			TaskObj taskObj;
 			taskObj.seq = false;
@@ -273,7 +273,7 @@ namespace asd
 		template <typename FUNC, typename... PARAMS>
 		inline Task_ptr PushAfter(IN Timer::Millisec a_afterMs,
 								  FUNC&& a_func,
-								  PARAMS&&... a_params) asd_noexcept
+								  PARAMS&&... a_params)
 		{
 			return PushAt(Timer::Now() + a_afterMs,
 						  std::forward<FUNC>(a_func),
@@ -284,7 +284,7 @@ namespace asd
 		template <typename FUNC, typename... PARAMS>
 		inline Task_ptr PushAt(IN Timer::TimePoint a_timepoint,
 							   FUNC&& a_func,
-							   PARAMS&&... a_params) asd_noexcept
+							   PARAMS&&... a_params)
 		{
 			TaskObj taskObj;
 			taskObj.seq = false;
@@ -300,7 +300,7 @@ namespace asd
 		template <typename KEY, typename FUNC, typename... PARAMS>
 		inline Task_ptr PushSeq(KEY&& a_key,
 								FUNC&& a_func,
-								PARAMS&&... a_params) asd_noexcept
+								PARAMS&&... a_params)
 		{
 			TaskObj taskObj;
 			taskObj.seq = true;
@@ -317,7 +317,7 @@ namespace asd
 		inline Task_ptr PushSeqAfter(IN Timer::Millisec a_afterMs,
 									 KEY&& a_key,
 									 FUNC&& a_func,
-									 PARAMS&&... a_params) asd_noexcept
+									 PARAMS&&... a_params)
 		{
 			return PushSeqAt(Timer::Now() + a_afterMs,
 							 std::forward<KEY>(a_key),
@@ -330,7 +330,7 @@ namespace asd
 		inline Task_ptr PushSeqAt(IN Timer::TimePoint a_timepoint,
 								  KEY&& a_key,
 								  FUNC&& a_func,
-								  PARAMS&&... a_params) asd_noexcept
+								  PARAMS&&... a_params)
 		{
 			TaskObj taskObj;
 			taskObj.seq = true;
@@ -365,28 +365,28 @@ namespace asd
 		class TaskQueue
 		{
 		public:
-			size_t size() const asd_noexcept
+			size_t size() const
 			{
 				return m_size;
 			}
 
-			bool empty() const asd_noexcept
+			bool empty() const
 			{
 				return m_size == 0;
 			}
 
-			void emplace_back(MOVE TaskObj&& a_data) asd_noexcept
+			void emplace_back(MOVE TaskObj&& a_data)
 			{
 				Node* newNode = m_nodePool.Alloc(std::move(a_data));
 				push(newNode, newNode, 1);
 			}
 
-			TaskObj& front() asd_noexcept
+			TaskObj& front()
 			{
 				return m_head->data;
 			}
 
-			void pop_front() asd_noexcept
+			void pop_front()
 			{
 				if (m_head == nullptr)
 					return;
@@ -398,13 +398,13 @@ namespace asd
 				--m_size;
 			}
 
-			void clear() asd_noexcept
+			void clear()
 			{
 				while (size() > 0)
 					pop_front();
 			}
 
-			~TaskQueue() asd_noexcept
+			~TaskQueue()
 			{
 				clear();
 			}
@@ -419,7 +419,7 @@ namespace asd
 
 			inline void push(IN Node* a_head,
 							 IN Node* a_tail,
-							 IN size_t a_size) asd_noexcept
+							 IN size_t a_size)
 			{
 				if (m_tail != nullptr)
 					m_tail->next = a_head;
@@ -591,7 +591,7 @@ namespace asd
 			std::unordered_set<Worker*> standby;
 
 
-			Data(IN const ThreadPoolOption& a_option) asd_noexcept
+			Data(IN const ThreadPoolOption& a_option)
 				: option(a_option)
 			{
 				RRSeq = 0;
@@ -606,7 +606,7 @@ namespace asd
 
 		// 작업쓰레드 추가
 		static void AddWorker(IN std::shared_ptr<Data> a_data,
-							  IN uint32_t a_count) asd_noexcept
+							  IN uint32_t a_count)
 		{
 			for (uint32_t i=0; i<a_count; ++i) {
 				asd_BeginTry();
@@ -619,7 +619,7 @@ namespace asd
 		// 타이머 작업 예약
 		static Task_ptr PushTimerTask(MOVE std::shared_ptr<Data>&& a_data,
 									  IN Timer::TimePoint a_timePoint,
-									  MOVE TaskObj&& a_task) asd_noexcept
+									  MOVE TaskObj&& a_task)
 		{
 			if (a_data == nullptr)
 				return nullptr;
@@ -638,7 +638,7 @@ namespace asd
 
 		// 작업 등록
 		static Task_ptr PushTask(REF std::shared_ptr<Data>& a_data,
-								 REF TaskObj& a_task) asd_noexcept
+								 REF TaskObj& a_task)
 		{
 			auto task = a_task.task;
 			if (a_data == nullptr)
@@ -682,7 +682,7 @@ namespace asd
 
 		// 작업 알림
 		static Notifier NeedNotify(REF Data* a_data,
-								   REF Worker* a_worker) asd_noexcept
+								   REF Worker* a_worker)
 		{
 			Notifier ret;
 			if (!a_data->option.UseNotifier)
@@ -791,7 +791,7 @@ namespace asd
 
 
 		// 작업쓰레드 메인루프
-		static void Working(REF std::shared_ptr<Data> a_data) asd_noexcept
+		static void Working(REF std::shared_ptr<Data> a_data)
 		{
 			asd_BeginTry();
 			if (a_data == nullptr)

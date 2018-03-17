@@ -14,7 +14,7 @@
 
 namespace asd
 {
-	int IpAddress::ToNativeCode(AddressFamily a_family) asd_noexcept
+	int IpAddress::ToNativeCode(AddressFamily a_family)
 	{
 		switch (a_family) {
 			case AddressFamily::IPv4:
@@ -41,7 +41,7 @@ namespace asd
 
 
 
-	IpAddress::IpAddress(IN AddressFamily a_addrFamily /*= IPv4*/) asd_noexcept
+	IpAddress::IpAddress(IN AddressFamily a_addrFamily /*= IPv4*/)
 	{
 		m_addrFamily = a_addrFamily;
 	}
@@ -49,7 +49,7 @@ namespace asd
 
 
 	IpAddress::IpAddress(IN const char* a_ip,
-						 IN uint16_t a_port /*= 0*/) asd_noexcept
+						 IN uint16_t a_port /*= 0*/)
 	{
 		auto list = FindIP(a_ip);
 		if (list.empty())
@@ -60,35 +60,35 @@ namespace asd
 
 
 
-	IpAddress::IpAddress(IN const IpAddress& a_cp) asd_noexcept
+	IpAddress::IpAddress(IN const IpAddress& a_cp)
 	{
 		*this = a_cp;
 	}
 
 
 
-	IpAddress::IpAddress(MOVE IpAddress&& a_rval) asd_noexcept
+	IpAddress::IpAddress(MOVE IpAddress&& a_rval)
 	{
 		*this = std::move(a_rval);
 	}
 
 
 
-	IpAddress::IpAddress(IN const sockaddr_in& a_native) asd_noexcept
+	IpAddress::IpAddress(IN const sockaddr_in& a_native)
 	{
 		*this = a_native;
 	}
 
 
 
-	IpAddress::IpAddress(IN const sockaddr_in6& a_native) asd_noexcept
+	IpAddress::IpAddress(IN const sockaddr_in6& a_native)
 	{
 		*this = a_native;
 	}
 
 
 
-	IpAddress& IpAddress::operator=(IN const IpAddress& a_cp) asd_noexcept
+	IpAddress& IpAddress::operator=(IN const IpAddress& a_cp)
 	{
 		this->~IpAddress();
 		m_addrFamily = a_cp.m_addrFamily;
@@ -102,7 +102,7 @@ namespace asd
 
 
 
-	IpAddress& IpAddress::operator=(MOVE IpAddress&& a_rval) asd_noexcept
+	IpAddress& IpAddress::operator=(MOVE IpAddress&& a_rval)
 	{
 		std::swap(m_addr, a_rval.m_addr);
 		std::swap(m_addrlen, a_rval.m_addrlen);
@@ -112,7 +112,7 @@ namespace asd
 
 
 
-	IpAddress& IpAddress::operator=(IN const sockaddr_in& a_native) asd_noexcept
+	IpAddress& IpAddress::operator=(IN const sockaddr_in& a_native)
 	{
 		this->~IpAddress();
 		m_addrlen = sizeof(sockaddr_in);
@@ -124,7 +124,7 @@ namespace asd
 
 
 
-	IpAddress& IpAddress::operator=(IN const sockaddr_in6& a_native) asd_noexcept
+	IpAddress& IpAddress::operator=(IN const sockaddr_in6& a_native)
 	{
 		this->~IpAddress();
 		m_addrlen = sizeof(sockaddr_in6);
@@ -136,28 +136,28 @@ namespace asd
 
 
 
-	IpAddress::operator const sockaddr* () const asd_noexcept
+	IpAddress::operator const sockaddr* () const
 	{
 		return m_addr;
 	}
 
 
 
-	int IpAddress::GetAddrLen() const asd_noexcept
+	int IpAddress::GetAddrLen() const
 	{
 		return m_addrlen;
 	}
 
 
 
-	AddressFamily IpAddress::GetAddressFamily() const asd_noexcept
+	AddressFamily IpAddress::GetAddressFamily() const
 	{
 		return m_addrFamily;
 	}
 
 
 
-	void* IpAddress::GetIp(OUT int* a_len /*= nullptr*/) const asd_noexcept
+	void* IpAddress::GetIp(OUT int* a_len /*= nullptr*/) const
 	{
 		if (m_addr == nullptr)
 			return nullptr;
@@ -191,7 +191,7 @@ namespace asd
 
 
 
-	uint16_t IpAddress::GetPort() const asd_noexcept
+	uint16_t IpAddress::GetPort() const
 	{
 		if (m_addr == nullptr)
 			return 0;
@@ -214,7 +214,7 @@ namespace asd
 
 
 
-	void IpAddress::SetPort(IN uint16_t a_port) asd_noexcept
+	void IpAddress::SetPort(IN uint16_t a_port)
 	{
 		if (m_addr == nullptr)
 			return;
@@ -238,7 +238,7 @@ namespace asd
 
 
 
-	MString IpAddress::ToString() const asd_noexcept
+	MString IpAddress::ToString() const
 	{
 		if (m_addr == nullptr)
 			return "";
@@ -267,7 +267,7 @@ namespace asd
 
 
 	int IpAddress::Compare(IN const IpAddress& a_left,
-						   IN const IpAddress& a_right) asd_noexcept
+						   IN const IpAddress& a_right)
 	{
 		if (a_left.m_addr == a_right.m_addr) {
 			assert(a_left.m_addrFamily == a_right.m_addrFamily);
@@ -314,7 +314,7 @@ namespace asd
 
 
 
-	size_t IpAddress::Hash::operator()(IN const IpAddress& a_addr) const asd_noexcept
+	size_t IpAddress::Hash::operator()(IN const IpAddress& a_addr) const
 	{
 		if (a_addr.m_addr == nullptr)
 			return 0;
@@ -349,7 +349,7 @@ namespace asd
 
 
 
-	std::vector<IpAddress> FindIP(IN const char* a_domain) asd_noexcept
+	std::vector<IpAddress> FindIP(IN const char* a_domain)
 	{
 		std::vector<IpAddress> ret;
 		addrinfo* result;

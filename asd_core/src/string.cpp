@@ -46,7 +46,7 @@ namespace asd
 	int vsprintf(OUT char* a_targetbuf,
 				 IN int a_bufsize,
 				 IN const char* a_format,
-				 IN va_list& a_args) asd_noexcept
+				 IN va_list& a_args)
 	{
 		return asd_vsprintf_a(a_targetbuf,
 							  a_bufsize,
@@ -58,7 +58,7 @@ namespace asd
 	int vsprintf(OUT wchar_t* a_targetbuf,
 				 IN int a_bufsize,
 				 IN const wchar_t* a_format,
-				 IN va_list& a_args) asd_noexcept
+				 IN va_list& a_args)
 	{
 		return asd_vsprintf_w(a_targetbuf,
 							  a_bufsize,
@@ -70,14 +70,14 @@ namespace asd
 
 	int vfprintf(IN FILE* a_fp,
 				 IN const char* a_format,
-				 IN va_list& a_args) asd_noexcept
+				 IN va_list& a_args)
 	{
 		return asd_vfprintf_a(a_fp, a_format, a_args);
 	}
 
 	int vfprintf(IN FILE* a_fp,
 				 IN const wchar_t* a_format,
-				 IN va_list& a_args) asd_noexcept
+				 IN va_list& a_args)
 	{
 		return asd_vfprintf_w(a_fp, a_format, a_args);
 	}
@@ -85,14 +85,14 @@ namespace asd
 
 
 	int vprintf(IN const char* a_format,
-				IN va_list& a_args) asd_noexcept
+				IN va_list& a_args)
 	{
 		return asd_vprintf_a(a_format, a_args);
 	}
 
 
 	int vprintf(IN const wchar_t* a_format,
-				IN va_list& a_args) asd_noexcept
+				IN va_list& a_args)
 	{
 		return asd_vprintf_w(a_format, a_args);
 	}
@@ -102,7 +102,7 @@ namespace asd
 	int sprintf(OUT char* a_targetbuf,
 				IN int a_bufsize,
 				IN const char* a_format,
-				IN ...) asd_noexcept
+				IN ...)
 	{
 		va_list args;
 		va_start(args, a_format);
@@ -118,7 +118,7 @@ namespace asd
 	int sprintf(OUT wchar_t* a_targetbuf,
 				IN int a_bufsize,
 				IN const wchar_t* a_format,
-				IN ...) asd_noexcept
+				IN ...)
 	{
 		va_list args;
 		va_start(args, a_format);
@@ -133,7 +133,7 @@ namespace asd
 
 
 	int printf(IN const char* a_format,
-			   IN ...) asd_noexcept
+			   IN ...)
 	{
 		va_list args;
 		va_start(args, a_format);
@@ -144,7 +144,7 @@ namespace asd
 
 
 	int printf(IN const wchar_t* a_format,
-			   IN ...) asd_noexcept
+			   IN ...)
 	{
 		va_list args;
 		va_start(args, a_format);
@@ -156,27 +156,27 @@ namespace asd
 
 
 	int fputs(IN const char* a_str,
-			  IN FILE* a_fp) asd_noexcept
+			  IN FILE* a_fp)
 	{
 		return ::fputs(a_str, a_fp);
 	}
 
 
 	int fputs(IN const wchar_t* a_str,
-			  IN FILE* a_fp) asd_noexcept
+			  IN FILE* a_fp)
 	{
 		return ::fputws(a_str, a_fp);
 	}
 
 
 
-	int puts(IN const char* a_str) asd_noexcept
+	int puts(IN const char* a_str)
 	{
 		return ::puts(a_str);
 	}
 
 
-	int puts(IN const wchar_t* a_str) asd_noexcept
+	int puts(IN const wchar_t* a_str)
 	{
 		return ::fputws(a_str, stdout);
 	}
@@ -197,7 +197,7 @@ namespace asd
 
 	template<typename CharType>
 	inline int vsctprintf(IN const CharType* a_format,
-						  IN va_list a_args) asd_noexcept
+						  IN va_list a_args)
 	{
 		const int LimitBytes = 1024 * 1024 * 16;
 		const int StartBytes = 1024 * 512;
@@ -232,7 +232,7 @@ namespace asd
 
 
 	int vscprintf(IN const char* a_format,
-				  IN va_list& a_args) asd_noexcept
+				  IN va_list& a_args)
 	{
 #if defined(asd_Platform_Windows)
 		return ::_vscprintf(a_format, a_args);
@@ -243,7 +243,7 @@ namespace asd
 
 
 	int vscprintf(IN const wchar_t* a_format,
-				  IN va_list& a_args) asd_noexcept
+				  IN va_list& a_args)
 	{
 #if defined(asd_Platform_Windows)
 		return ::_vscwprintf(a_format, a_args);
@@ -255,7 +255,7 @@ namespace asd
 
 
 	int scprintf(IN const char* a_format,
-				 IN ...) asd_noexcept
+				 IN ...)
 	{
 		va_list args;
 		va_start(args, a_format);
@@ -266,7 +266,7 @@ namespace asd
 
 
 	int scprintf(IN const wchar_t* a_format,
-				 IN ...) asd_noexcept
+				 IN ...)
 	{
 		va_list args;
 		va_start(args, a_format);
@@ -277,7 +277,7 @@ namespace asd
 
 
 
-	size_t strlen(IN const char* a_str) asd_noexcept
+	size_t strlen(IN const char* a_str)
 	{
 		if (a_str == nullptr)
 			return 0;
@@ -285,7 +285,7 @@ namespace asd
 	}
 
 
-	size_t strlen(IN const wchar_t* a_str) asd_noexcept
+	size_t strlen(IN const wchar_t* a_str)
 	{
 		if (a_str == nullptr)
 			return 0;
@@ -293,20 +293,20 @@ namespace asd
 	}
 
 
-	size_t strlen(IN const char16_t* a_str) asd_noexcept
+	size_t strlen(IN const char16_t* a_str)
 	{
 		return asd::strlen<sizeof(char16_t)>(a_str);
 	}
 
 
-	size_t strlen(IN const char32_t* a_str) asd_noexcept
+	size_t strlen(IN const char32_t* a_str)
 	{
 		return asd::strlen<sizeof(char32_t)>(a_str);
 	}
 
 
 	size_t strlen(IN const void* a_str,
-				  IN int a_sizeOfChar) asd_noexcept
+				  IN int a_sizeOfChar)
 	{
 		assert(a_sizeOfChar==1 || a_sizeOfChar==2 || a_sizeOfChar==4);
 		switch (a_sizeOfChar) {
@@ -325,7 +325,7 @@ namespace asd
 	template<typename ReturnType, typename ProxyType, bool AsciiOnly=false>
 	inline void strcpy_internal(OUT ReturnType* a_dst,
 								IN const ProxyType* a_src,
-								IN size_t a_dstBufCount) asd_noexcept
+								IN size_t a_dstBufCount)
 	{
 		if (SamePtr(a_dst, a_src))
 			return;
@@ -355,7 +355,7 @@ namespace asd
 
 	char* strcpy(OUT char* a_dst,
 				 IN const char* a_src,
-				 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
+				 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
 	{
 		strcpy_internal(a_dst, a_src, a_dstBufCount);
 		return a_dst;
@@ -364,7 +364,7 @@ namespace asd
 
 	wchar_t* strcpy(OUT wchar_t* a_dst,
 					IN const wchar_t* a_src,
-					IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
+					IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
 	{
 		strcpy_internal(a_dst, a_src, a_dstBufCount);
 		return a_dst;
@@ -373,7 +373,7 @@ namespace asd
 
 	char16_t* strcpy(OUT char16_t* a_dst,
 					 IN const char16_t* a_src,
-					 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
+					 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
 	{
 		strcpy_internal(a_dst, a_src, a_dstBufCount);
 		return a_dst;
@@ -382,7 +382,7 @@ namespace asd
 
 	char32_t* strcpy(OUT char32_t* a_dst,
 					 IN const char32_t* a_src,
-					 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
+					 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
 	{
 		strcpy_internal(a_dst, a_src, a_dstBufCount);
 		return a_dst;
@@ -392,7 +392,7 @@ namespace asd
 	// Ascii문자열만 사용 할 것.
 	char* strcpy(OUT char* a_dst,
 				 IN const wchar_t* a_src,
-				 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
+				 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
 	{
 		strcpy_internal<char, wchar_t, true>(a_dst, a_src, a_dstBufCount);
 		return a_dst;
@@ -402,7 +402,7 @@ namespace asd
 	// Ascii문자열만 사용 할 것.
 	wchar_t* strcpy(OUT wchar_t* a_dst,
 					IN const char* a_src,
-					IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/) asd_noexcept
+					IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
 	{
 		strcpy_internal<wchar_t, char, true>(a_dst, a_src, a_dstBufCount);
 		return a_dst;

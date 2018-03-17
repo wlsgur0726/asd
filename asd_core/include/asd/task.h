@@ -8,8 +8,8 @@ namespace asd
 	class Task
 	{
 	public:
-		Task() asd_noexcept;
-		virtual ~Task() asd_noexcept;
+		Task();
+		virtual ~Task();
 
 		// 큐잉한 task를 취소
 		// task가 아직 실행되지 않았다면 true 리턴
@@ -30,7 +30,7 @@ namespace asd
 	{
 	public:
 		TaskTemplate(FUNC&& a_func,
-					 PARAMS&&... a_params) asd_noexcept
+					 PARAMS&&... a_params)
 			: m_func(std::forward<FUNC>(a_func))
 			, m_params(std::forward<PARAMS>(a_params)...)
 		{
@@ -68,7 +68,7 @@ namespace asd
 	class TaskTemplate<FUNC> : public Task
 	{
 	public:
-		TaskTemplate(FUNC&& a_func) asd_noexcept
+		TaskTemplate(FUNC&& a_func)
 			: m_func(std::forward<FUNC>(a_func))
 		{
 		}
@@ -89,7 +89,7 @@ namespace asd
 
 	template <typename FUNC, typename... PARAMS>
 	static Task_ptr CreateTask(FUNC&& a_func,
-							   PARAMS&&... a_params) asd_noexcept
+							   PARAMS&&... a_params)
 	{
 		using TASK = TaskTemplate<FUNC, PARAMS...>;
 #if 0

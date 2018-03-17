@@ -10,27 +10,27 @@ namespace asd
 	class File
 	{
 	public:
-		File() asd_noexcept;
+		File();
 
 		File(IN const char* a_path,
-			 IN const char* a_mode = "") asd_noexcept;
+			 IN const char* a_mode = "");
 
 		File(IN const wchar_t* a_path,
-			 IN const wchar_t* a_mode = L"") asd_noexcept;
+			 IN const wchar_t* a_mode = L"");
 
 		void Open(IN const char* a_path,
-				  IN const char* a_mode = "") asd_noexcept;
+				  IN const char* a_mode = "");
 
 		void Open(IN const wchar_t* a_path,
-				  IN const wchar_t* a_mode = L"") asd_noexcept;
+				  IN const wchar_t* a_mode = L"");
 
 		size_t Read(OUT void* a_buffer,
 					IN size_t a_elemSize,
-					IN size_t a_elemCount) asd_noexcept;
+					IN size_t a_elemCount);
 
 		size_t Write(IN const void* a_buffer,
 					 IN size_t a_elemSize,
-					 IN size_t a_elemCount) asd_noexcept;
+					 IN size_t a_elemCount);
 
 		int GetLastError() const;
 
@@ -42,7 +42,7 @@ namespace asd
 
 		off_t Tell();
 
-		void Close() asd_noexcept;
+		void Close();
 
 	private:
 		std::shared_ptr<FILE> m_file;

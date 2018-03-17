@@ -20,7 +20,7 @@ namespace asd
 #define asd_Default_Endian		asd::Endian::Little
 
 
-	inline bool InvalidCount(IN size_t a_count) asd_noexcept
+	inline bool InvalidCount(IN size_t a_count)
 	{
 		const auto Limit = asd_Default_LimitCount;
 		static_assert(Limit > 0, "invalid Limit value");
@@ -51,7 +51,7 @@ namespace asd
 
 
 	template <typename T>
-	inline T Reverse(IN T a_src) asd_noexcept
+	inline T Reverse(IN T a_src)
 	{
 		auto src = (const uint8_t*)(&a_src);
 		uint8_t dst[sizeof(T)];
@@ -67,7 +67,7 @@ namespace asd
 		Endian BufferEndian,
 		typename DataType
 	> inline size_t Write_PrimitiveType(REF BufferList& a_buffer,
-										IN DataType a_data) asd_noexcept
+										IN DataType a_data)
 	{
 		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
 
@@ -81,7 +81,7 @@ namespace asd
 		Endian BufferEndian,
 		typename DataType
 	> inline size_t Read_PrimitiveType(REF BufferList& a_buffer,
-									   OUT DataType& a_data) asd_noexcept
+									   OUT DataType& a_data)
 	{
 		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
 
@@ -102,7 +102,7 @@ namespace asd
 		typename DataType
 	> inline size_t Write_PrimitiveArray(REF BufferList& a_buffer,
 										 IN const DataType* a_data,
-										 IN const size_t a_count) asd_noexcept
+										 IN const size_t a_count)
 	{
 		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
 
@@ -126,7 +126,7 @@ namespace asd
 		typename DataType
 	> inline size_t Read_PrimitiveArray(REF BufferList& a_buffer,
 										OUT DataType* a_data,
-										IN const size_t a_count) asd_noexcept
+										IN const size_t a_count)
 	{
 		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
 
@@ -149,7 +149,7 @@ namespace asd
 		typename DataType,
 		typename... Args
 	> inline size_t Write_PrimitiveVector(REF BufferList& a_buffer,
-										  IN const std::vector<DataType, Args...>& a_data) asd_noexcept
+										  IN const std::vector<DataType, Args...>& a_data)
 	{
 		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
 
@@ -182,7 +182,7 @@ namespace asd
 		typename DataType,
 		typename... Args
 	> inline size_t Read_PrimitiveVector(REF BufferList& a_buffer,
-										 OUT std::vector<DataType, Args...>& a_data) asd_noexcept
+										 OUT std::vector<DataType, Args...>& a_data)
 	{
 		static_assert(IsDirectSerializableType<DataType>::Value, "invalid type");
 
@@ -217,7 +217,7 @@ namespace asd
 
 #define asd_Define_Write_And_Read_PrimitiveType(Type)									\
 	inline size_t Write(REF BufferList& a_buffer,										\
-						IN const Type a_data) asd_noexcept								\
+						IN const Type a_data)								\
 	{																					\
 		return Write_PrimitiveType<asd_Default_Endian, Type>(a_buffer,					\
 															 a_data);					\
@@ -225,7 +225,7 @@ namespace asd
 																						\
 	inline size_t Write(REF BufferList& a_buffer,										\
 						IN const Type* a_data,											\
-						IN const size_t a_count) asd_noexcept							\
+						IN const size_t a_count)							\
 	{																					\
 		return Write_PrimitiveArray<asd_Default_Endian, Type>(a_buffer,					\
 															  a_data,					\
@@ -234,7 +234,7 @@ namespace asd
 																						\
 	template <size_t Count>																\
 	inline size_t Write(REF BufferList& a_buffer,										\
-						IN const std::array<Type, Count>& a_data) asd_noexcept			\
+						IN const std::array<Type, Count>& a_data)			\
 	{																					\
 		return Write(a_buffer,															\
 					 a_data.data(),														\
@@ -243,14 +243,14 @@ namespace asd
 																						\
 	template <typename... Args>															\
 	inline size_t Write(REF BufferList& a_buffer,										\
-						IN const std::vector<Type, Args...>& a_data) asd_noexcept		\
+						IN const std::vector<Type, Args...>& a_data)		\
 	{																					\
 		return Write_PrimitiveVector<asd_Default_Endian, Type, Args...>(a_buffer,		\
 																		a_data);		\
 	}																					\
 																						\
 	inline size_t Read(REF BufferList& a_buffer,										\
-					   OUT Type& a_data) asd_noexcept									\
+					   OUT Type& a_data)									\
 	{																					\
 		return Read_PrimitiveType<asd_Default_Endian, Type>(a_buffer,					\
 															a_data);					\
@@ -258,7 +258,7 @@ namespace asd
 																						\
 	inline size_t Read(REF BufferList& a_buffer,										\
 					   OUT Type* a_data,												\
-					   IN const size_t a_count) asd_noexcept							\
+					   IN const size_t a_count)							\
 	{																					\
 		return Read_PrimitiveArray<asd_Default_Endian, Type>(a_buffer,					\
 															 a_data,					\
@@ -267,7 +267,7 @@ namespace asd
 																						\
 	template <size_t Count>																\
 	inline size_t Read(REF BufferList& a_buffer,										\
-					   OUT std::array<Type, Count>& a_data) asd_noexcept				\
+					   OUT std::array<Type, Count>& a_data)				\
 	{																					\
 		return Read(a_buffer,															\
 					a_data.data(),														\
@@ -276,7 +276,7 @@ namespace asd
 																						\
 	template <typename... Args>															\
 	inline size_t Read(REF BufferList& a_buffer,										\
-					   OUT std::vector<Type, Args...>& a_data) asd_noexcept				\
+					   OUT std::vector<Type, Args...>& a_data)				\
 	{																					\
 		return Read_PrimitiveVector<asd_Default_Endian, Type, Args...>(a_buffer,		\
 																	   a_data);			\
@@ -317,7 +317,7 @@ namespace asd
 	// Read to const type
 	template <typename DataType>
 	inline size_t Read(REF BufferList& a_buffer,
-					   OUT const DataType& a_data) asd_noexcept
+					   OUT const DataType& a_data)
 	{
 		return Read(a_buffer,
 					const_cast<DataType&>(a_data));
@@ -377,7 +377,7 @@ namespace asd
 		size_t Count,
 		size_t Index
 	> inline size_t Write_TupleElem(REF BufferList& a_buffer,
-									IN const Tuple& a_data) asd_noexcept
+									IN const Tuple& a_data)
 	{
 		const bool Nullity = Count <= Index;
 		if (Nullity)
@@ -405,7 +405,7 @@ namespace asd
 		size_t Count,
 		size_t Index
 	> inline size_t Read_TupleElem(REF BufferList& a_buffer,
-								   OUT Tuple& a_data) asd_noexcept
+								   OUT Tuple& a_data)
 	{
 		const bool Nullity = Count <= Index;
 		if (Nullity)
@@ -430,7 +430,7 @@ namespace asd
 
 	template <typename... Args>
 	inline size_t Write(REF BufferList& a_buffer,
-						IN const std::tuple<Args...>& a_data) asd_noexcept
+						IN const std::tuple<Args...>& a_data)
 	{
 		Transactional<BufOp::Write> tran(a_buffer);
 
@@ -445,7 +445,7 @@ namespace asd
 
 	template <typename... Args>
 	inline size_t Read(REF BufferList& a_buffer,
-					   OUT std::tuple<Args...>& a_data) asd_noexcept
+					   OUT std::tuple<Args...>& a_data)
 	{
 		Transactional<BufOp::Read> tran(a_buffer);
 
@@ -461,7 +461,7 @@ namespace asd
 	// std container
 	template <typename Container>
 	inline size_t Write_StdContainer(REF BufferList& a_buffer,
-									 IN const Container& a_data) asd_noexcept
+									 IN const Container& a_data)
 	{
 		const auto count = a_data.size();
 		if (InvalidCount(count))
@@ -486,14 +486,14 @@ namespace asd
 #define asd_Define_Write_And_Read_StdContainer(Container)						\
 	template <typename... Args>													\
 	inline size_t Write(REF BufferList& a_buffer,								\
-						IN const Container<Args...>& a_data) asd_noexcept		\
+						IN const Container<Args...>& a_data)		\
 	{																			\
 		return Write_StdContainer(a_buffer, a_data);							\
 	}																			\
 																				\
 	template <typename... Args>													\
 	inline size_t Read(REF BufferList& a_buffer,								\
-					   OUT Container<Args...>& a_data) asd_noexcept				\
+					   OUT Container<Args...>& a_data)				\
 
 	asd_Define_Write_And_Read_StdContainer(std::vector)
 	{
@@ -625,7 +625,7 @@ namespace asd
 		typename Value,
 		typename... Args
 	> inline size_t Write(REF BufferList& a_buffer,
-						  IN const std::map<Key, Value, Args...>& a_data) asd_noexcept
+						  IN const std::map<Key, Value, Args...>& a_data)
 	{
 		return Write_StdContainer<std::map<Key, Value, Args...>>(a_buffer, a_data);
 	}
@@ -673,7 +673,7 @@ namespace asd
 		typename Value,
 		typename... Args
 	> inline size_t Write(REF BufferList& a_buffer,
-						  IN const std::unordered_map<Key, Value, Args...>& a_data) asd_noexcept
+						  IN const std::unordered_map<Key, Value, Args...>& a_data)
 	{
 		return Write_StdContainer<std::unordered_map<Key, Value, Args...>>(a_buffer, a_data);
 	}

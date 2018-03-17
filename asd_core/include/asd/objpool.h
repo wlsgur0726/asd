@@ -48,7 +48,7 @@ namespace asd
 
 
 
-		virtual ~ObjectPool() asd_noexcept
+		virtual ~ObjectPool()
 		{
 			Clear();
 		}
@@ -78,7 +78,7 @@ namespace asd
 
 
 		// 풀링되면 true, 풀이 꽉 차면 false 리턴
-		bool Free(IN Object* a_obj) asd_noexcept
+		bool Free(IN Object* a_obj)
 		{
 			if (a_obj == nullptr)
 				return true;
@@ -107,7 +107,7 @@ namespace asd
 
 
 
-		void Clear() asd_noexcept
+		void Clear()
 		{
 			const int BufSize = 1024;
 			Object* buf[BufSize];
@@ -147,7 +147,7 @@ namespace asd
 
 
 
-		size_t GetCount() const asd_noexcept
+		size_t GetCount() const
 		{
 			return m_pool.size();
 		}
@@ -155,7 +155,7 @@ namespace asd
 
 
 		template <typename CAST>
-		inline static CAST* GetHeader(IN Object* a_obj) asd_noexcept
+		inline static CAST* GetHeader(IN Object* a_obj)
 		{
 			static_assert(sizeof(CAST) <= HeaderSize, "invalid cast");
 			auto p = (uint8_t*)a_obj;
@@ -165,7 +165,7 @@ namespace asd
 
 
 	private:
-		inline static Object* AllocMemory() asd_noexcept
+		inline static Object* AllocMemory()
 		{
 			auto block = (uint8_t*)::operator new(sizeof(Object) + HeaderSize);
 			Object* ret = (Object*)&block[HeaderSize];
@@ -173,7 +173,7 @@ namespace asd
 		}
 
 
-		inline static void FreeMemory(IN Object* a_ptr) asd_noexcept
+		inline static void FreeMemory(IN Object* a_ptr)
 		{
 			auto p = (uint8_t*)a_ptr;
 			auto block = p - HeaderSize;
@@ -183,7 +183,7 @@ namespace asd
 		class Pool : public std::vector<Object*>
 		{
 		public:
-			inline Object* pop() asd_noexcept
+			inline Object* pop()
 			{
 				size_t s = size();
 				if (s == 0)
@@ -195,7 +195,7 @@ namespace asd
 				return ret;
 			}
 
-			inline void push(IN Object* a_obj) asd_noexcept
+			inline void push(IN Object* a_obj)
 			{
 				emplace_back(a_obj);
 			}
@@ -266,7 +266,7 @@ namespace asd
 
 
 
-		virtual ~ObjectPool2() asd_noexcept
+		virtual ~ObjectPool2()
 		{
 			Clear();
 		}
@@ -328,7 +328,7 @@ namespace asd
 
 
 
-		void Clear() asd_noexcept
+		void Clear()
 		{
 			++m_popContention;
 			Node* snapshot;
@@ -359,7 +359,7 @@ namespace asd
 
 
 
-		size_t GetCount() const asd_noexcept
+		size_t GetCount() const
 		{
 			return m_pooledCount;
 		}
@@ -367,7 +367,7 @@ namespace asd
 
 
 		template <typename CAST>
-		inline static CAST* GetHeader(IN Object* a_obj) asd_noexcept
+		inline static CAST* GetHeader(IN Object* a_obj)
 		{
 			static_assert(sizeof(CAST) <= HeaderSize, "invalid cast");
 			auto p = (uint8_t*)a_obj;
@@ -377,7 +377,7 @@ namespace asd
 
 
 	private:
-		inline static Object* AllocMemory() asd_noexcept
+		inline static Object* AllocMemory()
 		{
 			auto block = (uint8_t*)::operator new(sizeof(Object) + HeaderSize);
 			Object* ret = (Object*)&block[HeaderSize];
@@ -385,7 +385,7 @@ namespace asd
 		}
 
 
-		inline static void FreeMemory(IN Object* a_ptr) asd_noexcept
+		inline static void FreeMemory(IN Object* a_ptr)
 		{
 			auto p = (uint8_t*)a_ptr;
 			auto block = p - HeaderSize;
@@ -393,7 +393,7 @@ namespace asd
 		}
 
 
-		Node* PopNode() asd_noexcept
+		Node* PopNode()
 		{
 			++m_popContention;
 			Node* snapshot = m_head;
@@ -510,7 +510,7 @@ namespace asd
 
 
 
-		virtual ~ObjectPoolShardSet() asd_noexcept
+		virtual ~ObjectPoolShardSet()
 		{
 			for (size_t i=0; i<m_shardCount; ++i)
 				m_shards[i].~Pool();
@@ -539,7 +539,7 @@ namespace asd
 
 
 		template <typename CAST>
-		inline static CAST* GetHeader(IN Object* a_obj) asd_noexcept
+		inline static CAST* GetHeader(IN Object* a_obj)
 		{
 			return Pool::template GetHeader<CAST>(a_obj);
 		}
@@ -547,7 +547,7 @@ namespace asd
 
 
 	private:
-		inline size_t GetShardIndex(IN Object* a_obj = nullptr) asd_noexcept
+		inline size_t GetShardIndex(IN Object* a_obj = nullptr)
 		{
 			size_t index;
 			if (a_obj == nullptr) {
@@ -563,7 +563,7 @@ namespace asd
 		}
 
 
-		inline static ShardSetHeader* GetShardSetHeader(IN Object* a_obj) asd_noexcept
+		inline static ShardSetHeader* GetShardSetHeader(IN Object* a_obj)
 		{
 			auto block = Pool::template GetHeader<uint8_t>(a_obj);
 			return (ShardSetHeader*)(block + OrgHeaderSize);

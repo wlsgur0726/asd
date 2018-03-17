@@ -69,18 +69,18 @@ namespace asd
 	class HasMagicCode
 	{
 	public:
-		virtual ~HasMagicCode() asd_noexcept
+		virtual ~HasMagicCode()
 		{
 			m_magicCode = nullptr;
 		}
 
-		static const char* GetMagicCode() asd_noexcept
+		static const char* GetMagicCode()
 		{
 			static const char* s_magicCode = typeid(T).name();
 			return s_magicCode;
 		}
 
-		inline bool IsValidMagicCode() const asd_noexcept
+		inline bool IsValidMagicCode() const
 		{
 			return m_magicCode == GetMagicCode();
 		}
@@ -116,12 +116,12 @@ namespace asd
 		typedef void(*Function)(IN T*);
 		Function m_deleteFunction;
 
-		inline DeleteFunction_ptr(IN Function a_deleteFunction = nullptr) asd_noexcept
+		inline DeleteFunction_ptr(IN Function a_deleteFunction = nullptr)
 			: m_deleteFunction(a_deleteFunction)
 		{
 		}
 
-		inline void operator()(IN T* a_ptr) const asd_noexcept
+		inline void operator()(IN T* a_ptr) const
 		{
 			if (m_deleteFunction != nullptr)
 				m_deleteFunction(a_ptr);
@@ -129,7 +129,7 @@ namespace asd
 				delete a_ptr;
 		}
 
-		inline operator Function() const asd_noexcept
+		inline operator Function() const
 		{
 			return m_deleteFunction;
 		}
@@ -143,7 +143,7 @@ namespace asd
 		typedef typename Base::deleter_type::Function		DeleteFunction;
 
 		inline UniquePtr(REF T* a_ptr = nullptr,
-						 IN DeleteFunction a_deleter = nullptr) asd_noexcept
+						 IN DeleteFunction a_deleter = nullptr)
 			: Base(a_ptr, typename Base::deleter_type(a_deleter))
 		{
 		}

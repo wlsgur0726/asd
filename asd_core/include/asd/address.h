@@ -19,7 +19,7 @@ namespace asd
 	class IpAddress
 	{
 	public:
-		static int ToNativeCode(AddressFamily a_family) asd_noexcept;
+		static int ToNativeCode(AddressFamily a_family);
 
 	private:
 		AddressFamily m_addrFamily = AddressFamily::IPv4;
@@ -29,56 +29,56 @@ namespace asd
 	public:
 		virtual ~IpAddress();
 
-		IpAddress(IN AddressFamily a_addrFamily = AddressFamily::IPv4) asd_noexcept;
+		IpAddress(IN AddressFamily a_addrFamily = AddressFamily::IPv4);
 
 		IpAddress(IN const char* a_ip,
-				  IN uint16_t a_port = 0) asd_noexcept;
+				  IN uint16_t a_port = 0);
 
-		IpAddress(IN const IpAddress& a_cp) asd_noexcept;
+		IpAddress(IN const IpAddress& a_cp);
 
-		IpAddress(MOVE IpAddress&& a_rval) asd_noexcept;
+		IpAddress(MOVE IpAddress&& a_rval);
 
-		IpAddress(IN const sockaddr_in& a_native_ipv4) asd_noexcept;
+		IpAddress(IN const sockaddr_in& a_native_ipv4);
 
-		IpAddress(IN const sockaddr_in6& a_native_ipv6) asd_noexcept;
+		IpAddress(IN const sockaddr_in6& a_native_ipv6);
 
-		IpAddress& operator=(IN const IpAddress& a_cp) asd_noexcept;
+		IpAddress& operator=(IN const IpAddress& a_cp);
 
-		IpAddress& operator=(MOVE IpAddress&& a_rval) asd_noexcept;
+		IpAddress& operator=(MOVE IpAddress&& a_rval);
 
-		IpAddress& operator=(IN const sockaddr_in& a_native_ipv4) asd_noexcept;
+		IpAddress& operator=(IN const sockaddr_in& a_native_ipv4);
 
-		IpAddress& operator=(IN const sockaddr_in6& a_native_ipv6) asd_noexcept;
+		IpAddress& operator=(IN const sockaddr_in6& a_native_ipv6);
 
-		operator const sockaddr* () const asd_noexcept;
+		operator const sockaddr* () const;
 
-		int GetAddrLen() const asd_noexcept;
+		int GetAddrLen() const;
 
-		AddressFamily GetAddressFamily() const asd_noexcept;
+		AddressFamily GetAddressFamily() const;
 
-		void* GetIp(OUT int* a_len = nullptr) const asd_noexcept;
+		void* GetIp(OUT int* a_len = nullptr) const;
 
-		uint16_t GetPort() const asd_noexcept;
+		uint16_t GetPort() const;
 
-		void SetPort(IN uint16_t a_port) asd_noexcept;
+		void SetPort(IN uint16_t a_port);
 
-		MString ToString() const asd_noexcept;
+		MString ToString() const;
 
 		static int Compare(IN const IpAddress& a_left,
-						   IN const IpAddress& a_right) asd_noexcept;
+						   IN const IpAddress& a_right);
 
 		asd_Define_CompareOperator(Compare, IpAddress);
 
 		// STL의 해시 기반 컨테이너에서 사용할 Functor
 		struct Hash
 		{
-			size_t operator()(IN const IpAddress& a_addr) const asd_noexcept;
+			size_t operator()(IN const IpAddress& a_addr) const;
 		};
 	};
 
 
 
-	std::vector<IpAddress> FindIP(IN const char* a_domain) asd_noexcept;
+	std::vector<IpAddress> FindIP(IN const char* a_domain);
 }
 
 namespace std

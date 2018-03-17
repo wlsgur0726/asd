@@ -15,24 +15,24 @@ namespace asd
 	}
 
 
-	File::File() asd_noexcept
+	File::File()
 	{
 	}
 
 	File::File(IN const char* a_path,
-			   IN const char* a_mode /*= ""*/) asd_noexcept
+			   IN const char* a_mode /*= ""*/)
 	{
 		Open(a_path, a_mode);
 	}
 
 	File::File(IN const wchar_t* a_path,
-			   IN const wchar_t* a_mode /*= L""*/) asd_noexcept
+			   IN const wchar_t* a_mode /*= L""*/)
 	{
 		Open(a_path, a_mode);
 	}
 
 	void File::Open(IN const char* a_path,
-					IN const char* a_mode /*= ""*/) asd_noexcept
+					IN const char* a_mode /*= ""*/)
 	{
 #if asd_Platform_Windows
 		FILE* fp;
@@ -51,7 +51,7 @@ namespace asd
 	}
 
 	void File::Open(IN const wchar_t* a_path,
-					IN const wchar_t* a_mode /*= L""*/) asd_noexcept
+					IN const wchar_t* a_mode /*= L""*/)
 	{
 #if asd_Platform_Windows
 		FILE* fp;
@@ -70,7 +70,7 @@ namespace asd
 
 	size_t File::Read(OUT void* a_buffer,
 					  IN size_t a_elemSize,
-					  IN size_t a_elemCount) asd_noexcept
+					  IN size_t a_elemCount)
 	{
 		if (m_file == nullptr) {
 			m_lastError = EBADF;
@@ -87,7 +87,7 @@ namespace asd
 
 	size_t File::Write(IN const void* a_buffer,
 					   IN size_t a_elemSize,
-					   IN size_t a_elemCount) asd_noexcept
+					   IN size_t a_elemCount)
 	{
 		if (m_file == nullptr) {
 			m_lastError = EBADF;
@@ -154,7 +154,7 @@ namespace asd
 		return offset;
 	}
 
-	void File::Close() asd_noexcept
+	void File::Close()
 	{
 		m_file.reset();
 	}

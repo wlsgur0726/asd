@@ -16,14 +16,14 @@ namespace asd
 	class Exception : public std::exception
 	{
 	public:
-		Exception() asd_noexcept;
-		Exception(IN const char* a_what) asd_noexcept;
-		Exception(IN const MString& a_what) asd_noexcept;
-		Exception(IN const DebugInfo& a_dbginfo) asd_noexcept;
-		virtual ~Exception() asd_noexcept;
+		Exception();
+		Exception(IN const char* a_what);
+		Exception(IN const MString& a_what);
+		Exception(IN const DebugInfo& a_dbginfo);
+		virtual ~Exception();
 
 		virtual const char* what() const asd_noexcept override;
-		const StackTrace& GetStackTrace() const asd_noexcept;
+		const StackTrace& GetStackTrace() const;
 
 	protected:
 		MString m_what;
@@ -33,14 +33,14 @@ namespace asd
 	private:
 		struct DumpCreator
 		{
-			DumpCreator() asd_noexcept;
+			DumpCreator();
 		} m_dumpCreator;
 #endif
 	};
 
 	struct UnknownException
 	{
-		inline const char* what() const asd_noexcept
+		inline const char* what() const
 		{
 			return "?";
 		}
@@ -102,10 +102,10 @@ namespace asd
 	// for asd_try - asd_catch
 	struct ExceptionPtrInterface
 	{
-		virtual ~ExceptionPtrInterface() asd_noexcept {}
-		virtual const char* what() const asd_noexcept = 0;
-		virtual const std::type_info& GetType() const asd_noexcept = 0;
-		virtual const StackTrace& GetStackTrace() const asd_noexcept
+		virtual ~ExceptionPtrInterface() {}
+		virtual const char* what() const = 0;
+		virtual const std::type_info& GetType() const = 0;
+		virtual const StackTrace& GetStackTrace() const
 		{
 			static StackTrace s_null(0, 0);
 			return s_null;
@@ -117,17 +117,17 @@ namespace asd
 	{
 		const ExceptionType* m_ptr;
 
-		ExceptionPtrTemplate(IN const ExceptionType* a_ptr) asd_noexcept
+		ExceptionPtrTemplate(IN const ExceptionType* a_ptr)
 			: m_ptr(a_ptr)
 		{
 		}
 
-		virtual const char* what() const asd_noexcept override
+		virtual const char* what() const override
 		{
 			return m_ptr->what();
 		}
 
-		virtual const std::type_info& GetType() const asd_noexcept
+		virtual const std::type_info& GetType() const
 		{
 			return typeid(*m_ptr);
 		}
@@ -138,22 +138,22 @@ namespace asd
 	{
 		const Exception* m_ptr;
 
-		ExceptionPtrTemplate(IN const Exception* a_ptr) asd_noexcept
+		ExceptionPtrTemplate(IN const Exception* a_ptr)
 			: m_ptr(a_ptr)
 		{
 		}
 
-		virtual const char* what() const asd_noexcept override
+		virtual const char* what() const override
 		{
 			return m_ptr->what();
 		}
 
-		virtual const std::type_info& GetType() const asd_noexcept
+		virtual const std::type_info& GetType() const
 		{
 			return typeid(*m_ptr);
 		}
 
-		virtual const StackTrace& GetStackTrace() const asd_noexcept override
+		virtual const StackTrace& GetStackTrace() const override
 		{
 			return m_ptr->GetStackTrace();
 		}
@@ -164,19 +164,19 @@ namespace asd
 	{
 		const char* m_ptr;
 
-		ExceptionPtrTemplate(IN const char*const* a_ptr) asd_noexcept
+		ExceptionPtrTemplate(IN const char*const* a_ptr)
 			: m_ptr(*a_ptr)
 		{
 			if (m_ptr == nullptr)
 				m_ptr = "";
 		}
 
-		virtual const char* what() const asd_noexcept override
+		virtual const char* what() const override
 		{
 			return m_ptr;
 		}
 
-		virtual const std::type_info& GetType() const asd_noexcept
+		virtual const std::type_info& GetType() const
 		{
 			return typeid(const char*);
 		}
@@ -199,7 +199,7 @@ namespace asd
 	struct DefaultExceptionHandler
 	{
 		void operator () (IN ExceptionPtrInterface* a_exception,
-						  IN const DebugInfo& a_catchPosInfo) const asd_noexcept;
+						  IN const DebugInfo& a_catchPosInfo) const;
 	};
 
 
@@ -211,18 +211,18 @@ namespace asd
 		// - ErrorMessage를 asd::Logger::GlobalInstance().ErrorLog()로 출력
 		// - release일 경우 StackTrace도 출력
 		// - debug일 경우 DebugBreak
-		virtual void OnError(IN const DebugInfo& a_info) asd_noexcept;
+		virtual void OnError(IN const DebugInfo& a_info);
 		virtual ~AssertHandler() {}
 	};
 
 
 	// 현재 셋팅되어있는 AssertHandler 리턴
-	std::shared_ptr<AssertHandler> GetAssertHandler() asd_noexcept;
+	std::shared_ptr<AssertHandler> GetAssertHandler();
 
 
 	// 커스텀 AssertHandler 셋팅
 	// nullptr 입력할 경우 기본 AssertHandler로 셋팅
-	void SetAssertHandler(IN std::shared_ptr<AssertHandler> a_handler) asd_noexcept;
+	void SetAssertHandler(IN std::shared_ptr<AssertHandler> a_handler);
 
 
 	// asd_RAssert : 표준 assert와는 다르게 release에서도 Check는 수행된다.

@@ -29,7 +29,7 @@ namespace asd
 		Mutex m_lock;
 		std::unordered_map<uint32_t, tid_t> m_map;
 
-		void Register() asd_noexcept
+		void Register()
 		{
 			uint32_t seq = GetCurrentThreadSequence();
 #if asd_Platform_Windows
@@ -41,13 +41,13 @@ namespace asd
 			m_map[seq] = tid;
 		}
 
-		size_t Count() asd_noexcept
+		size_t Count()
 		{
 			auto lock = GetLock(m_lock);
 			return m_map.size();
 		}
 
-		void Unregister() asd_noexcept
+		void Unregister()
 		{
 			uint32_t seq = GetCurrentThreadSequence();
 			auto lock = GetLock(m_lock);
@@ -65,7 +65,7 @@ namespace asd
 
 
 
-	uint32_t GetCurrentThreadID() asd_noexcept
+	uint32_t GetCurrentThreadID()
 	{
 		thread_local uint32_t t_tid = 0;
 		if (t_tid == 0) {
@@ -80,7 +80,7 @@ namespace asd
 
 
 
-	uint32_t GetCurrentThreadSequence() asd_noexcept
+	uint32_t GetCurrentThreadSequence()
 	{
 		static std::atomic<uint32_t> g_sequence;
 		thread_local uint32_t t_sequence = g_sequence++;
@@ -89,7 +89,7 @@ namespace asd
 
 
 
-	uint32_t Get_HW_Concurrency() asd_noexcept
+	uint32_t Get_HW_Concurrency()
 	{
 		static uint32_t s_HW_Concurrency;
 		static std::once_flag s_init;
@@ -104,7 +104,7 @@ namespace asd
 
 
 
-	void KillThread(IN uint32_t a_threadSequence) asd_noexcept
+	void KillThread(IN uint32_t a_threadSequence)
 	{
 		auto lock = GetLock(g_threadManager.m_lock);
 		auto it = g_threadManager.m_map.find(a_threadSequence);
@@ -126,14 +126,14 @@ namespace asd
 
 
 
-	size_t GetAliveThreadCount() asd_noexcept
+	size_t GetAliveThreadCount()
 	{
 		return g_threadManager.Count();
 	}
 
 
 
-	void srand() asd_noexcept
+	void srand()
 	{
 		thread_local int t_seed;
 		intptr_t a = (intptr_t)&t_seed;

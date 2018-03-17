@@ -20,7 +20,7 @@ namespace asd
 		size_t Col = 0;	// 버퍼 내에서의 오프셋
 
 		inline static int Compare(IN const Offset& a_left,
-								  IN const Offset& a_right) asd_noexcept
+								  IN const Offset& a_right)
 		{
 			if (a_left.Row < a_right.Row)
 				return -1;
@@ -81,12 +81,12 @@ namespace asd
 	class BufferInterface
 	{
 	public:
-		virtual uint8_t* GetBuffer() const asd_noexcept = 0;
-		virtual size_t Capacity() const asd_noexcept = 0;
-		virtual size_t GetSize() const asd_noexcept = 0;
-		virtual bool SetSize(IN size_t a_bytes) asd_noexcept = 0;
+		virtual uint8_t* GetBuffer() const = 0;
+		virtual size_t Capacity() const = 0;
+		virtual size_t GetSize() const = 0;
+		virtual bool SetSize(IN size_t a_bytes) = 0;
 
-		inline size_t GetReserve() const asd_noexcept
+		inline size_t GetReserve() const
 		{
 			const auto capacity = Capacity();
 			const auto size = GetSize();
@@ -94,7 +94,7 @@ namespace asd
 			return capacity - size;
 		}
 
-		virtual ~BufferInterface() asd_noexcept
+		virtual ~BufferInterface()
 		{
 		}
 	};
@@ -106,32 +106,32 @@ namespace asd
 		: public BufferInterface
 		, public std::array<uint8_t, Bytes>
 	{
-		static constexpr size_t Limit() asd_noexcept
+		static constexpr size_t Limit()
 		{
 			return Bytes;
 		}
 
-		inline StaticBuffer() asd_noexcept
+		inline StaticBuffer()
 		{
 		}
 
-		virtual uint8_t* GetBuffer() const asd_noexcept override
+		virtual uint8_t* GetBuffer() const override
 		{
 			return const_cast<uint8_t*>(data());
 		}
 
-		virtual size_t Capacity() const asd_noexcept override
+		virtual size_t Capacity() const override
 		{
 			return Limit();
 		}
 
-		virtual size_t GetSize() const asd_noexcept override
+		virtual size_t GetSize() const override
 		{
 			assert(m_size <= Bytes);
 			return m_size;
 		}
 
-		virtual bool SetSize(IN size_t a_bytes) asd_noexcept override
+		virtual bool SetSize(IN size_t a_bytes) override
 		{
 			if (a_bytes > Bytes)
 				return false;
@@ -155,25 +155,25 @@ namespace asd
 		typedef std::vector<T, Args...> BaseClass;
 		using BaseClass::BaseClass;
 
-		virtual uint8_t* GetBuffer() const asd_noexcept override
+		virtual uint8_t* GetBuffer() const override
 		{
 			assert(size() > 0);
 			return reinterpret_cast<uint8_t*>(data());
 		}
 
-		virtual size_t Capacity() const asd_noexcept override
+		virtual size_t Capacity() const override
 		{
 			assert(size() > 0);
 			return GetSize();
 		}
 
-		virtual size_t GetSize() const asd_noexcept override
+		virtual size_t GetSize() const override
 		{
 			assert(size() > 0);
 			return size() * sizeof(T);
 		}
 
-		virtual bool SetSize(IN size_t a_bytes) asd_noexcept override
+		virtual bool SetSize(IN size_t a_bytes) override
 		{
 			return false; // not use
 		}
@@ -199,25 +199,25 @@ namespace asd
 			m_data = std::move(a_builder.ReleaseBufferPointer());
 		}
 
-		virtual uint8_t* GetBuffer() const asd_noexcept override
+		virtual uint8_t* GetBuffer() const override
 		{
 			asd_DAssert(m_data != nullptr);
 			return m_data.get();
 		}
 
-		virtual size_t Capacity() const asd_noexcept override
+		virtual size_t Capacity() const override
 		{
 			asd_DAssert(m_data != nullptr);
 			return m_bytes;
 		}
 
-		virtual size_t GetSize() const asd_noexcept override
+		virtual size_t GetSize() const override
 		{
 			asd_DAssert(m_data != nullptr);
 			return m_bytes;
 		}
 
-		virtual bool SetSize(IN size_t a_bytes) asd_noexcept override
+		virtual bool SetSize(IN size_t a_bytes) override
 		{
 			asd_RAssert(false, "banned call (send only)");
 			return false; // not use
@@ -239,7 +239,7 @@ namespace asd
 
 
 	template<size_t BYTES>
-	Buffer_ptr NewBuffer() asd_noexcept
+	Buffer_ptr NewBuffer()
 	{
 		using Buffer = StaticBuffer<BYTES>;
 		using PoolType = ObjectPoolShardSet< ObjectPool2<Buffer> >;
@@ -279,46 +279,46 @@ namespace asd
 
 
 	public:
-		inline static Buffer_ptr NewWriteBuffer() asd_noexcept
+		inline static Buffer_ptr NewWriteBuffer()
 		{
 			return NewBuffer<asd_BufferList_DefaultWriteBufferSize>();
 		}
 
-		static BufferList_ptr New() asd_noexcept;
+		static BufferList_ptr New();
 
-		BufferList() asd_noexcept;
+		BufferList();
 
-		virtual ~BufferList() asd_noexcept;
+		virtual ~BufferList();
 
-		void Clear() asd_noexcept;
+		void Clear();
 
-		size_t GetTotalSize() const asd_noexcept;
+		size_t GetTotalSize() const;
 
-		void ReserveBuffer(IN size_t a_bytes = asd_BufferList_DefaultWriteBufferSize) asd_noexcept;
+		void ReserveBuffer(IN size_t a_bytes = asd_BufferList_DefaultWriteBufferSize);
 
-		void ReserveBuffer(MOVE Buffer_ptr&& a_buffer) asd_noexcept;
+		void ReserveBuffer(MOVE Buffer_ptr&& a_buffer);
 
-		void PushBack(MOVE Buffer_ptr&& a_buffer) asd_noexcept;
+		void PushBack(MOVE Buffer_ptr&& a_buffer);
 
-		void PushBack(MOVE BufferList&& a_bufferList) asd_noexcept;
+		void PushBack(MOVE BufferList&& a_bufferList);
 
-		void PushBack(MOVE BaseType&& a_bufferList) asd_noexcept;
+		void PushBack(MOVE BaseType&& a_bufferList);
 
-		void PushFront(MOVE Buffer_ptr&& a_buffer) asd_noexcept;
+		void PushFront(MOVE Buffer_ptr&& a_buffer);
 
-		void PushFront(MOVE BufferList&& a_bufferList) asd_noexcept;
+		void PushFront(MOVE BufferList&& a_bufferList);
 
-		void PushFront(MOVE BaseType&& a_bufferList) asd_noexcept;
+		void PushFront(MOVE BaseType&& a_bufferList);
 
-		void Flush() asd_noexcept;
+		void Flush();
 
-		bool Readable(IN size_t a_bytes) const asd_noexcept;
+		bool Readable(IN size_t a_bytes) const;
 
 		size_t Write(IN const void* a_data,
-					 IN const size_t a_bytes) asd_noexcept;
+					 IN const size_t a_bytes);
 
 		size_t Read(OUT void* a_data,
-					IN const size_t a_bytes) asd_noexcept;
+					IN const size_t a_bytes);
 
 		using BaseType::begin;
 		using BaseType::end;
@@ -341,17 +341,17 @@ namespace asd
 		size_t			m_result = 0;
 
 	public:
-		Transactional(REF BufferList& a_bufferList) asd_noexcept;
+		Transactional(REF BufferList& a_bufferList);
 
-		void Rollback() asd_noexcept;
+		void Rollback();
 
-		inline size_t SetResult(IN const size_t a_result) asd_noexcept
+		inline size_t SetResult(IN const size_t a_result)
 		{
 			m_result = a_result;
 			return a_result;
 		}
 
-		inline ~Transactional() asd_noexcept
+		inline ~Transactional()
 		{
 			if (m_result == 0)
 				Rollback();

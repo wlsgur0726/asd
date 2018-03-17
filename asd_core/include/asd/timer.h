@@ -21,23 +21,23 @@ namespace asd
 
 		// 시차 계산
 		static Millisec Diff(IN TimePoint a_before,
-							 IN TimePoint a_after) asd_noexcept;
+							 IN TimePoint a_after);
 
 		// 현재시간
-		static TimePoint Now() asd_noexcept;
+		static TimePoint Now();
 
 
-		Timer() asd_noexcept;
+		Timer();
 
 		// 어디까지 실행했는지
-		TimePoint CurrentOffset() asd_noexcept;
+		TimePoint CurrentOffset();
 
 		// a_afterMs 후에 수행할 task를 큐잉
 		// 큐잉된 task 리턴 (nullptr이면 실패)
 		template <typename FUNC, typename... PARAMS>
 		inline Task_ptr PushAfter(IN Millisec a_after,
 								  FUNC&& a_func,
-								  PARAMS&&... a_params) asd_noexcept
+								  PARAMS&&... a_params)
 		{
 			return PushAt(Now() + a_after,
 						  std::forward<FUNC>(a_func),
@@ -49,7 +49,7 @@ namespace asd
 		template <typename FUNC, typename... PARAMS>
 		inline Task_ptr PushAt(IN TimePoint a_timepoint,
 							   FUNC&& a_func,
-							   PARAMS&&... a_params) asd_noexcept
+							   PARAMS&&... a_params)
 		{
 			auto task = CreateTask(std::forward<FUNC>(a_func),
 								   std::forward<PARAMS>(a_params)...);
@@ -58,12 +58,12 @@ namespace asd
 		}
 
 		void PushTask(IN TimePoint a_timepoint,
-					  IN const Task_ptr& a_task) asd_noexcept;
+					  IN const Task_ptr& a_task);
 
-		virtual ~Timer() asd_noexcept;
+		virtual ~Timer();
 
 	private:
-		void PollLoop() asd_noexcept;
+		void PollLoop();
 
 		Mutex m_lock;
 		bool m_run = true;

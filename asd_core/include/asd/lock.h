@@ -42,7 +42,7 @@ namespace asd
 
 		Mutex& operator=(MOVE Mutex&& a_rval);
 
-		~Mutex() asd_noexcept;
+		~Mutex();
 
 		asd_DeclareMutexInterface;
 
@@ -56,11 +56,11 @@ namespace asd
 	class SpinMutex final
 	{
 	public:
-		SpinMutex() asd_noexcept;
+		SpinMutex();
 
-		SpinMutex(MOVE SpinMutex&& a_rval) asd_noexcept;
+		SpinMutex(MOVE SpinMutex&& a_rval);
 
-		SpinMutex& operator=(MOVE SpinMutex&& a_rval) asd_noexcept;
+		SpinMutex& operator=(MOVE SpinMutex&& a_rval);
 
 		asd_DeclareMutexInterface;
 
@@ -82,7 +82,7 @@ namespace asd
 
 		SharedMutex& operator=(MOVE SharedMutex&& a_rval);
 
-		~SharedMutex() asd_noexcept;
+		~SharedMutex();
 
 		asd_DeclareMutexInterface;
 
@@ -110,14 +110,14 @@ namespace asd
 				lock();
 		}
 
-		Lock(MOVE Lock<MUTEX_TYPE>&& a_move) asd_noexcept
+		Lock(MOVE Lock<MUTEX_TYPE>&& a_move)
 		{
 			m_recursionCount = a_move.m_recursionCount;
 			m_mutex = a_move.m_mutex;
 			a_move.m_mutex = nullptr;
 		}
 
-		~Lock() asd_noexcept
+		~Lock()
 		{
 			if (m_mutex == nullptr)
 				return;
@@ -188,14 +188,14 @@ namespace asd
 				lock_shared();
 		}
 
-		SharedLock(MOVE SharedLock<MUTEX_TYPE>&& a_move) asd_noexcept
+		SharedLock(MOVE SharedLock<MUTEX_TYPE>&& a_move)
 		{
 			m_recursionCount = a_move.m_recursionCount;
 			m_mutex = a_move.m_mutex;
 			a_move.m_mutex = nullptr;
 		}
 
-		~SharedLock() asd_noexcept
+		~SharedLock()
 		{
 			if (m_mutex == nullptr)
 				return;

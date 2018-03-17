@@ -36,7 +36,7 @@ asd_Check_Member(SQL_TIME_STRUCT, second);
 
 namespace asd
 {
-	MString DBDiagInfo::ToString() const asd_noexcept
+	MString DBDiagInfo::ToString() const
 	{
 		return MString::Format("State={},NativeError={},Message={}",
 							   m_state,
@@ -48,7 +48,7 @@ namespace asd
 
 	DBException::DBException(IN const DBDiagInfoList& a_diagInfoList,
 							 IN const char* a_lastFileName,
-							 IN int a_lastFileLine) asd_noexcept
+							 IN int a_lastFileLine)
 	{
 		m_what.Format("DBException({}:{})", a_lastFileName, a_lastFileLine);
 		int index = 1;
@@ -396,7 +396,7 @@ namespace asd
 	}
 
 
-	DBConnection::~DBConnection() asd_noexcept
+	DBConnection::~DBConnection()
 	{
 		asd_BeginDestructor();
 		Close();
@@ -753,7 +753,7 @@ namespace asd
 
 
 
-	DBStatement::DBStatement() asd_noexcept
+	DBStatement::DBStatement()
 	{
 	}
 
@@ -807,7 +807,7 @@ namespace asd
 	}
 
 
-	uint16_t DBStatement::GetColumnCount() const asd_noexcept
+	uint16_t DBStatement::GetColumnCount() const
 	{
 		assert(m_handle != nullptr);
 		assert(m_handle->m_columnNameList.size() <= std::numeric_limits<uint16_t>::max());
@@ -822,7 +822,7 @@ namespace asd
 	}
 
 
-	DBStatement::~DBStatement() asd_noexcept
+	DBStatement::~DBStatement()
 	{
 		asd_BeginDestructor();
 		Close();

@@ -52,7 +52,7 @@ namespace asd
 		};
 		std::unique_ptr<Listening> m_listening;
 
-		bool ReadyAcceptSocket(IN const Socket& a_sock) asd_noexcept
+		bool ReadyAcceptSocket(IN const Socket& a_sock)
 		{
 			m_listening->m_acceptSock = ::socket(IpAddress::ToNativeCode(a_sock.GetAddressFamily()),
 												 Socket::ToNativeCode(a_sock.GetSocektType()),
@@ -60,7 +60,7 @@ namespace asd
 			return m_listening->m_acceptSock != INVALID_SOCKET;
 		}
 
-		SOCKET AcceptNewSocket() asd_noexcept
+		SOCKET AcceptNewSocket()
 		{
 			SOCKET newSock = m_listening->m_acceptSock;;
 			m_listening->m_acceptSock = INVALID_SOCKET;
@@ -69,7 +69,7 @@ namespace asd
 	};
 
 
-	UniquePtr<AsyncSocketNative> AsyncSocket::InitNative() asd_noexcept
+	UniquePtr<AsyncSocketNative> AsyncSocket::InitNative()
 	{
 		return UniquePtr<AsyncSocketNative>(new AsyncSocketNative);
 	}
@@ -80,7 +80,7 @@ namespace asd
 	{
 	};
 
-	UniquePtr<AsyncSocketNative> AsyncSocket::InitNative() asd_noexcept
+	UniquePtr<AsyncSocketNative> AsyncSocket::InitNative()
 	{
 		return nullptr;
 	}
@@ -130,12 +130,12 @@ namespace asd
 			asd_DAssert(m_event != nullptr);
 		}
 
-		virtual ~IOEventInternal() asd_noexcept
+		virtual ~IOEventInternal()
 		{
 			StopThread();
 		}
 
-		void StartThread() asd_noexcept
+		void StartThread()
 		{
 			m_run = true;
 			for (auto& t : m_threads) {
@@ -147,7 +147,7 @@ namespace asd
 			}
 		}
 
-		void StopThread() asd_noexcept
+		void StopThread()
 		{
 			if (m_run.exchange(false)) {
 				for (auto cnt=m_threads.size(); cnt>0; --cnt)
@@ -157,7 +157,7 @@ namespace asd
 			}
 		}
 
-		void Poll(IN uint32_t a_timeoutMs) asd_noexcept
+		void Poll(IN uint32_t a_timeoutMs)
 		{
 			// Wait
 			EventInfo event;
@@ -192,56 +192,56 @@ namespace asd
 			Poll_Finally(sock);
 		}
 
-		virtual bool Register(REF AsyncSocket* a_sock) asd_noexcept
+		virtual bool Register(REF AsyncSocket* a_sock)
 		{
 			asd_RAssert(false, "not impl");
 			return false;
 		}
 
-		virtual bool PostSignal(IN AsyncSocket* a_sock) asd_noexcept
+		virtual bool PostSignal(IN AsyncSocket* a_sock)
 		{
 			asd_RAssert(false, "not impl");
 			return false;
 		}
 
 		virtual bool Wait(IN uint32_t a_timeoutMs,
-						  OUT EventInfo& a_event) asd_noexcept
+						  OUT EventInfo& a_event)
 		{
 			asd_RAssert(false, "not impl");
 			return false;
 		}
 
-		virtual void ProcEvent(REF EventInfo& a_event) asd_noexcept
+		virtual void ProcEvent(REF EventInfo& a_event)
 		{
 			asd_RAssert(false, "not impl");
 		}
 
-		virtual int Listen(REF AsyncSocket* a_sock) asd_noexcept
+		virtual int Listen(REF AsyncSocket* a_sock)
 		{
 			asd_RAssert(false, "not impl");
 			return -1;
 		}
 
 		virtual int Connect(REF AsyncSocket* a_sock,
-							IN const IpAddress& a_dst) asd_noexcept
+							IN const IpAddress& a_dst)
 		{
 			asd_RAssert(false, "not impl");
 			return -1;
 		}
 
-		virtual int Send(REF AsyncSocket* a_sock) asd_noexcept
+		virtual int Send(REF AsyncSocket* a_sock)
 		{
 			asd_RAssert(false, "not impl");
 			return -1;
 		}
 
 		virtual void CloseSocket(REF AsyncSocket* a_sock,
-								 IN bool a_hard = false) asd_noexcept
+								 IN bool a_hard = false)
 		{
 			asd_RAssert(false, "not impl");
 		}
 
-		virtual void Poll_Finally(REF AsyncSocket* a_sock) asd_noexcept
+		virtual void Poll_Finally(REF AsyncSocket* a_sock)
 		{
 			asd_RAssert(false, "not impl");
 		}
@@ -274,7 +274,7 @@ namespace asd
 
 
 
-		virtual ~IOEventInternal_IOCP() asd_noexcept
+		virtual ~IOEventInternal_IOCP()
 		{
 			StopThread();
 			if (m_iocp != NULL)
@@ -283,7 +283,7 @@ namespace asd
 
 
 
-		virtual bool Register(REF AsyncSocket* a_sock) asd_noexcept override
+		virtual bool Register(REF AsyncSocket* a_sock) override
 		{
 			if (a_sock->m_native == nullptr) {
 				a_sock->m_lastError = -1;
@@ -312,7 +312,7 @@ namespace asd
 
 
 
-		virtual bool PostSignal(IN AsyncSocket* a_sock) asd_noexcept override
+		virtual bool PostSignal(IN AsyncSocket* a_sock) override
 		{
 			ULONG_PTR id = a_sock != nullptr ? AsyncSocketHandle::GetID(a_sock) : AsyncSocketHandle::Null;
 			auto r = ::PostQueuedCompletionStatus(m_iocp, 0, id, nullptr);
@@ -326,7 +326,7 @@ namespace asd
 
 
 
-		int WSARecv(REF AsyncSocket* a_sock) asd_noexcept
+		int WSARecv(REF AsyncSocket* a_sock)
 		{
 			asd_RAssert(a_sock->m_recvBuffer == nullptr, "unknown logic error");
 			a_sock->m_recvBuffer = NewBuffer<asd_BufferList_DefaultReadBufferSize>();
@@ -368,7 +368,7 @@ namespace asd
 
 
 		virtual bool Wait(IN uint32_t a_timeoutMs,
-						  OUT EventInfo& a_event) asd_noexcept override
+						  OUT EventInfo& a_event) override
 		{
 			AsyncSocketHandle::ID id = AsyncSocketHandle::Null;
 			auto r = ::GetQueuedCompletionStatus(m_iocp,
@@ -410,7 +410,7 @@ namespace asd
 
 
 
-		virtual void ProcEvent(REF EventInfo& a_event) asd_noexcept override
+		virtual void ProcEvent(REF EventInfo& a_event) override
 		{
 			AsyncSocket* sock = a_event.m_socket.get();
 
@@ -523,7 +523,7 @@ namespace asd
 
 
 
-		virtual int Listen(REF AsyncSocket* a_sock) asd_noexcept override
+		virtual int Listen(REF AsyncSocket* a_sock) override
 		{
 			asd_ChkErrAndRetVal(a_sock->m_native->m_listening != nullptr, -1, "already listenig");
 			a_sock->m_native->m_listening.reset(new AsyncSocketNative::Listening);
@@ -532,7 +532,7 @@ namespace asd
 
 
 
-		int AcceptEx(REF AsyncSocket* a_sock) asd_noexcept
+		int AcceptEx(REF AsyncSocket* a_sock)
 		{
 			static LPFN_ACCEPTEX s_acceptEx = nullptr;
 			if (s_acceptEx == nullptr) {
@@ -598,7 +598,7 @@ namespace asd
 
 
 		virtual int Connect(REF AsyncSocket* a_sock,
-							IN const IpAddress& a_dst) asd_noexcept override
+							IN const IpAddress& a_dst) override
 		{
 			static LPFN_CONNECTEX s_connectEx = nullptr;
 			if (s_connectEx == nullptr) {
@@ -684,7 +684,7 @@ namespace asd
 
 
 
-		virtual int Send(REF AsyncSocket* a_sock) asd_noexcept override
+		virtual int Send(REF AsyncSocket* a_sock) override
 		{
 			if (a_sock->m_sendQueue.empty())
 				return 0;
@@ -768,7 +768,7 @@ namespace asd
 
 
 		virtual void CloseSocket(REF AsyncSocket* a_sock,
-								 IN bool a_hard = false) asd_noexcept override
+								 IN bool a_hard = false) override
 		{
 			if (a_sock->GetNativeHandle() == Socket::InvalidHandle)
 				return;
@@ -796,7 +796,7 @@ namespace asd
 
 
 
-		virtual void Poll_Finally(REF AsyncSocket* a_sock) asd_noexcept override
+		virtual void Poll_Finally(REF AsyncSocket* a_sock) override
 		{
 			if (a_sock->m_state == AsyncSocket::State::Closing)
 				CloseSocket(a_sock);
@@ -852,7 +852,7 @@ namespace asd
 
 
 
-		virtual bool Register(REF AsyncSocket* a_sock) asd_noexcept override
+		virtual bool Register(REF AsyncSocket* a_sock) override
 		{
 			epoll_event ev;
 			ev.data.ptr = (void*)AsyncSocketHandle::GetID(a_sock);
@@ -880,7 +880,7 @@ namespace asd
 
 
 
-		virtual bool PostSignal(IN AsyncSocket* a_sock) asd_noexcept override
+		virtual bool PostSignal(IN AsyncSocket* a_sock) override
 		{
 			if (a_sock == nullptr) {
 				ssize_t r;
@@ -960,7 +960,7 @@ namespace asd
 
 
 		virtual bool Wait(IN uint32_t a_timeoutMs,
-						  OUT EventInfo& a_event) asd_noexcept override
+						  OUT EventInfo& a_event) override
 		{
 			auto r = ::epoll_wait(m_epoll,
 								  &a_event.m_epollEvent,
@@ -995,7 +995,7 @@ namespace asd
 
 
 
-		int GetSocketError(IN AsyncSocket* a_sock) asd_noexcept
+		int GetSocketError(IN AsyncSocket* a_sock)
 		{
 			int err = -1;
 			a_sock->GetSockOpt_Error(err);
@@ -1004,7 +1004,7 @@ namespace asd
 
 
 
-		virtual void ProcEvent(REF EventInfo& a_event) asd_noexcept override
+		virtual void ProcEvent(REF EventInfo& a_event) override
 		{
 			AsyncSocket* sock = a_event.m_socket.get();
 
@@ -1123,7 +1123,7 @@ namespace asd
 
 
 		virtual int Connect(REF AsyncSocket* a_sock,
-							IN const IpAddress& a_dst) asd_noexcept override
+							IN const IpAddress& a_dst) override
 		{
 			if (PostSignal(a_sock) == false)
 				return -1;
@@ -1141,7 +1141,7 @@ namespace asd
 
 
 
-		virtual int Listen(REF AsyncSocket* a_sock) asd_noexcept override
+		virtual int Listen(REF AsyncSocket* a_sock) override
 		{
 			// 딱히 할게 없음
 			return 0;
@@ -1149,7 +1149,7 @@ namespace asd
 
 
 
-		virtual int Send(REF AsyncSocket* a_sock) asd_noexcept override
+		virtual int Send(REF AsyncSocket* a_sock) override
 		{
 			thread_local std::vector<iovec> t_iovec;
 			const size_t count = min(a_sock->m_sendQueue.size(), (size_t)IOV_MAX);
@@ -1194,7 +1194,7 @@ namespace asd
 
 
 		virtual void CloseSocket(REF AsyncSocket* a_sock,
-								 IN bool a_hard = false) asd_noexcept override
+								 IN bool a_hard = false) override
 		{
 			if (a_sock->m_state == AsyncSocket::State::Closed)
 				return;
@@ -1220,7 +1220,7 @@ namespace asd
 
 
 
-		virtual void Poll_Finally(REF AsyncSocket* a_sock) asd_noexcept override
+		virtual void Poll_Finally(REF AsyncSocket* a_sock) override
 		{
 			if (a_sock->m_state == AsyncSocket::State::Closed)
 				return;
@@ -1257,7 +1257,7 @@ namespace asd
 
 
 
-	IOEvent::~IOEvent() asd_noexcept
+	IOEvent::~IOEvent()
 	{
 		Stop();
 	}
@@ -1269,7 +1269,7 @@ namespace asd
 	}
 
 
-	void IOEvent::Stop() asd_noexcept
+	void IOEvent::Stop()
 	{
 		std::shared_ptr<IOEventInternal> internal = std::move(*this);
 		if (internal != nullptr)
@@ -1279,7 +1279,7 @@ namespace asd
 
 	bool IOEvent::RegisterListener(IN AsyncSocket_ptr& a_sock,
 								   IN const IpAddress& a_bind,
-								   IN int a_backlog /*= 1024*/) asd_noexcept
+								   IN int a_backlog /*= 1024*/)
 	{
 		auto internal = get();
 		if (internal == nullptr)
@@ -1321,7 +1321,7 @@ namespace asd
 
 
 	bool IOEvent::RegisterConnector(IN AsyncSocket_ptr& a_sock,
-									IN const IpAddress& a_dst) asd_noexcept
+									IN const IpAddress& a_dst)
 	{
 		auto internal = get();
 		if (internal == nullptr)
@@ -1355,7 +1355,7 @@ namespace asd
 	}
 
 
-	bool IOEvent::Register(IN AsyncSocket_ptr& a_sock) asd_noexcept
+	bool IOEvent::Register(IN AsyncSocket_ptr& a_sock)
 	{
 		auto internal = get();
 		if (internal == nullptr)
@@ -1384,7 +1384,7 @@ namespace asd
 	}
 
 
-	void IOEvent::Poll(IN uint32_t a_timeoutSec) asd_noexcept
+	void IOEvent::Poll(IN uint32_t a_timeoutSec)
 	{
 		auto internal = get();
 		if (internal != nullptr)
@@ -1393,7 +1393,7 @@ namespace asd
 
 
 
-	bool AsyncSocket::Send(MOVE std::deque<Buffer_ptr>&& a_data) asd_noexcept
+	bool AsyncSocket::Send(MOVE std::deque<Buffer_ptr>&& a_data)
 	{
 		auto ev = std::atomic_load(&m_event);
 		if (ev == nullptr) {
@@ -1427,7 +1427,7 @@ namespace asd
 	}
 
 
-	void AsyncSocket::Close() asd_noexcept
+	void AsyncSocket::Close()
 	{
 		std::shared_ptr<IOEventInternal> null;
 		auto ev = std::atomic_exchange(&m_event, null);
@@ -1441,7 +1441,7 @@ namespace asd
 	}
 
 
-	AsyncSocket::~AsyncSocket() asd_noexcept
+	AsyncSocket::~AsyncSocket()
 	{
 		Close();
 	}

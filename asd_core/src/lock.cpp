@@ -57,7 +57,7 @@ namespace asd
 			::LeaveCriticalSection(&m_mtx);
 		}
 
-		~MutexData() asd_noexcept
+		~MutexData()
 		{
 			asd_DAssert(m_mtx.RecursionCount == 0);
 			asd_DAssert(m_mtx.OwningThread == 0);
@@ -136,7 +136,7 @@ namespace asd
 			}
 		}
 
-		~MutexData() asd_noexcept
+		~MutexData()
 		{
 			asd_DAssert(m_recursionCount == 0);
 			asd_DAssert(m_ownerThread == 0);
@@ -202,7 +202,7 @@ namespace asd
 		m_data->unlock();
 	}
 
-	Mutex::~Mutex() asd_noexcept
+	Mutex::~Mutex()
 	{
 		if (m_data == nullptr)
 			return;
@@ -217,18 +217,18 @@ namespace asd
 
 
 
-	SpinMutex::SpinMutex() asd_noexcept
+	SpinMutex::SpinMutex()
 	{
 		m_lock = 0;
 	}
 
-	SpinMutex::SpinMutex(MOVE SpinMutex&& a_rval) asd_noexcept
+	SpinMutex::SpinMutex(MOVE SpinMutex&& a_rval)
 	{
 		m_lock = 0;
 		operator=(std::move(a_rval));
 	}
 
-	SpinMutex& SpinMutex::operator=(MOVE SpinMutex&& a_rval) asd_noexcept
+	SpinMutex& SpinMutex::operator=(MOVE SpinMutex&& a_rval)
 	{
 		auto a = this;
 		auto b = &a_rval;
@@ -245,7 +245,7 @@ namespace asd
 
 	inline bool TrySpinLock(REF std::atomic<uint32_t>& a_lock,
 							IN uint32_t a_tid,
-							REF int& a_recursionCount) asd_noexcept
+							REF int& a_recursionCount)
 	{
 		uint32_t lock = a_lock;
 		if (lock == 0) {
@@ -550,7 +550,7 @@ namespace asd
 		return *this;
 	}
 
-	SharedMutex::~SharedMutex() asd_noexcept
+	SharedMutex::~SharedMutex()
 	{
 		if (m_data == nullptr)
 			return;

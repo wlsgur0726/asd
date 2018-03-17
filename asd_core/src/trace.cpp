@@ -69,7 +69,7 @@ namespace asd
 	} g_init;
 
 	StackTrace::StackTrace(IN uint32_t a_skip /*= 0*/,
-						   IN uint32_t a_count /*= 10*/) asd_noexcept
+						   IN uint32_t a_count /*= 10*/)
 	{
 		thread_local std::vector<void*> frames;
 		frames.resize(a_count);
@@ -109,7 +109,7 @@ namespace asd
 
 #elif asd_Compiler_GCC
 	StackTrace::StackTrace(IN uint32_t a_skip /*= 0*/,
-						   IN uint32_t a_count /*= 10*/) asd_noexcept
+						   IN uint32_t a_count /*= 10*/)
 	{
 		std::vector<void*> trace;
 		trace.resize(a_skip + a_count + 1);
@@ -189,12 +189,12 @@ namespace asd
 
 #endif
 
-	MString StackFrame::ToString() const asd_noexcept
+	MString StackFrame::ToString() const
 	{
 		return MString::Format("{}@{} ({}:{})", Module, Function, File, Line);
 	}
 
-	MString StackTrace::ToString(IN const ToStrOpt& a_opt /*= ToStrOpt()*/) const asd_noexcept
+	MString StackTrace::ToString(IN const ToStrOpt& a_opt /*= ToStrOpt()*/) const
 	{
 		MString indent;
 		indent.resize(a_opt.Indent);
@@ -235,7 +235,7 @@ namespace asd
 
 	Trace::Trace(IN const char* a_file,
 				 IN int a_line,
-				 IN const char* a_function) asd_noexcept
+				 IN const char* a_function)
 		: Time(std::chrono::system_clock::now())
 		, TID(GetCurrentThreadID())
 		, File(a_file)
@@ -244,7 +244,7 @@ namespace asd
 	{
 	}
 
-	MString Trace::ToString() const asd_noexcept
+	MString Trace::ToString() const
 	{
 		return MString::Format("[{}][{}][{}:{}][{}]",
 							   Elapsed(Time),
@@ -255,7 +255,7 @@ namespace asd
 	}
 
 	void PushTrace(REF Tracer& a_tracer,
-				   IN const Trace& a_trace) asd_noexcept
+				   IN const Trace& a_trace)
 	{
 		if (a_tracer.size() >= a_tracer.m_limit)
 			a_tracer.pop_front();
@@ -264,7 +264,7 @@ namespace asd
 
 
 
-	MString DebugInfo::ToString() const asd_noexcept
+	MString DebugInfo::ToString() const
 	{
 		return MString::Format("[{}][{}][{}:{}][{}] {}",
 							   Elapsed(Time),
@@ -277,7 +277,7 @@ namespace asd
 
 
 	void PushDebugTrace(REF DebugTracer& a_tracer,
-						MOVE DebugInfo&& a_trace) asd_noexcept
+						MOVE DebugInfo&& a_trace)
 	{
 		static Mutex s_lock;
 		auto lock = GetLock(s_lock);

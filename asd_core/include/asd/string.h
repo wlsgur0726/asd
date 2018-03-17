@@ -11,113 +11,113 @@ namespace asd
 	int vsprintf(OUT char* a_targetbuf,
 				 IN int a_bufsize,
 				 IN const char* a_format,
-				 IN va_list& a_args) asd_noexcept;
+				 IN va_list& a_args);
 
 	int vsprintf(OUT wchar_t* a_targetbuf,
 				 IN int a_bufsize,
 				 IN const wchar_t* a_format,
-				 IN va_list& a_args) asd_noexcept;
+				 IN va_list& a_args);
 
 
 	int vfprintf(IN FILE* a_fp,
 				 IN const char* a_format,
-				 IN va_list& a_args) asd_noexcept;
+				 IN va_list& a_args);
 
 	int vfprintf(IN FILE* a_fp,
 				 IN const wchar_t* a_format,
-				 IN va_list& a_args) asd_noexcept;
+				 IN va_list& a_args);
 
 
 	int vprintf(IN const char* a_format,
-				IN va_list& a_args) asd_noexcept;
+				IN va_list& a_args);
 
 	int vprintf(IN const wchar_t* a_format,
-				IN va_list& a_args) asd_noexcept;
+				IN va_list& a_args);
 
 
 	int sprintf(OUT char* a_targetbuf,
 				IN int a_bufsize,
 				IN const char* a_format,
-				IN ...) asd_noexcept;
+				IN ...);
 
 	int sprintf(OUT wchar_t* a_targetbuf,
 				IN int a_bufsize,
 				IN const wchar_t* a_format,
-				IN ...) asd_noexcept;
+				IN ...);
 
 
 	int printf(IN const char* a_format,
-			   IN ...) asd_noexcept;
+			   IN ...);
 
 	int printf(IN const wchar_t* a_format,
-			   IN ...) asd_noexcept;
+			   IN ...);
 
 
 	int vscprintf(IN const char* a_format,
-				  IN va_list& a_args) asd_noexcept;
+				  IN va_list& a_args);
 
 	int vscprintf(IN const wchar_t* a_format,
-				  IN va_list& a_args) asd_noexcept;
+				  IN va_list& a_args);
 
 
 	int scprintf(IN const char* a_format,
-				 IN ...) asd_noexcept;
+				 IN ...);
 
 	int scprintf(IN const wchar_t* a_format,
-				 IN ...) asd_noexcept;
+				 IN ...);
 
 
 	int fputs(IN const char* a_str,
-			  IN FILE* a_fp) asd_noexcept;
+			  IN FILE* a_fp);
 
 	int fputs(IN const wchar_t* a_str,
-			  IN FILE* a_fp) asd_noexcept;
+			  IN FILE* a_fp);
 
 	
-	int puts(IN const char* a_str) asd_noexcept;
+	int puts(IN const char* a_str);
 
-	int puts(IN const wchar_t* a_str) asd_noexcept;
+	int puts(IN const wchar_t* a_str);
 
 
 	char* strcpy(OUT char* a_dst,
 				 IN const char* a_src,
-				 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max()) asd_noexcept;
+				 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max());
 
 	wchar_t* strcpy(OUT wchar_t* a_dst,
 					IN const wchar_t* a_sr,
-					IN size_t a_dstBufCount = std::numeric_limits<size_t>::max()) asd_noexcept;
+					IN size_t a_dstBufCount = std::numeric_limits<size_t>::max());
 
 	char16_t* strcpy(OUT char16_t* a_dst,
 					 IN const char16_t* a_src,
-					 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max()) asd_noexcept;
+					 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max());
 
 	char32_t* strcpy(OUT char32_t* a_dst,
 					 IN const char32_t* a_src,
-					 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max()) asd_noexcept;
+					 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max());
 
 
 	// Ascii문자열만 사용 할 것.
 	char* strcpy(OUT char* a_dst,
 				 IN const wchar_t* a_src,
-				 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max()) asd_noexcept;
+				 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max());
 
 	// Ascii문자열만 사용 할 것.
 	wchar_t* strcpy(OUT wchar_t* a_dst,
 					IN const char* a_src,
-					IN size_t a_dstBufCount = std::numeric_limits<size_t>::max()) asd_noexcept;
+					IN size_t a_dstBufCount = std::numeric_limits<size_t>::max());
 
 
-	size_t strlen(IN const char* a_str) asd_noexcept;
+	size_t strlen(IN const char* a_str);
 
-	size_t strlen(IN const wchar_t* a_str) asd_noexcept;
+	size_t strlen(IN const wchar_t* a_str);
 
-	size_t strlen(IN const char16_t* a_str) asd_noexcept;
+	size_t strlen(IN const char16_t* a_str);
 
-	size_t strlen(IN const char32_t* a_str) asd_noexcept;
+	size_t strlen(IN const char32_t* a_str);
 
 	// SizeOfChar값 단위로 문자열 길이를 구한다.
 	template<int SizeOfChar>
-	inline size_t strlen(IN const void* a_str) asd_noexcept
+	inline size_t strlen(IN const void* a_str)
 	{
 		static_assert(SizeOfChar==1 || SizeOfChar==2 || SizeOfChar==4,
 					  "invalid SizeOfChar");
@@ -137,7 +137,7 @@ namespace asd
 
 	// 위 템플릿함수의 런타임 버전
 	size_t strlen(IN const void* a_str,
-				  IN int a_sizeOfChar) asd_noexcept;
+				  IN int a_sizeOfChar);
 
 
 	template<typename CHARTYPE>
@@ -205,7 +205,7 @@ namespace asd
 	template<typename CharType, bool CaseSensitive = true>
 	struct hash_String
 	{
-		inline size_t operator() (IN const CharType* a_src) const asd_noexcept
+		inline size_t operator() (IN const CharType* a_src) const
 		{
 			const size_t cnt = sizeof(size_t) / sizeof(CharType);
 			static_assert(sizeof(size_t) >= sizeof(CharType),
@@ -249,7 +249,7 @@ namespace asd
 	struct equal_to_String
 	{
 		inline bool operator()(IN const CharType* a_left,
-							   IN const CharType* a_right) const asd_noexcept
+							   IN const CharType* a_right) const
 		{
 			return asd::strcmp(a_left, a_right, CaseSensitive) == 0;
 		}
@@ -281,20 +281,20 @@ namespace asd
 
 
 
-		inline BasicString() asd_noexcept
+		inline BasicString()
 		{
 		}
 
 
 
-		inline BasicString(IN const ThisType& a_data) asd_noexcept
+		inline BasicString(IN const ThisType& a_data)
 		{
 			BaseType::operator=(a_data);
 		}
 
 
 
-		inline BasicString(MOVE ThisType&& a_data) asd_noexcept
+		inline BasicString(MOVE ThisType&& a_data)
 		{
 			BaseType::operator=(std::forward<BaseType>(a_data));
 		}
@@ -302,14 +302,14 @@ namespace asd
 
 
 		template<typename T>
-		inline BasicString(IN const T& a_data) asd_noexcept
+		inline BasicString(IN const T& a_data)
 		{
 			this->operator=(a_data);
 		}
 
 
 
-		inline BasicString(IN const CharType* a_str) asd_noexcept
+		inline BasicString(IN const CharType* a_str)
 		{
 			auto p = BaseType::GetArrayPtr(false);
 			*p = a_str;
@@ -319,7 +319,7 @@ namespace asd
 
 		template<typename... ARGS>
 		inline static ThisType Format(IN const CharType* a_format,
-									  IN const ARGS&... a_args) asd_noexcept
+									  IN const ARGS&... a_args)
 		{
 			ThisType ret;
 			if (a_format == nullptr)
@@ -331,38 +331,38 @@ namespace asd
 
 
 
-		inline operator const CharType*() const asd_noexcept
+		inline operator const CharType*() const
 		{
 			return BaseType::data();
 		}
 
-		inline operator CharType*() asd_noexcept
-		{
-			return BaseType::data();
-		}
-
-
-
-		inline operator const void*() const asd_noexcept
-		{
-			return BaseType::data();
-		}
-
-		inline operator void*() asd_noexcept
+		inline operator CharType*()
 		{
 			return BaseType::data();
 		}
 
 
 
-		inline operator StdStrType() const asd_noexcept
+		inline operator const void*() const
+		{
+			return BaseType::data();
+		}
+
+		inline operator void*()
+		{
+			return BaseType::data();
+		}
+
+
+
+		inline operator StdStrType() const
 		{
 			return StdStrType(*BaseType::GetArrayPtr());
 		}
 
 
 
-		inline size_t GetHash() const asd_noexcept
+		inline size_t GetHash() const
 		{
 			hash_String<CharType, CaseSensitive_Default> func;
 			return func(BaseType::data());
@@ -380,46 +380,46 @@ namespace asd
 		asd_SharedArray_Define_StdStyleType(BaseType, reverse_iterator);
 		asd_SharedArray_Define_StdStyleType(BaseType, const_reverse_iterator);
 
-		inline size_type length() const asd_noexcept
+		inline size_type length() const
 		{
 			return BaseType::GetArrayPtr()->length();
 		}
 
-		inline value_type* c_str() asd_noexcept
+		inline value_type* c_str()
 		{
 			return (value_type*)BaseType::GetArrayPtr()->c_str();
 		}
 
-		inline const value_type* c_str() const asd_noexcept
+		inline const value_type* c_str() const
 		{
 			return BaseType::GetArrayPtr()->c_str();
 		}
 
 		inline ThisType& append(IN const CharType* a_str,
-								IN size_type a_len) asd_noexcept
+								IN size_type a_len)
 		{
 			BaseType::GetArrayPtr()->append(a_str, a_len);
 			return *this;
 		}
 
-		inline ThisType& append(IN const ThisType& a_str) asd_noexcept
+		inline ThisType& append(IN const ThisType& a_str)
 		{
 			return append(a_str, a_str.size());
 		}
 
-		inline ThisType& append(IN const CharType* a_str) asd_noexcept
+		inline ThisType& append(IN const CharType* a_str)
 		{
 			return append(a_str, asd::strlen(a_str));
 		}
 
 		inline ThisType substr(IN size_type a_pos = 0,
-							   IN size_type a_count = StdStrType::npos) const asd_noexcept
+							   IN size_type a_count = StdStrType::npos) const
 		{
 			return BaseType::GetArrayPtr()->substr(a_pos, a_count);
 		}
 
 		template<typename... ARGS>
-		inline size_type find(IN ARGS... args) const asd_noexcept
+		inline size_type find(IN ARGS... args) const
 		{
 			return BaseType::GetArrayPtr()->find(args...);
 		}
@@ -430,7 +430,7 @@ namespace asd
 		template<typename T>
 		inline static int Compare(IN const CharType* a_left,
 								  IN const T& a_right,
-								  IN bool a_caseSensitive = CaseSensitive_Default) asd_noexcept
+								  IN bool a_caseSensitive = CaseSensitive_Default)
 		{
 			return asd::strcmp(a_left,
 							   ThisType(a_right).data(),
@@ -439,7 +439,7 @@ namespace asd
 
 		template<typename T>
 		inline int Compare(IN const T& a_data,
-						   IN bool a_caseSensitive = CaseSensitive_Default) const asd_noexcept
+						   IN bool a_caseSensitive = CaseSensitive_Default) const
 		{
 			return Compare(BaseType::data(),
 						   a_data,
@@ -447,37 +447,37 @@ namespace asd
 		}
 
 		template<typename T>
-		inline bool operator==(IN const T& a_data) const asd_noexcept
+		inline bool operator==(IN const T& a_data) const
 		{
 			return Compare(a_data) == 0;
 		}
 
 		template<typename T>
-		inline bool operator!=(IN const T& a_data) const asd_noexcept
+		inline bool operator!=(IN const T& a_data) const
 		{
 			return Compare(a_data) != 0;
 		}
 
 		template<typename T>
-		inline bool operator<(IN const T& a_data) const asd_noexcept
+		inline bool operator<(IN const T& a_data) const
 		{
 			return Compare(a_data) < 0;
 		}
 
 		template<typename T>
-		inline bool operator<=(IN const T& a_data) const asd_noexcept
+		inline bool operator<=(IN const T& a_data) const
 		{
 			return Compare(a_data) <= 0;
 		}
 
 		template<typename T>
-		inline bool operator>(IN const T& a_data) const asd_noexcept
+		inline bool operator>(IN const T& a_data) const
 		{
 			return Compare(a_data) > 0;
 		}
 
 		template<typename T>
-		inline bool operator>=(IN const T& a_data) const asd_noexcept
+		inline bool operator>=(IN const T& a_data) const
 		{
 			return Compare(a_data) >= 0;
 		}
@@ -486,7 +486,7 @@ namespace asd
 
 		// 대입
 		template<typename T>
-		inline ThisType& operator+=(IN const T& a_data) asd_noexcept
+		inline ThisType& operator+=(IN const T& a_data)
 		{
 			const CharType format[] = {'{', '}', 0};
 			if (length() == 0)
@@ -496,20 +496,20 @@ namespace asd
 		}
 
 		template<typename T>
-		inline ThisType& operator<<(IN const T& a_data) asd_noexcept
+		inline ThisType& operator<<(IN const T& a_data)
 		{
 			return this->operator+=(a_data);
 		}
 
 		template<typename T>
-		inline ThisType operator+(IN const T& a_data) const asd_noexcept
+		inline ThisType operator+(IN const T& a_data) const
 		{
 			ThisType ret;
 			return ret << *this << a_data;
 		}
 
 		template<typename T>
-		inline ThisType& operator=(IN const T& a_data) asd_noexcept
+		inline ThisType& operator=(IN const T& a_data)
 		{
 			BaseType::resize(0);
 			return this->operator+=(a_data);
@@ -518,19 +518,19 @@ namespace asd
 
 
 		// 특정 타입들 예외처리
-		inline ThisType& operator=(IN const ThisType& a_data) asd_noexcept
+		inline ThisType& operator=(IN const ThisType& a_data)
 		{
 			BaseType::operator=(a_data);
 			return *this;
 		}
 
-		inline ThisType& operator=(MOVE ThisType&& a_data) asd_noexcept
+		inline ThisType& operator=(MOVE ThisType&& a_data)
 		{
 			BaseType::operator=(std::forward<BaseType>(a_data));
 			return *this;
 		}
 
-		inline ThisType& operator+=(IN const ThisType& a_data) asd_noexcept
+		inline ThisType& operator+=(IN const ThisType& a_data)
 		{
 			if (length() == 0) {
 				BaseType::operator=(a_data);
@@ -539,23 +539,23 @@ namespace asd
 			return append(a_data.data(), a_data.length());
 		}
 
-		inline ThisType& operator+=(IN const CharType* a_data) asd_noexcept
+		inline ThisType& operator+=(IN const CharType* a_data)
 		{
 			return append(a_data);
 		}
 
-		inline ThisType& operator+=(IN CharType* a_data) asd_noexcept
+		inline ThisType& operator+=(IN CharType* a_data)
 		{
 			return append(a_data);
 		}
 
-		inline ThisType& operator+=(IN const std::nullptr_t&) asd_noexcept
+		inline ThisType& operator+=(IN const std::nullptr_t&)
 		{
 			return *this;
 		}
 
 #if asd_Compiler_MSVC
-		inline ThisType& operator+=(IN const Caster& a_data) asd_noexcept
+		inline ThisType& operator+=(IN const Caster& a_data)
 		{
 			return this->operator+=(a_data.operator ThisType());
 		}

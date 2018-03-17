@@ -14,7 +14,6 @@ namespace asd
 		using SeqKey = typename ThreadPool::SeqKey;
 		using Data = DATA;
 		using ThisType = Actx<ThreadPool, Data>;
-		using ContextOwner = ThisType;
 		class Context;
 		using Ctx = std::shared_ptr<Context>;
 		using Task = std::function<void(Ctx)>;
@@ -25,7 +24,7 @@ namespace asd
 			using TopRef = Global<ShardedHashMap<uintptr_t, Context>>;
 
 		public:
-			friend class ContextOwner;
+			friend class Actx<THREAD_POOL, DATA>;
 
 			Context(IN const Trace& a_start,
 					REF ThreadPool& a_threadPool,
@@ -36,7 +35,7 @@ namespace asd
 				, m_lock(a_ownerLock)
 				, m_dbg(a_start)
 			{
-				asd_ChkErrAndRet(m_lock == nullptr);
+				asd_ChkErrAndRet(m_lock == nullptr, "unknown error");
 			}
 
 			Context(REF Context* a_owner)
@@ -47,7 +46,7 @@ namespace asd
 				, m_useDefaultSeqKey(a_owner->m_useDefaultSeqKey)
 				, m_dbg(a_owner->m_dbg.startPoint)
 			{
-				asd_ChkErrAndRet(m_owner == nullptr);
+				asd_ChkErrAndRet(m_owner == nullptr, "unknown error");
 				if (m_useDefaultSeqKey)
 					m_defaultSeqKey = m_owner->m_defaultSeqKey;
 				m_dbg.loopDepth = m_owner->m_dbg.loopDepth + 1;
@@ -256,23 +255,23 @@ namespace asd
 
 		ThisType& EnableDefaultSeqKey(SeqKey&& a_key)
 		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, *this);
+			asd_ChkErrAndRetVal(m_ctx == nullptr, *this, "already started");
 			m_ctx->m_useDefaultSeqKey = true;
 			m_ctx->m_defaultSeqKey = std::forward<SeqKey>(a_key);
 		}
 
 		ThisType& Then(Task&& a_task)
 		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, *this);
-			asd_ChkErrAndRetVal(a_task == nullptr, *this);
+			asd_ChkErrAndRetVal(m_ctx == nullptr, *this, "already started");
+			asd_ChkErrAndRetVal(a_task == nullptr, *this, "invalid task");
 			m_ctx->m_tasks.emplace_back(std::forward<Task>(a_task));
 			return *this;
 		}
 
 		ThisType& Loop()
 		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, *this);
-			asd_ChkErrAndRetVal(m_loop && m_loop->m_ctx, *this);
+			asd_ChkErrAndRetVal(m_ctx == nullptr, *this, "already started");
+			asd_ChkErrAndRetVal(m_loop && m_loop->m_ctx, *this, "you maybe forgot to call EndLoop() at sub loop");
 			if (m_loop)
 				m_loop->InitLoop();
 			else
@@ -282,8 +281,8 @@ namespace asd
 
 		ThisType& While(WhileCondition&& a_cond)
 		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, *this);
-			asd_ChkErrAndRetVal(a_cond == nullptr, *this);
+			asd_ChkErrAndRetVal(m_ctx == nullptr, *this, "already started");
+			asd_ChkErrAndRetVal(a_cond == nullptr, *this, "invalid task");
 			return Loop().Then([this, cond=std::forward<WhileCondition>(a_cond)](Ctx ctx)
 			{
 				if (cond(ctx)) {
@@ -303,9 +302,9 @@ namespace asd
 
 		ThisType& EndLoop()
 		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, *this);
-			asd_ChkErrAndRetVal(m_owner == nullptr, *this);
-			asd_ChkErrAndRetVal(m_loop && m_loop->m_ctx, *this);
+			asd_ChkErrAndRetVal(m_ctx == nullptr, *this, "already started");
+			asd_ChkErrAndRetVal(m_owner == nullptr, *this, "is not Loop");
+			asd_ChkErrAndRetVal(m_loop && m_loop->m_ctx, *this, "you maybe forgot to call EndLoop() at sub loop");
 
 			return m_owner->Then([ctx=std::move(m_ctx)](Ctx)
 			{
@@ -316,7 +315,7 @@ namespace asd
 
 		ThisType& Finally(Task&& a_task)
 		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, *this);
+			asd_ChkErrAndRetVal(m_ctx == nullptr, *this, "already started");
 			asd_DAssert(m_ctx->m_finally == nullptr);
 			m_ctx->m_finally = std::forward<Task>(a_task);
 			return *this;
@@ -324,8 +323,8 @@ namespace asd
 
 		void Run()
 		{
-			asd_ChkErrAndRet(m_ctx == nullptr);
-			asd_ChkErrAndRet(m_loop && m_loop->m_ctx);
+			asd_ChkErrAndRet(m_ctx == nullptr, "already started");
+			asd_ChkErrAndRet(m_loop && m_loop->m_ctx, "you maybe forgot to call EndLoop() at sub loop");
 			auto ctx = std::move(m_ctx);
 			auto lock = std::move(m_lock);
 			Context::TopRef::Instance().Insert((uintptr_t)ctx.get(), ctx);

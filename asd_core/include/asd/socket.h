@@ -32,8 +32,8 @@ namespace asd
 			TCP,
 			UDP,
 		};
-		static int ToNativeCode(IN Type a_type) asd_noexcept;
-		static Type FromNativeCode(IN int a_type) asd_noexcept;
+		static int ToNativeCode(IN Type a_type);
+		static Type FromNativeCode(IN int a_type);
 
 		struct IoResult
 		{
@@ -50,68 +50,68 @@ namespace asd
 
 
 		Socket(IN Socket::Type a_socketType = Type::TCP,
-			   IN AddressFamily a_addressFamily = AddressFamily::IPv4) asd_noexcept;
+			   IN AddressFamily a_addressFamily = AddressFamily::IPv4);
 
-		Socket(MOVE Socket&& a_rval) asd_noexcept;
+		Socket(MOVE Socket&& a_rval);
 
-		Socket(IN Handle a_nativeHandle) asd_noexcept;
+		Socket(IN Handle a_nativeHandle);
 
 		Socket(IN Handle a_nativeHandle,
 			   IN Socket::Type a_socketType,
-			   IN AddressFamily a_addressFamily) asd_noexcept;
+			   IN AddressFamily a_addressFamily);
 
-		Socket& operator=(MOVE Socket&& a_rval) asd_noexcept;
-
-
-		virtual ~Socket() asd_noexcept;
+		Socket& operator=(MOVE Socket&& a_rval);
 
 
-		Handle GetNativeHandle() const asd_noexcept;
+		virtual ~Socket();
 
 
-		virtual void Close() asd_noexcept;
+		Handle GetNativeHandle() const;
+
+
+		virtual void Close();
 
 
 		// 실제 소켓을 생성하는 함수.
 		// a_force가 true이면 무조건 기존에 열려있던 소켓을 닫고 새로 연다.
 		// a_force가 false이면 소켓이 열려있지 않거나 a_addressFamily와 a_socketType가 기존과 다른 경우에만 새로 연다.
-		Error Init(IN bool a_force = false) asd_noexcept;
+		Error Init(IN bool a_force = false);
 
 		Error Init(IN Socket::Type a_socketType,
 				   IN AddressFamily a_addressFamily,
-				   IN bool a_force = false) asd_noexcept;
+				   IN bool a_force = false);
 
 
-		AddressFamily GetAddressFamily() const asd_noexcept;
+		AddressFamily GetAddressFamily() const;
 
-		Type GetSocektType() const asd_noexcept;
+		Type GetSocektType() const;
 
 
 		// a_addr의 AddressFamily를 적용하여 초기화한다.
-		Error Bind(IN const IpAddress& a_addr) asd_noexcept;
+		Error Bind(IN const IpAddress& a_addr);
 
 
 		// backlog 기본값 참고 : https://kldp.org/node/113987
 		static constexpr int DefaultBacklog = 1024;
-		Error Listen(IN int a_backlog = DefaultBacklog) asd_noexcept;
+		Error Listen(IN int a_backlog = DefaultBacklog);
 
 
 		Error Accept(OUT Socket& a_newbe,
-					 OUT IpAddress& a_address) asd_noexcept;
+					 OUT IpAddress& a_address);
 
 
 		// a_dest의 AddressFamily를 적용하여 초기화한다.
-		Error Connect(IN const IpAddress& a_dest) asd_noexcept;
+		Error Connect(IN const IpAddress& a_dest);
 
 
 		IoResult Send(IN const void* a_buffer,
 					  IN int a_bufferSize,
-					  IN int a_flags = 0) asd_noexcept;
+					  IN int a_flags = 0);
 
 		template <typename SizeType>
 		inline IoResult Send(IN const void* a_buffer,
 							 IN SizeType a_bufferSize,
-							 IN int a_flags = 0) asd_noexcept
+							 IN int a_flags = 0)
 		{
 			asd_ChkErrAndRetVal(a_bufferSize > std::numeric_limits<int>::max(),
 								IoResult(0, -1),
@@ -126,13 +126,13 @@ namespace asd
 		IoResult SendTo(IN const void* a_buffer,
 						IN int a_bufferSize,
 						IN const IpAddress& a_dest,
-						IN int a_flags = 0) asd_noexcept;
+						IN int a_flags = 0);
 
 		template <typename SizeType>
 		inline IoResult SendTo(IN const void* a_buffer,
 							   IN SizeType a_bufferSize,
 							   IN const IpAddress& a_dest,
-							   IN int a_flags = 0) asd_noexcept
+							   IN int a_flags = 0)
 		{
 			asd_ChkErrAndRetVal(a_bufferSize > std::numeric_limits<int>::max(),
 								IoResult(0, -1),
@@ -147,12 +147,12 @@ namespace asd
 
 		IoResult Recv(OUT void* a_buffer,
 					  IN int a_bufferSize,
-					  IN int a_flags = 0) asd_noexcept;
+					  IN int a_flags = 0);
 
 		template <typename SizeType>
 		inline IoResult Recv(OUT void* a_buffer,
 							 IN SizeType a_bufferSize,
-							 IN int a_flags = 0) asd_noexcept
+							 IN int a_flags = 0)
 		{
 			asd_ChkErrAndRetVal(a_bufferSize > std::numeric_limits<int>::max(),
 								IoResult(0, -1),
@@ -167,13 +167,13 @@ namespace asd
 		IoResult RecvFrom(OUT void* a_buffer,
 						  IN int a_bufferSize,
 						  OUT IpAddress& a_src,
-						  IN int a_flags = 0) asd_noexcept;
+						  IN int a_flags = 0);
 
 		template <typename SizeType>
 		inline IoResult RecvFrom(OUT void* a_buffer,
 								 IN SizeType a_bufferSize,
 								 OUT IpAddress& a_src,
-								 IN int a_flags = 0) asd_noexcept
+								 IN int a_flags = 0)
 		{
 			asd_ChkErrAndRetVal(a_bufferSize > std::numeric_limits<int>::max(),
 								IoResult(0, -1),
@@ -189,37 +189,37 @@ namespace asd
 		Error SetSockOpt(IN int a_level,
 						 IN int a_optname,
 						 IN const void* a_optval,
-						 IN uint32_t a_optlen) asd_noexcept;
+						 IN uint32_t a_optlen);
 		Error GetSockOpt(IN int a_level,
 						 IN int a_optname,
 						 OUT void* a_optval,
-						 INOUT uint32_t& a_optlen) const asd_noexcept;
+						 INOUT uint32_t& a_optlen) const;
 
-		Error SetSockOpt_ReuseAddr(IN bool a_set) asd_noexcept;
-		Error GetSockOpt_ReuseAddr(OUT bool& a_result) const asd_noexcept;
+		Error SetSockOpt_ReuseAddr(IN bool a_set);
+		Error GetSockOpt_ReuseAddr(OUT bool& a_result) const;
 
-		Error SetSockOpt_UseNagle(IN bool a_set) asd_noexcept;
-		Error GetSockOpt_UseNagle(OUT bool& a_result) const asd_noexcept;
+		Error SetSockOpt_UseNagle(IN bool a_set);
+		Error GetSockOpt_UseNagle(OUT bool& a_result) const;
 
 		Error SetSockOpt_Linger(IN bool a_use,
-								IN uint16_t a_sec) asd_noexcept;
+								IN uint16_t a_sec);
 		Error GetSockOpt_Linger(OUT bool& a_use,
-								OUT uint16_t& a_sec) const asd_noexcept;
+								OUT uint16_t& a_sec) const;
 
 
-		Error SetSockOpt_RecvBufSize(IN int a_byte) asd_noexcept;
-		Error GetSockOpt_RecvBufSize(OUT int& a_byte) const asd_noexcept;
+		Error SetSockOpt_RecvBufSize(IN int a_byte);
+		Error GetSockOpt_RecvBufSize(OUT int& a_byte) const;
 
-		Error SetSockOpt_SendBufSize(IN int a_byte) asd_noexcept;
-		Error GetSockOpt_SendBufSize(OUT int& a_byte) const asd_noexcept;
+		Error SetSockOpt_SendBufSize(IN int a_byte);
+		Error GetSockOpt_SendBufSize(OUT int& a_byte) const;
 
-		Error GetSockOpt_Error(OUT int& a_error) const asd_noexcept;
+		Error GetSockOpt_Error(OUT int& a_error) const;
 
-		Error SetNonblock(IN bool a_nonblock) asd_noexcept;
-		Error CheckNonblock(OUT bool& a_result) const asd_noexcept;
+		Error SetNonblock(IN bool a_nonblock);
+		Error CheckNonblock(OUT bool& a_result) const;
 
-		Error GetSockName(OUT IpAddress& a_addr) const asd_noexcept;
-		Error GetPeerName(OUT IpAddress& a_addr) const asd_noexcept;
+		Error GetSockName(OUT IpAddress& a_addr) const;
+		Error GetPeerName(OUT IpAddress& a_addr) const;
 
 
 	private:

@@ -27,20 +27,20 @@ namespace asd
 #endif
 
 
-	Timer::TimePoint Timer::Now() asd_noexcept
+	Timer::TimePoint Timer::Now()
 	{
 		return std::chrono::high_resolution_clock::now();
 	}
 
 
 	Timer::Millisec Timer::Diff(IN TimePoint a_before,
-								IN TimePoint a_after) asd_noexcept
+								IN TimePoint a_after)
 	{
 		return std::chrono::duration_cast<Millisec>(a_after - a_before);
 	}
 
 
-	Timer::Timer() asd_noexcept
+	Timer::Timer()
 	{
 		m_thread = std::thread([this]()
 		{
@@ -53,13 +53,13 @@ namespace asd
 	}
 
 
-	Timer::TimePoint Timer::CurrentOffset() asd_noexcept
+	Timer::TimePoint Timer::CurrentOffset()
 	{
 		return m_offset - Millisec(1);
 	}
 
 
-	void Timer::PollLoop() asd_noexcept
+	void Timer::PollLoop()
 	{
 		std::vector<std::deque<Task_ptr>> taskList;
 		taskList.reserve(100);
@@ -97,7 +97,7 @@ namespace asd
 
 
 	void Timer::PushTask(IN TimePoint a_timepoint,
-						 IN const Task_ptr& a_task) asd_noexcept
+						 IN const Task_ptr& a_task)
 	{
 		if (a_task == nullptr)
 			return;
@@ -107,7 +107,7 @@ namespace asd
 	}
 
 
-	Timer::~Timer() asd_noexcept
+	Timer::~Timer()
 	{
 		asd_BeginDestructor();
 

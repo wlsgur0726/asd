@@ -13,7 +13,7 @@ namespace asd
 		int m_nativeError = 0;
 		MString m_message;
 
-		MString ToString() const asd_noexcept;
+		MString ToString() const;
 	};
 
 	typedef std::vector<DBDiagInfo> DBDiagInfoList;
@@ -26,7 +26,7 @@ namespace asd
 		DBDiagInfoList m_diagInfoList;
 		DBException(IN const DBDiagInfoList& a_diagInfoList,
 					IN const char* a_lastFileName,
-					IN int a_lastFileLine) asd_noexcept;
+					IN int a_lastFileLine);
 	};
 
 
@@ -81,7 +81,7 @@ namespace asd
 
 		void Close();
 
-		virtual ~DBConnection() asd_noexcept;
+		virtual ~DBConnection();
 	};
 
 
@@ -93,7 +93,7 @@ namespace asd
 		DBStatementHandle_ptr m_handle;
 
 	public:
-		DBStatement() asd_noexcept;
+		DBStatement();
 
 
 		DBStatement(REF DBConnection& a_conHandle);
@@ -224,7 +224,7 @@ namespace asd
 		void Close();
 
 
-		virtual ~DBStatement() asd_noexcept;
+		virtual ~DBStatement();
 
 
 		// 결과 조회.
@@ -232,7 +232,7 @@ namespace asd
 		MString GetColumnName(IN uint16_t a_columnIndex);
 
 
-		uint16_t GetColumnCount() const asd_noexcept;
+		uint16_t GetColumnCount() const;
 
 
 		template <typename T>

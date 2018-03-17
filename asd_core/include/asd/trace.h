@@ -14,7 +14,7 @@ namespace asd
 		MString	File;
 		int		Line = 0;
 
-		MString ToString() const asd_noexcept;
+		MString ToString() const;
 	};
 
 
@@ -22,17 +22,17 @@ namespace asd
 	{
 	public:
 		StackTrace(IN uint32_t a_skip = 0,
-				   IN uint32_t a_count = 10) asd_noexcept;
+				   IN uint32_t a_count = 10);
 
 		struct ToStrOpt
 		{
-			ToStrOpt() asd_noexcept {}
+			ToStrOpt() {}
 			uint32_t	Indent = 4;
 			bool		IgnoreFirstIndent = false;
 			bool		NewlineHead = false;
 			bool		NewlineTail = false;
 		};
-		MString ToString(IN const ToStrOpt& a_opt = ToStrOpt()) const asd_noexcept;
+		MString ToString(IN const ToStrOpt& a_opt = ToStrOpt()) const;
 	};
 
 
@@ -49,9 +49,9 @@ namespace asd
 
 		Trace(IN const char* a_file,
 			  IN int a_line,
-			  IN const char* a_function) asd_noexcept;
+			  IN const char* a_function);
 
-		virtual MString ToString() const asd_noexcept;
+		virtual MString ToString() const;
 	};
 
 
@@ -70,7 +70,7 @@ namespace asd
 
 
 	void PushTrace(REF Tracer& a_tracer,
-				   IN const Trace& a_trace) asd_noexcept;
+				   IN const Trace& a_trace);
 #define asd_Trace\
 	asd::Trace(__FILE__, __LINE__, __FUNCTION__)
 
@@ -92,19 +92,19 @@ namespace asd
 						 IN const int a_line,
 						 IN const char* a_function,
 						 IN const char* a_comment = "",
-						 IN const ARGS&... a_args) asd_noexcept
+						 IN const ARGS&... a_args)
 			: Trace(a_file, a_line, a_function)
 			, Comment(MString::Format(a_comment, a_args...))
 		{
 		}
 
-		virtual MString ToString() const asd_noexcept override;
+		virtual MString ToString() const override;
 	};
 
 	using DebugTracer = std::deque<DebugInfo>;
 
 	void PushDebugTrace(REF DebugTracer& a_tracer,
-						MOVE DebugInfo&& a_trace) asd_noexcept;
+						MOVE DebugInfo&& a_trace);
 
 	// __VA_ARGS__ : format, ...
 #define asd_DebugInfo(...)\
