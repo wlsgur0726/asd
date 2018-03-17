@@ -602,7 +602,6 @@ namespace asd
 				return workerList[++RRSeq % workerList.size()];
 			}
 		};
-		std::shared_ptr<Data> m_data;
 
 
 		// 작업쓰레드 추가
@@ -966,6 +965,7 @@ namespace asd
 			}
 		}
 
+		std::shared_ptr<Data> m_data;
 	};
 }
 

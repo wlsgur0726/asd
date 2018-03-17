@@ -56,6 +56,7 @@
     <ClInclude Include="built-in\cppformat\fmt\format.h">
       <Filter>built-in\cppformat</Filter>
     </ClInclude>
+    <ClInclude Include="include\asd\actx.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\address.cpp" />

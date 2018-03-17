@@ -282,7 +282,7 @@ namespace asdtest_threadpool
 			tp.Start();
 
 			ns sleepTime = ns(1000 * 100);
-			ms testTime = ms(1000 * 60 * 10);
+			ms testTime = ms(1000 * 60 * 1);
 
 			auto threads = CreatePushThread(&tp,
 											range,

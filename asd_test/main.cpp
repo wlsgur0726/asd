@@ -22,12 +22,12 @@
 int main(int argc, char** argv)
 {
 	Test();
-#if 1
+#if 0
 	std::vector<char*> args;
 	args.emplace_back(argv[0]);
 
 	//char* filter = "--gtest_filter=ThreadPool.AutoScaling";
-	char* filter = "--gtest_filter=Redis.*";
+	char* filter = "--gtest_filter=Actx.*";
 	//char* filter = "--gtest_filter=Semaphore.PerfTest*";
 	args.emplace_back(filter);
 

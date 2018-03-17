@@ -41,10 +41,10 @@ namespace asd
 	{
 		using TimePoint = std::chrono::system_clock::time_point;
 
-		const TimePoint	Time;
-		const uint32_t	TID;
+		TimePoint		Time;
+		uint32_t		TID;
 		const char*		File;
-		const int		Line;
+		int				Line;
 		const char*		Function;
 
 		Trace(IN const char* a_file,

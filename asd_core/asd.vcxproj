@@ -177,6 +177,7 @@
     <ClInclude Include="built-in\cppformat\fmt\printf.h" />
     <ClInclude Include="built-in\cppformat\fmt\string.h" />
     <ClInclude Include="built-in\cppformat\fmt\time.h" />
+    <ClInclude Include="include\asd\actx.h" />
     <ClInclude Include="include\asd\address.h" />
     <ClInclude Include="include\asd\asdbase.h" />
     <ClInclude Include="include\asd\caster.h" />

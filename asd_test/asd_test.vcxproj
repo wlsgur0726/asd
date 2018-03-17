@@ -166,6 +166,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Profiling|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="test.cpp" />
+    <ClCompile Include="test_actx.cpp" />
     <ClCompile Include="test_classutil.cpp" />
     <ClCompile Include="test_datetime.cpp" />
     <ClCompile Include="test_exception.cpp" />
