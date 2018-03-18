@@ -901,9 +901,9 @@ namespace asd
 					double cpu = CpuUsage();
 					if (cpu < a_data->option.AutoScaling.CpuUsageLow) {
 						uint64_t sleepingThreadCount = a_data->stats.sleepingThreadCount;
-						if (sleepingThreadCount > max(0.1*a_data->workers.size(), 1))
+						if (sleepingThreadCount > max(1.0, a_data->workers.size()*0.1))
 							return [&](){ DeleteWorker(a_data.get(), nullptr); };
-						if (sleepingThreadCount > 0)
+						if (sleepingThreadCount > max(1.0, a_data->workers.size()*0.02))
 							return s_none;
 						return [&](){ AddWorker(a_data, a_data->option.AutoScaling.IncreaseCount); };
 					}

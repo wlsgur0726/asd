@@ -230,7 +230,11 @@ namespace asdtest_threadpool
 			double cpu = asd::CpuUsage();
 
 			uint64_t cur = g_count.load();
-			print("  total          :  {}\n", stats.totalProcCount.load());
+			auto push = stats.totalPushCount.load();
+			auto proc = stats.totalProcCount.load();
+			print("  push           :  {}\n", push);
+			print("  proc           :  {}\n", proc);
+			print("  push - proc    :  {}\n", push - proc);
 			print("  conflict       :  {}\n", stats.totalConflictCount.load());
 			print("  conflict rate  :  {} %%\n", stats.TotalConflictRate() * 100);
 			print("  waiting time   :  {} ms\n", stats.RecentWaitingTimeMs());
@@ -274,19 +278,20 @@ namespace asdtest_threadpool
 
 			g_count = 0;
 			startTime = clock::now();
-			opt.AutoScaling.CpuUsageHigh = 0.95;
-			opt.AutoScaling.CpuUsageLow = 0.8;
-			opt.StartThreadCount = 100;
+			opt.AutoScaling.CpuUsageHigh = 0.90;
+			opt.AutoScaling.CpuUsageLow = 0.75;
+			opt.AutoScaling.IncreaseCount = 10;
+			opt.StartThreadCount = 300;
 
 			tp.Reset(opt);
 			tp.Start();
 
-			ns sleepTime = ns(1000 * 100);
-			ms testTime = ms(1000 * 60 * 1);
+			ns sleepTime = ns(1000 * 1000 * 10);
+			ms testTime = ms(1000 * 60 * 10);
 
 			auto threads = CreatePushThread(&tp,
-											range,
-											(sleepTime.count()/500) * testTime.count(),
+											0/*range*/,
+											(sleepTime.count()/(1000*100)) * testTime.count(),
 											2,
 											testTime,
 											sleepTime);

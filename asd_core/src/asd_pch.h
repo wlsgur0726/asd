@@ -9,7 +9,8 @@
 #	if defined(asd_Compiler_MSVC)
 #		define _WINSOCK_DEPRECATED_NO_WARNINGS
 #	endif
-#
+#	define UMDF_USING_NTSTATUS
+#	include <ntstatus.h>
 #	include <WinSock2.h>
 #	include <Windows.h>
 #
