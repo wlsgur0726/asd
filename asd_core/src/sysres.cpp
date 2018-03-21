@@ -343,12 +343,12 @@ namespace asd
 		return CPU::Instance().RecentAvg();
 	}
 
-	Timer::Millisec GetCpuUsageCheckCycle()
+	Timer::Millisec GetCpuUsageCheckInterval()
 	{
 		return CPU::Instance().GetInterval();
 	}
 
-	Timer::Millisec SetCpuUsageCheckCycle(IN Timer::Millisec a_cycle)
+	Timer::Millisec SetCpuUsageCheckInterval(IN Timer::Millisec a_cycle)
 	{
 		return CPU::Instance().SetInterval(a_cycle);
 	}

@@ -25,12 +25,12 @@ namespace asd
 			double CpuUsageLow = (1.0 / Get_HW_Concurrency()) * (Get_HW_Concurrency() - 1);
 			uint32_t MinThreadCount = 1;
 			uint32_t MaxThreadCount = std::numeric_limits<uint32_t>::max();
-			Timer::Millisec Cycle = Timer::Millisec(1000);
+			Timer::Millisec Interval = Timer::Millisec(1000);
 			uint32_t IncreaseCount = Get_HW_Concurrency();
 		} AutoScaling;
 
 		bool CollectStats = false;
-		Timer::Millisec CollectStats_Cycle = Timer::Millisec(1000);
+		Timer::Millisec CollectStats_Interval = Timer::Millisec(1000);
 
 		bool UseNotifier = false;
 		int SpinWaitCount = 5;
@@ -107,14 +107,14 @@ namespace asd
 			recentWaitingCount = WaitingCount();
 		}
 
-		void Push()
+		uint64_t Push()
 		{
-			++totalPushCount;
+			return ++totalPushCount;
 		}
 
-		void Pop()
+		uint64_t Pop()
 		{
-			++totalProcCount;
+			return ++totalProcCount;
 		}
 
 		atomic_t totalPushCount;
@@ -228,9 +228,12 @@ namespace asd
 				auto MinCnt = data->option.AutoScaling.MinThreadCount;
 				auto MaxCnt = data->option.AutoScaling.MaxThreadCount;
 				if (MinCnt > MaxCnt || MaxCnt == 0)
-					asd_RaiseException("invalid AutoScaling option");
+					asd_RaiseException("invalid AutoScaling option - ThreadCount");
+				if (data->option.AutoScaling.IncreaseCount <= 0)
+					asd_RaiseException("invalid AutoScaling option - IncreaseCount");
 				startThreadCount = max(startThreadCount, MinCnt);
 				startThreadCount = min(startThreadCount, MaxCnt);
+				data->curIncrCnt = data->option.AutoScaling.IncreaseCount;
 			}
 			AddWorker(data, startThreadCount);
 
@@ -459,6 +462,8 @@ namespace asd
 			TaskQueue* publicQueue = &queue[0];
 			TaskQueue* privateQueue = &queue[1];
 
+			bool selfDeleting = false;
+
 			bool sleep = false; // UseCenterQueue() == false 경우에만 사용
 			Semaphore notify;
 		};
@@ -590,6 +595,10 @@ namespace asd
 			TaskQueue centerQueue;
 			std::unordered_set<Worker*> standby;
 
+			// AutoScailing
+			uint64_t prevWaitCnt = 0;
+			uint32_t curIncrCnt = 0;
+			size_t selfDeletingCnt = 0;
 
 			Data(IN const ThreadPoolOption& a_option)
 				: option(a_option)
@@ -625,7 +634,7 @@ namespace asd
 				return nullptr;
 
 			auto lock = GetSharedLock(a_data->lock);
-			if (a_data->run == false)
+			if (!a_data->run)
 				return nullptr;
 
 			auto timer = a_data->timer ? a_data->timer.get() : &Timer::GlobalInstance();
@@ -646,7 +655,7 @@ namespace asd
 
 			auto lock = GetSharedLock(a_data->lock);
 
-			if (!a_data->run || a_data->workerList.empty())
+			if (!a_data->run)
 				return nullptr;
 
 			Notifier notifier;
@@ -741,6 +750,18 @@ namespace asd
 
 				workerLock.unlock();
 
+				if (a_data->option.AutoScaling.Use) {
+					double cpu = CpuUsage();
+					if (cpu > a_data->option.AutoScaling.CpuUsageHigh) {
+						auto lock = GetLock(a_data->lock);
+						if (a_data->workers.size() > Get_HW_Concurrency() + a_data->selfDeletingCnt) {
+							a_worker->selfDeleting = true;
+							a_data->selfDeletingCnt++;
+							return false;
+						}
+					}
+				}
+
 				Notifier notifier;
 				if (a_data->option.UseCenterQueue()) {
 					Worker* responsibleWorker = nullptr;
@@ -832,7 +853,7 @@ namespace asd
 				}
 			}
 
-			DeleteWorker(a_data.get(), &curWorker);
+			DeleteWorker(a_data, &curWorker);
 
 			auto workerLock = GetLock(curWorker.lock);
 			asd_RAssert(curWorker.publicQueue->empty(), "exist remain task");
@@ -842,7 +863,7 @@ namespace asd
 
 
 		// 작업쓰레드 제거
-		static void DeleteWorker(REF Data* a_data,
+		static void DeleteWorker(REF std::shared_ptr<Data> a_data,
 								 REF Worker* a_worker)
 		{
 			auto lock = GetLock(a_data->lock);
@@ -851,6 +872,7 @@ namespace asd
 			const size_t last = a_data->workerList.size() - 1;
 
 			if (AutoScalingProc) {
+				a_data->curIncrCnt = a_data->option.AutoScaling.IncreaseCount;
 				if (a_data->workerList.size() <= max(a_data->option.AutoScaling.MinThreadCount, 1U))
 					return;
 				a_worker = a_data->workerList[last];
@@ -862,12 +884,15 @@ namespace asd
 
 			asd_ChkErrAndRet(a_worker != it->second, "unknown error");
 
+			if (a_worker->selfDeleting)
+				a_data->selfDeletingCnt--;
+
 			Notifier notifier;
 			{
 				auto centerQueueLock = GetLock(a_data->centerQueueLock);
 				auto workerLock = GetLock(a_worker->lock);
 				a_worker->run = false;
-				notifier = NeedNotify(a_data, a_worker);
+				notifier = NeedNotify(a_data.get(), a_worker);
 			}
 			notifier.Notify();
 
@@ -879,6 +904,9 @@ namespace asd
 			a_data->workers.erase(it);
 			a_data->stats.threadCount = a_data->workers.size();
 			asd_RAssert(a_data->workers.size() == a_data->workerList.size(), "unknown error");
+
+			if (a_data->run && a_data->workers.empty())
+				AddWorker(a_data, 1);
 		}
 
 
@@ -892,34 +920,55 @@ namespace asd
 			{
 				auto lock = GetSharedLock(a_data->lock);
 
-				if (!a_data->run || a_data->workers.empty())
+				if (!a_data->run)
 					return;
 
-				auto proc([&]() -> std::function<void()>
-				{
+				size_t workerCount = a_data->workers.size();
+
+				auto proc = [&]() -> std::function<void()>{
 					static const auto s_none = [](){};
+
+					uint64_t waitCnt = a_data->stats.WaitingCount();
+					if (0 < a_data->prevWaitCnt && a_data->prevWaitCnt < waitCnt) {
+						double addRate = waitCnt / (double)a_data->prevWaitCnt;
+						a_data->curIncrCnt = (uint32_t)std::ceil(a_data->curIncrCnt * addRate);
+					}
+					a_data->prevWaitCnt = waitCnt;
+
+					if (workerCount <= 0) {
+						a_data->curIncrCnt = a_data->option.AutoScaling.IncreaseCount;
+						return [&](){ AddWorker(a_data, 1); };
+					}
+
 					double cpu = CpuUsage();
 					if (cpu < a_data->option.AutoScaling.CpuUsageLow) {
 						uint64_t sleepingThreadCount = a_data->stats.sleepingThreadCount;
-						if (sleepingThreadCount > max(1.0, a_data->workers.size()*0.1))
-							return [&](){ DeleteWorker(a_data.get(), nullptr); };
-						if (sleepingThreadCount > max(1.0, a_data->workers.size()*0.02))
+						if (sleepingThreadCount > max(1.0, workerCount*0.2) || workerCount>a_data->option.AutoScaling.MaxThreadCount) {
+							sleepingThreadCount = (uint64_t)(sleepingThreadCount * 0.1);
+							return [=](){
+								for (auto i=sleepingThreadCount; i>0; --i)
+									DeleteWorker(a_data, nullptr);
+							};
+						}
+						if (sleepingThreadCount > max(1.0, workerCount*0.02))
 							return s_none;
-						return [&](){ AddWorker(a_data, a_data->option.AutoScaling.IncreaseCount); };
+						return [&](){ AddWorker(a_data, a_data->curIncrCnt); };
 					}
 					else if (cpu > a_data->option.AutoScaling.CpuUsageHigh) {
-						if (a_data->workers.size() <= 1)
+						a_data->curIncrCnt = a_data->option.AutoScaling.IncreaseCount;
+						if (workerCount <= 1)
 							return s_none;
-						return [&](){ DeleteWorker(a_data.get(), nullptr); };
+						return [&](){ DeleteWorker(a_data, nullptr); };
 					}
 					return s_none;
-				}());
+				}();
 				lock.unlock_shared();
 				proc();
+
 				PushAutoScalingTask(a_data);
 			});
 
-			auto at = Timer::Now() + max(GetCpuUsageCheckCycle(), a_data->option.AutoScaling.Cycle);
+			auto at = Timer::Now() + max(GetCpuUsageCheckInterval(), a_data->option.AutoScaling.Interval);
 			if (a_data->timer != nullptr) {
 				a_data->timer->PushTask(at, task);
 			}
@@ -953,7 +1002,7 @@ namespace asd
 				PushStatTask(a_data);
 			});
 
-			auto at = Timer::Now() + a_data->option.CollectStats_Cycle;
+			auto at = Timer::Now() + a_data->option.CollectStats_Interval;
 			if (a_data->timer != nullptr) {
 				a_data->timer->PushTask(at, task);
 			}
@@ -968,4 +1017,3 @@ namespace asd
 		std::shared_ptr<Data> m_data;
 	};
 }
-

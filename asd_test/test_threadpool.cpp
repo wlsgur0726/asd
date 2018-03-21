@@ -280,26 +280,31 @@ namespace asdtest_threadpool
 			startTime = clock::now();
 			opt.AutoScaling.CpuUsageHigh = 0.90;
 			opt.AutoScaling.CpuUsageLow = 0.75;
-			opt.AutoScaling.IncreaseCount = 10;
 			opt.StartThreadCount = 300;
 
 			tp.Reset(opt);
 			tp.Start();
 
 			ns sleepTime = ns(1000 * 1000 * 10);
-			ms testTime = ms(1000 * 60 * 10);
+			ms testTime = ms(1000 * 60 * 2);
 
 			auto threads = CreatePushThread(&tp,
 											0/*range*/,
-											(sleepTime.count()/(1000*100)) * testTime.count(),
+											(sleepTime.count()/(1000*100)) * (testTime.count()/2),
 											2,
-											testTime,
+											testTime / 2,
 											sleepTime);
 
+			bool cpuBound = false;
 			for (auto printTime=startTime; printTime<startTime+testTime;) {
 				printStats();
 				printTime += ms(1000);
 				std::this_thread::sleep_until(printTime);
+				if (!cpuBound && printTime>startTime+(testTime/2)) {
+					cpuBound = true;
+					for (auto t=4; t>0; --t)
+						RunTask(&tp, 0, ms(0));
+				}
 			}
 			for (auto& t : threads)
 				t.join();
