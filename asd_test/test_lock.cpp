@@ -162,4 +162,41 @@ namespace asdtest_lock
 	{
 		Counting(1, g_handleTask);
 	}
+
+
+	TEST(Lock, AsyncMutex)
+	{
+		asd::AsyncMutex amtx;
+		auto Test = [&](int seq)
+		{
+			auto sleep = [](){std::this_thread::sleep_for(std::chrono::milliseconds(10));};
+			asd::puts(asd::MString::Format("seq:{}, ready", seq));
+
+			amtx.GetLock([=](auto lock)
+			{
+				sleep();
+				asd::puts(asd::MString::Format("seq:{}, run1", seq));
+
+				std::thread([=]() mutable
+				{
+					sleep();
+					asd::puts(asd::MString::Format("seq:{}, run2", seq));
+
+					std::thread([=]() mutable
+					{
+						sleep();
+						asd::puts(asd::MString::Format("seq:{}, run3", seq));
+						lock.reset();
+					}).detach();
+				}).detach();
+			});
+		};
+
+		for (int i=1; i<=5; ++i)
+			Test(i);
+
+		asd::Semaphore wait;
+		amtx.GetLock([&](asd::AsyncMutex::Lock) { wait.Post(); });
+		wait.Wait();
+	}
 }

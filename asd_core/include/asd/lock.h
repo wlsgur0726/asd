@@ -95,6 +95,26 @@ namespace asd
 
 
 
+	struct AsyncMutexData;
+	class AsyncMutex
+	{
+	public:
+		using Lock = std::shared_ptr<AsyncMutexData>;
+		using Callback = std::function<void(IN Lock)>;
+
+		AsyncMutex();
+
+		void GetLock(Callback&& a_callback);
+
+		size_t WaitingCount() const;
+
+	private:
+		std::shared_ptr<AsyncMutexData> m_data;
+		AsyncMutex(IN const AsyncMutex&) = delete;
+	};
+
+
+
 	template <typename MUTEX_TYPE>
 	class Lock final
 	{

@@ -2,7 +2,8 @@
 #include "asd/lock.h"
 #include "asd/threadutil.h"
 #include <thread>
-#include<unordered_map>
+#include <unordered_map>
+#include <queue>
 
 #if defined(asd_Platform_Windows)	
 #	include <Windows.h>
@@ -591,5 +592,68 @@ namespace asd
 	void SharedMutex::unlock_shared()
 	{
 		m_data->unlock_shared();
+	}
+
+
+
+	struct AsyncMutexData : public std::enable_shared_from_this<AsyncMutexData>
+	{
+		Mutex m_lock;
+		uint32_t m_seq = 0;
+		uint32_t m_owned = 0;
+		std::queue<std::pair<uint32_t, AsyncMutex::Callback>> m_waiting;
+
+		uint32_t GetNextSeq()
+		{
+			uint32_t s;
+			do {
+				s = ++m_seq;
+			} while (s == 0);
+			return s;
+		}
+
+		void Next(AsyncMutex::Callback&& a_callback = nullptr)
+		{
+			auto lock = GetLock(m_lock);
+
+			if (a_callback) {
+				auto seq = GetNextSeq();
+				m_waiting.emplace(seq, std::forward<AsyncMutex::Callback>(a_callback));
+				if (m_owned != 0)
+					return;
+			}
+
+			if (m_waiting.empty()) {
+				m_owned = 0;
+				return;
+			}
+
+			auto owner = std::move(m_waiting.front());
+			m_waiting.pop();
+			m_owned = owner.first;
+
+			lock.unlock();
+
+			owner.second(AsyncMutex::Lock(this, [data=shared_from_this()](AsyncMutexData*) {
+				data->Next();
+			}));
+		}
+	};
+
+	AsyncMutex::AsyncMutex()
+		: m_data(new AsyncMutexData)
+	{
+	}
+
+	void AsyncMutex::GetLock(Callback&& a_callback)
+	{
+		asd_ChkErrAndRet(a_callback == nullptr, "a_callback is null");
+		m_data->Next(std::forward<Callback>(a_callback));
+	}
+
+	size_t AsyncMutex::WaitingCount() const
+	{
+		auto lock = asd::GetLock(m_data->m_lock);
+		return m_data->m_waiting.size();
 	}
 }
