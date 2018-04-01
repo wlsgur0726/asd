@@ -6,14 +6,12 @@
 
 namespace asd
 {
-	template <typename THREAD_POOL, typename DATA>
+	template <typename DATA>
 	class Actx
 	{
 	public:
-		using ThreadPool = THREAD_POOL;
-		using SeqKey = typename ThreadPool::SeqKey;
 		using Data = DATA;
-		using ThisType = Actx<ThreadPool, Data>;
+		using ThisType = Actx<Data>;
 		class Context;
 		using Ctx = std::shared_ptr<Context>;
 		using Task = std::function<void(Ctx)>;
@@ -24,14 +22,12 @@ namespace asd
 			using TopRef = Global<ShardedHashMap<uintptr_t, Context>>;
 
 		public:
-			friend class Actx<THREAD_POOL, DATA>;
+			friend class Actx<DATA>;
 
 			Context(IN const Trace& a_start,
-					REF ThreadPool& a_threadPool,
 					REF std::shared_ptr<Data>& a_data,
 					REF std::shared_ptr<Mutex>& a_ownerLock)
-				: threadPool(a_threadPool)
-				, data(a_data)
+				: data(a_data)
 				, m_lock(a_ownerLock)
 				, m_dbg(a_start)
 			{
@@ -40,15 +36,11 @@ namespace asd
 
 			Context(REF Context* a_owner)
 				: m_owner(a_owner)
-				, threadPool(a_owner->threadPool)
 				, data(a_owner->data)
 				, m_lock(a_owner->m_lock)
-				, m_useDefaultSeqKey(a_owner->m_useDefaultSeqKey)
 				, m_dbg(a_owner->m_dbg.startPoint)
 			{
 				asd_ChkErrAndRet(m_owner == nullptr, "unknown error");
-				if (m_useDefaultSeqKey)
-					m_defaultSeqKey = m_owner->m_defaultSeqKey;
 				m_dbg.loopDepth = m_owner->m_dbg.loopDepth + 1;
 			}
 
@@ -57,118 +49,151 @@ namespace asd
 				Clear();
 			}
 
-			ThreadPool& threadPool;
 			std::shared_ptr<Data> data;
 
-			void Next()
+			nullptr_t Next()
 			{
 				auto lock = GetLock(*m_lock);
 				if (m_fin)
-					return;
-
-				if (m_useDefaultSeqKey)
-					threadPool.PushSeq(m_defaultSeqKey, InvokeFunc());
-				else
-					threadPool.Push(InvokeFunc());
+					return nullptr;
+				Invoke();
+				return nullptr;
 			}
-
-			void Next(SeqKey&& a_seqKey)
+			template <typename ThreadPool>
+			inline auto Next(REF ThreadPool& a_threadPool)
 			{
-				auto lock = GetLock(*m_lock);
-				if (m_fin)
-					return;
-
-				threadPool.PushSeq(std::forward<SeqKey>(a_seqKey),
-								   InvokeFunc());
+				return a_threadPool.Push([ctx=shared_from_this()]()
+				{
+					ctx->Next();
+				});
 			}
-
-			void Finish()
+			template <typename ThreadPool, typename SeqKey>
+			inline auto Next(REF ThreadPool& a_threadPool,
+							 SeqKey&& a_seqKey)
 			{
-				auto lock = GetLock(*m_lock);
-				Finish_Internal();
-				Next();
+				return a_threadPool.PushSeq(std::forward<SeqKey>(a_seqKey), [ctx=shared_from_this()]()
+				{
+					ctx->Next();
+				});
 			}
 
-			void Finish(SeqKey&& a_seqKey)
+			nullptr_t Finish()
 			{
 				auto lock = GetLock(*m_lock);
 				Finish_Internal();
-				Next(std::forward<SeqKey>(a_seqKey));
+				return Next();
 			}
-
-			void Continue()
+			template <typename ThreadPool>
+			inline auto Finish(REF ThreadPool& a_threadPool)
 			{
-				Finish();
+				return a_threadPool.Push([ctx=shared_from_this()]()
+				{
+					ctx->Finish();
+				});
 			}
-
-			void Continue(SeqKey&& a_seqKey)
+			template <typename ThreadPool, typename SeqKey>
+			inline auto Finish(REF ThreadPool& a_threadPool,
+							   SeqKey&& a_seqKey)
 			{
-				Finish(std::forward<SeqKey>(a_seqKey));
+				return a_threadPool.Push(std::forward<SeqKey>(a_seqKey), [ctx=shared_from_this()]()
+				{
+					ctx->Finish();
+				});
 			}
 
-			void Break()
+			nullptr_t Continue()
+			{
+				return Finish();
+			}
+			template <typename ThreadPool>
+			inline auto Continue(REF ThreadPool& a_threadPool)
+			{
+				return a_threadPool.Push([ctx=shared_from_this()]()
+				{
+					ctx->Continue();
+				});
+			}
+			template <typename ThreadPool, typename SeqKey>
+			inline auto Continue(REF ThreadPool& a_threadPool,
+								 SeqKey&& a_seqKey)
+			{
+				return a_threadPool.PushSeq(std::forward<SeqKey>(a_seqKey), [ctx=shared_from_this()]()
+				{
+					ctx->Continue();
+				});
+			}
+
+			nullptr_t Break()
 			{
 				auto lock = GetLock(*m_lock);
 				Break_Internal();
-				Finish();
+				return Finish();
 			}
-
-			void Break(SeqKey&& a_seqKey)
+			template <typename ThreadPool>
+			inline auto Break(REF ThreadPool& a_threadPool)
 			{
-				auto lock = GetLock(*m_lock);
-				Break_Internal();
-				Finish(std::forward<SeqKey>(a_seqKey));
+				return a_threadPool.Push([ctx=shared_from_this()]()
+				{
+					ctx->Break();
+				});
+			}
+			template <typename ThreadPool, typename SeqKey>
+			inline auto Break(REF ThreadPool& a_threadPool,
+							  SeqKey&& a_seqKey)
+			{
+				return a_threadPool.Push(std::forward<SeqKey>(a_seqKey), [ctx=shared_from_this()]()
+				{
+					ctx->Break();
+				});
 			}
 
 		private:
-			inline auto InvokeFunc()
+			inline void Invoke()
 			{
-				asd_DAssert(++m_dbg.callNext == 1);
-				return [this, ctx=shared_from_this()]() mutable
-				{
-					auto lock = GetLock(*m_lock);
+				if (m_fin)
+					return;
 
-					asd_DAssert(--m_dbg.callNext == 0);
-					if (m_fin)
-						return;
-
-					m_fin = m_cur >= m_tasks.size();
-					if (!m_fin) {
-						Task& task = m_tasks[m_cur];
+				auto ctx = shared_from_this();
+				m_fin = m_cur >= m_tasks.size();
+				if (!m_fin) {
+					if (m_owner) {
+						Task& task = m_tasks[m_cur++];
 						asd_DAssert(task);
 						if (task)
 							task(ctx);
-
-						if (m_owner)
-							++m_cur;
-						else
-							m_tasks.pop_front();
 					}
 					else {
-						if (m_finally)
-							m_finally(ctx);
-
-						if (m_owner && m_fin) {
-							if (m_continue) {
-								Reset();
-								Next();
-							}
-							else {
-								auto owner = m_owner;
-								if (owner->m_owner == nullptr) {
-									Clear();
-									owner->m_loops.erase(ctx);
-								}
-								owner->Next();
-							}
-							return;
-						}
-						if (!m_owner) {
-							Clear();
-							TopRef::Instance().Erase((uintptr_t)this);
-						}
+						Task task = std::move(m_tasks.front());
+						m_tasks.pop_front();
+						asd_DAssert(task);
+						if (task)
+							task(ctx);
 					}
-				};
+				}
+				else {
+					if (m_finally)
+						m_finally(ctx);
+
+					if (m_owner && m_fin) {
+						if (m_continue) {
+							Reset();
+							Next();
+						}
+						else {
+							auto owner = m_owner;
+							if (owner->m_owner == nullptr) {
+								Clear();
+								owner->m_loops.erase(ctx);
+							}
+							owner->Next();
+						}
+						return;
+					}
+					if (!m_owner) {
+						Clear();
+						TopRef::Instance().Erase((uintptr_t)this);
+					}
+				}
 			}
 
 			inline void Finish_Internal()
@@ -213,14 +238,11 @@ namespace asd
 			std::deque<Task> m_tasks;
 			Task m_finally;
 			bool m_continue = true;
-			bool m_useDefaultSeqKey = false;
-			SeqKey m_defaultSeqKey;
 
 			struct Dbg
 			{
 				Trace startPoint;
 				int loopDepth = 0;
-				int callNext = 0;
 				Dbg(IN const Trace& a_start)
 					: startPoint(a_start)
 				{
@@ -230,7 +252,6 @@ namespace asd
 
 
 		Actx(IN const Trace& a_start,
-			 REF ThreadPool& a_threadPool,
 			 REF std::shared_ptr<Data> a_data,
 			 REF std::shared_ptr<Mutex> a_ownerLock)
 			: m_lock(std::move(a_ownerLock))
@@ -238,7 +259,7 @@ namespace asd
 			if (m_lock == nullptr)
 				m_lock.reset(new Mutex);
 			m_lock->lock();
-			m_ctx.reset(new Context(a_start, a_threadPool, a_data, m_lock));
+			m_ctx.reset(new Context(a_start, a_data, m_lock));
 		}
 
 		Actx(REF ThisType* a_owner)
@@ -252,13 +273,6 @@ namespace asd
 
 		Actx(MOVE ThisType&& a_actx) = default;
 		ThisType& operator=(MOVE ThisType&& a_actx) = default;
-
-		ThisType& EnableDefaultSeqKey(SeqKey&& a_key)
-		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, *this, "already started");
-			m_ctx->m_useDefaultSeqKey = true;
-			m_ctx->m_defaultSeqKey = std::forward<SeqKey>(a_key);
-		}
 
 		ThisType& Then(Task&& a_task)
 		{
@@ -321,16 +335,18 @@ namespace asd
 			return *this;
 		}
 
-		void Run()
+		template <typename... ThreadPoolArgs>
+		auto Run(ThreadPoolArgs&&... a_args) -> decltype(Ctx()->Next(std::forward<ThreadPoolArgs>(a_args)...))
 		{
-			asd_ChkErrAndRet(m_ctx == nullptr, "already started");
-			asd_ChkErrAndRet(m_loop && m_loop->m_ctx, "you maybe forgot to call EndLoop() at sub loop");
+			asd_ChkErrAndRetVal(m_ctx == nullptr, nullptr, "already started");
+			asd_ChkErrAndRetVal(m_loop && m_loop->m_ctx, nullptr, "you maybe forgot to call EndLoop() at sub loop");
 			auto ctx = std::move(m_ctx);
 			auto lock = std::move(m_lock);
 			Context::TopRef::Instance().Insert((uintptr_t)ctx.get(), ctx);
-			ctx->Next();
+			auto ret = ctx->Next(std::forward<ThreadPoolArgs>(a_args)...);
 			if (lock)
 				lock->unlock();
+			return ret;
 		}
 
 		virtual ~Actx()
@@ -361,19 +377,16 @@ namespace asd
 	};
 
 
-	template <typename ThreadPool, typename Data>
-	Actx<ThreadPool, Data> CreateActx(IN const Trace& a_start,
-									  REF ThreadPool& a_threadPool,
-									  REF std::shared_ptr<Data> a_data)
+	template <typename Data>
+	Actx<Data> CreateActx(IN const Trace& a_start,
+						  REF std::shared_ptr<Data> a_data)
 	{
-		return Actx<ThreadPool, Data>(a_start, a_threadPool, a_data, nullptr);
+		return Actx<Data>(a_start, a_data, nullptr);
 	}
 
 
-	template <typename ThreadPool>
-	Actx<ThreadPool, nullptr_t> CreateActx(IN const Trace& a_start,
-										   REF ThreadPool& a_threadPool)
+	Actx<nullptr_t> CreateActx(IN const Trace& a_start)
 	{
-		return Actx<ThreadPool, nullptr_t>(a_start, a_threadPool, nullptr, nullptr);
+		return Actx<nullptr_t>(a_start, nullptr, nullptr);
 	}
 }

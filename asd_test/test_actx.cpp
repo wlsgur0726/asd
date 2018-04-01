@@ -12,7 +12,8 @@ namespace asdtest_actx
 
 		void PrintLine(int line)
 		{
-			::printf("  %d -> %d\n", before, line);
+			auto tid = asd::GetCurrentThreadID();
+			::printf("  tid:%u, %d -> %d\n", tid, before, line);
 			before = line;
 		}
 		~TestData()
@@ -29,21 +30,21 @@ namespace asdtest_actx
 		tp.Start();
 
 		auto data = std::make_shared<TestData>();
-		auto actx = asd::CreateActx(asd_Trace, tp, data);
+		auto actx = asd::CreateActx(asd_Trace, data);
 		using Ctx = decltype(actx.CtxT());
 		actx
-		.Then([](Ctx ctx){
+		.Then([&](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
-			std::thread([ctx](){ ctx->Next(); }).detach();
+			ctx->Next(tp);
 		})
-		.Then([](Ctx ctx){
+		.Then([&](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
-			std::thread([ctx](){ ctx->Finish(); }).detach();
+			ctx->Finish(tp);
 		})
-		.Then([](Ctx ctx){
+		.Then([&](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
 			FAIL();
-			std::thread([ctx](){ ctx->Next(); }).detach();
+			ctx->Next(tp);
 		})
 		.Finally([](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
@@ -51,7 +52,7 @@ namespace asdtest_actx
 		});
 
 		data->before = __LINE__;
-		actx.Run();
+		actx.Run(tp);
 
 		data->event.Wait();
 		data.reset();
@@ -73,14 +74,13 @@ namespace asdtest_actx
 		};
 
 		auto data = std::make_shared<WhileTestData>();
-		auto actx = asd::CreateActx(asd_Trace, tp, data);
+		auto actx = asd::CreateActx(asd_Trace, data);
 		using Ctx = decltype(actx.CtxT());
 		actx
-		.Then([](Ctx ctx){
+		.Then([&](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
-
 			::printf("normal test\n");
-			std::thread([ctx](){ ctx->Next(); }).detach();
+			ctx->Next(tp);
 		})
 		.While([](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
@@ -88,51 +88,51 @@ namespace asdtest_actx
 			::printf(" loopA %d\n", loop);
 			return loop <= 2;
 		})
-			.Then([](Ctx ctx){
+			.Then([&](Ctx ctx){
 				ctx->data->PrintLine(__LINE__);
-				std::thread([ctx](){ ctx->Next(); }).detach();
+				ctx->Next(tp);
 			})
-			.Then([](Ctx ctx){
+			.Then([&](Ctx ctx){
 				ctx->data->PrintLine(__LINE__);
-				std::thread([ctx](){ ctx->Next(); }).detach();
+				ctx->Next(tp);
 			})
 			.Finally([](Ctx ctx){
 				ctx->data->PrintLine(__LINE__);
 			})
 		.EndLoop()
 
-		.Then([](Ctx ctx){
+		.Then([&](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
 			EXPECT_EQ(ctx->data->loopA, 3);
 			::printf("Break test\n");
-			std::thread([ctx](){ ctx->Next(); }).detach();
+			ctx->Next(tp);
 		})
-		.While([](Ctx ctx){
+		.While([&](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
 			int loop = ++ctx->data->loopB;
 			::printf("loopB %d\n", loop);
 			return loop <= 100;
 		})
-			.Then([](Ctx ctx){
+			.Then([&](Ctx ctx){
 				ctx->data->PrintLine(__LINE__);
-				std::thread([ctx](){ ctx->Break(); }).detach();
+				ctx->Break(tp);
 			})
-			.Then([](Ctx ctx){
+			.Then([&](Ctx ctx){
 				ctx->data->PrintLine(__LINE__);
 				FAIL();
-				std::thread([ctx](){ ctx->Next(); }).detach();
+				ctx->Next(tp);
 			})
 			.Finally([](Ctx ctx){
 				ctx->data->PrintLine(__LINE__);
 			})
 		.EndLoop()
 
-		.Then([](Ctx ctx){
+		.Then([&](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
 			EXPECT_EQ(ctx->data->loopB, 1);
 
 			::printf("Continue test\n");
-			std::thread([ctx](){ ctx->Next(); }).detach();
+			ctx->Next(tp);
 		})
 		.While([](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
@@ -140,24 +140,24 @@ namespace asdtest_actx
 			::printf("loopC %d\n", loop);
 			return loop <= 2;
 		})
-			.Then([](Ctx ctx){
+			.Then([&](Ctx ctx){
 				ctx->data->PrintLine(__LINE__);
-				std::thread([ctx](){ ctx->Continue(); }).detach();
+				ctx->Continue(tp);
 			})
-			.Then([](Ctx ctx){
+			.Then([&](Ctx ctx){
 				ctx->data->PrintLine(__LINE__);
 				FAIL();
-				std::thread([ctx](){ ctx->Next(); }).detach();
+				ctx->Next(tp);
 			})
 			.Finally([](Ctx ctx){
 				ctx->data->PrintLine(__LINE__);
 			})
 		.EndLoop()
 
-		.Then([](Ctx ctx){
+		.Then([&](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
 			EXPECT_EQ(ctx->data->loopC, 3);
-			std::thread([ctx](){ ctx->Next(); }).detach();
+			ctx->Next(tp);
 		})
 		.Finally([](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
@@ -165,7 +165,7 @@ namespace asdtest_actx
 		});
 
 		data->before = __LINE__;
-		actx.Run();
+		actx.Run(tp);
 
 		data->event.Wait();
 		data.reset();
@@ -186,18 +186,18 @@ namespace asdtest_actx
 			int k = 0;
 		};
 		auto data = std::make_shared<NestedLoopData>();
-		auto actx = asd::CreateActx(asd_Trace, tp, data);
+		auto actx = asd::CreateActx(asd_Trace, data);
 		using Ctx = decltype(actx.CtxT());
 		actx
 		.While([](Ctx ctx) { return ++ctx->data->i <= 3; })
 			.While([](Ctx ctx) { return ++ctx->data->j <= 3; })
 				.While([](Ctx ctx) { return ++ctx->data->k <= 3; })
-					.Then([](Ctx ctx){
+					.Then([&](Ctx ctx){
 						::printf("i:%d, j:%d, k:%d\n",
 									ctx->data->i,
 									ctx->data->j,
 									ctx->data->k);
-						std::thread([ctx](){ ctx->Next(); }).detach();
+						ctx->Next(tp);
 					})
 				.EndLoop()
 				.Finally([](Ctx ctx) {
@@ -214,7 +214,7 @@ namespace asdtest_actx
 			EXPECT_EQ(ctx->data->i, 4);
 			ctx->data->event.Post();
 		})
-		.Run();
+		.Run(tp);
 
 		data->event.Wait();
 		data.reset();
