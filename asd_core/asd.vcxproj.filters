@@ -57,6 +57,8 @@
       <Filter>built-in\cppformat</Filter>
     </ClInclude>
     <ClInclude Include="include\asd\actx.h" />
+    <ClInclude Include="include\asd\connpool.h" />
+    <ClInclude Include="include\asd\redisconnpool.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\address.cpp" />
@@ -93,6 +95,7 @@
     <ClCompile Include="built-in\cppformat\fmt\format.cc">
       <Filter>built-in\cppformat</Filter>
     </ClCompile>
+    <ClCompile Include="src\redisconnpool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="built-in">

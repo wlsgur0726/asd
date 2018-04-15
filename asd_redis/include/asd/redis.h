@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "asd/asdbase.h"
-#include <string>
 #include <memory>
 
 #if asd_Platform_Windows
@@ -75,6 +74,8 @@ namespace asd
 		bool Connect(const char* ip,
 					 uint16_t port = 6379);
 
+		bool IsConnected() const;
+
 		RedisReply Command(const char* cmd,
 						   ...);
 
@@ -90,7 +91,7 @@ namespace asd
 
 	private:
 		redisContext* m_ctx = nullptr;
-		std::string m_ip;
+		char* m_ip = nullptr;
 		uint16_t m_port = 6379;
 	};
 }

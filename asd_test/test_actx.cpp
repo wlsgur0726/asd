@@ -130,7 +130,6 @@ namespace asdtest_actx
 		.Then([&](Ctx ctx){
 			ctx->data->PrintLine(__LINE__);
 			EXPECT_EQ(ctx->data->loopB, 1);
-
 			::printf("Continue test\n");
 			ctx->Next(tp);
 		})
@@ -194,9 +193,9 @@ namespace asdtest_actx
 				.While([](Ctx ctx) { return ++ctx->data->k <= 3; })
 					.Then([&](Ctx ctx){
 						::printf("i:%d, j:%d, k:%d\n",
-									ctx->data->i,
-									ctx->data->j,
-									ctx->data->k);
+								 ctx->data->i,
+								 ctx->data->j,
+								 ctx->data->k);
 						ctx->Next(tp);
 					})
 				.EndLoop()

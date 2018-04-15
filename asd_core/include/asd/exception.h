@@ -229,7 +229,7 @@ namespace asd
 	// __VA_ARGS__ : format, ...
 #define asd_RAssert(Check, ...)													\
 	do {																		\
-		if ((Check) == false)													\
+		if (!(Check))															\
 			asd::GetAssertHandler()->OnError(asd_DebugInfo(__VA_ARGS__));		\
 	} while(false)																\
 

@@ -79,7 +79,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\asd_redis\include;$(ProjectDir)include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>asd_pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -111,7 +111,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\asd_redis\include;$(ProjectDir)include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>asd_pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -145,7 +145,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\asd_redis\include;$(ProjectDir)include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>asd_pch.h</PrecompiledHeaderFile>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
@@ -182,6 +182,7 @@
     <ClInclude Include="include\asd\asdbase.h" />
     <ClInclude Include="include\asd\caster.h" />
     <ClInclude Include="include\asd\classutil.h" />
+    <ClInclude Include="include\asd\connpool.h" />
     <ClInclude Include="include\asd\container.h" />
     <ClInclude Include="include\asd\exception.h" />
     <ClInclude Include="include\asd\file.h" />
@@ -196,6 +197,7 @@
     <ClInclude Include="include\asd\objpool.h" />
     <ClInclude Include="include\asd\odbcwrap.h" />
     <ClInclude Include="include\asd\random.h" />
+    <ClInclude Include="include\asd\redisconnpool.h" />
     <ClInclude Include="include\asd\semaphore.h" />
     <ClInclude Include="include\asd\serialize.h" />
     <ClInclude Include="include\asd\sharedarray.h" />
@@ -261,6 +263,7 @@
     <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\memdump.cpp" />
     <ClCompile Include="src\odbcwrap.cpp" />
+    <ClCompile Include="src\redisconnpool.cpp" />
     <ClCompile Include="src\semaphore.cpp" />
     <ClCompile Include="src\socket.cpp" />
     <ClCompile Include="src\string.cpp" />
@@ -277,8 +280,8 @@
     <ProjectReference Include="..\..\libiconv\windows\msvc2017\libiconv.vcxproj">
       <Project>{8bd75398-70d3-4786-a9dc-52fbd1e5ca13}</Project>
     </ProjectReference>
-    <ProjectReference Include="built-in\cppformat\cppformat.vcxproj">
-      <Project>{175b1a44-660c-4ce6-98fc-9176e2a90e7d}</Project>
+    <ProjectReference Include="..\asd_redis\asd_redis.vcxproj">
+      <Project>{ab33719a-7a27-4642-9522-3e2d8c22840d}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

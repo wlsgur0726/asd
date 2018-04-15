@@ -128,7 +128,9 @@ namespace asd
 	{
 		Disconnect();
 
-		m_ip = ip;
+		auto len = strlen(ip) + 1;
+		m_ip = new char[len];
+		memcpy(m_ip, ip, len);
 		m_port = port;
 
 		timeval timeout;
@@ -136,6 +138,12 @@ namespace asd
 		timeout.tv_usec = 0;
 		m_ctx = ::redisConnectWithTimeout(ip, (int)port, timeout);
 		return Error() == nullptr;
+	}
+
+
+	bool RedisContext::IsConnected() const
+	{
+		return m_ctx != nullptr;
 	}
 
 
@@ -192,6 +200,11 @@ namespace asd
 
 		auto ctx = m_ctx;
 		m_ctx = nullptr;
+
+		if (m_ip) {
+			delete[] m_ip;
+			m_ip = nullptr;
+		}
 
 		::redisFree(ctx);
 	}
