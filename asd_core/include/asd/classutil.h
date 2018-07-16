@@ -33,7 +33,7 @@ namespace asd
 			{
 				s_globalObject.reset(new T);
 			});
-			assert(s_globalObject != nullptr);
+			asd_DAssert(s_globalObject != nullptr);
 			return *s_globalObject;
 		}
 

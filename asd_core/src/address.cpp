@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/address.h"
 
 #if defined(asd_Platform_Windows)
@@ -22,7 +22,7 @@ namespace asd
 			case AddressFamily::IPv6:
 				return AF_INET6;
 		}
-		asd_RAssert(false, "invalid AddressFamily");
+		asd_OnErr("invalid AddressFamily");
 		return -1;
 	}
 
@@ -179,7 +179,7 @@ namespace asd
 				break;
 			}
 			default:
-				asd_RAssert(false, "invalid AddressFamily");
+				asd_OnErr("invalid AddressFamily");
 				break;
 		}
 		
@@ -206,7 +206,7 @@ namespace asd
 				return ntohs(cast->sin6_port);
 			}
 			default:
-				asd_RAssert(false, "invalid AddressFamily");
+				asd_OnErr("invalid AddressFamily");
 				break;
 		}
 		return 0;
@@ -231,7 +231,7 @@ namespace asd
 				break;
 			}
 			default:
-				asd_RAssert(false, "invalid AddressFamily");
+				asd_OnErr("invalid AddressFamily");
 				break;
 		}
 	}
@@ -258,7 +258,7 @@ namespace asd
 			case AddressFamily::IPv6:
 				return MString::Format("[{}]:{}", ip, GetPort());
 			default:
-				asd_RAssert(false, "invalid AddressFamily");
+				asd_OnErr("invalid AddressFamily");
 				break;
 		}
 		return "";
@@ -270,7 +270,7 @@ namespace asd
 						   IN const IpAddress& a_right)
 	{
 		if (a_left.m_addr == a_right.m_addr) {
-			assert(a_left.m_addrFamily == a_right.m_addrFamily);
+			asd_DAssert(a_left.m_addrFamily == a_right.m_addrFamily);
 			return 0;
 		}
 
@@ -287,8 +287,8 @@ namespace asd
 		else if (a_left.m_addrFamily > a_right.m_addrFamily)
 			return 1;
 		
-		assert(a_left.m_addrFamily == a_right.m_addrFamily);
-		assert(a_left.m_addrlen == a_right.m_addrlen);
+		asd_DAssert(a_left.m_addrFamily == a_right.m_addrFamily);
+		asd_DAssert(a_left.m_addrlen == a_right.m_addrlen);
 
 
 		// 3. IP 비교
@@ -331,8 +331,8 @@ namespace asd
 		}
 		else {
 			// IPv6
-			assert(len == 16);
-			assert(len % SizeOfSizeT == 0);
+			asd_DAssert(len == 16);
+			asd_DAssert(len % SizeOfSizeT == 0);
 			const int Count = len / SizeOfSizeT;
 			size_t* arr = (size_t*)ip;
 			for (int i=0; i<Count; ++i) {

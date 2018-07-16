@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/log.h"
 #include "asd/datetime.h"
 #include <fcntl.h>

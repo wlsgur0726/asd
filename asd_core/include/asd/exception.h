@@ -89,7 +89,7 @@ namespace asd
 #if asd_Can_not_use_Exception
 	#define asd_RaiseException(...)				\
 		do {									\
-			asd_RAssert(false, __VA_ARGS__);	\
+			asd_OnErr(__VA_ARGS__);	\
 			std::terminate();					\
 		} while(false)							\
 
@@ -198,8 +198,8 @@ namespace asd
 	// for asd_Catch_Default, asd_CatchUnknown_Default
 	struct DefaultExceptionHandler
 	{
-		void operator () (IN ExceptionPtrInterface* a_exception,
-						  IN const DebugInfo& a_catchPosInfo) const;
+		void operator()(IN ExceptionPtrInterface* a_exception,
+						IN const DebugInfo& a_catchPosInfo) const;
 	};
 
 
@@ -222,7 +222,7 @@ namespace asd
 
 	// 커스텀 AssertHandler 셋팅
 	// nullptr 입력할 경우 기본 AssertHandler로 셋팅
-	void SetAssertHandler(IN std::shared_ptr<AssertHandler> a_handler);
+void SetAssertHandler(IN std::shared_ptr<AssertHandler> a_handler);
 
 
 	// asd_RAssert : 표준 assert와는 다르게 release에서도 Check는 수행된다.
@@ -239,23 +239,13 @@ namespace asd
 #	define asd_DAssert(Check) asd_RAssert(Check, #Check)
 #
 #else
-#	define asd_DAssert(Check)
+#	define asd_DAssert(Check) do {} while(false)
 #
 #endif
 
 
-	// check error and return
 	// __VA_ARGS__ : format, ...
-#define asd_ChkErrAndRetVal(IsErr, RetVal, ...)									\
-	do {																		\
-		if (IsErr) {															\
-			asd::GetAssertHandler()->OnError(asd_DebugInfo(__VA_ARGS__));		\
-			return RetVal;														\
-		}																		\
-	} while(false)																\
-
-#define asd_ChkErrAndRet(IsErr, ...)\
-	asd_ChkErrAndRetVal(IsErr, ;, __VA_ARGS__)
+#define asd_OnErr(...) asd::GetAssertHandler()->OnError(asd_DebugInfo(__VA_ARGS__))
 
 
 }

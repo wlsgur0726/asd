@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/datetime.h"
 #include "asd/classutil.h"
 
@@ -45,7 +45,7 @@ namespace asd
 			const time_t utc = mktime(asd::gmtime(&t));
 			const time_t diff = local - utc;
 
-			assert(diff > -day && diff < day);
+			asd_DAssert(diff > -day && diff < day);
 			OffsetSec = (int)diff;
 		}
 	};
@@ -69,7 +69,7 @@ namespace asd
 	// 1년 1월 1일로부터 a_year년 1월 1일 사이의 윤일 개수를 구한다.
 	inline int GetLeapDayCount(IN int a_year)
 	{
-		assert(a_year != 0);
+		asd_DAssert(a_year != 0);
 
 		int y;
 		if (a_year > 0)
@@ -94,7 +94,7 @@ namespace asd
 		if (a_year1 > a_year2)
 			std::swap(a_year1, a_year2);
 
-		assert(a_year2 > a_year1);
+		asd_DAssert(a_year2 > a_year1);
 		return GetLeapDayCount(a_year2) - GetLeapDayCount(a_year1);
 	}
 
@@ -102,7 +102,7 @@ namespace asd
 	// 윤년인지 여부
 	inline bool IsLeapYear(IN int a_year)
 	{
-		assert(a_year != 0);
+		asd_DAssert(a_year != 0);
 		if (a_year < 0)
 			a_year -= 3;
 		
@@ -120,10 +120,10 @@ namespace asd
 	inline int GetLastDay(IN int a_month,
 						  IN bool a_isLeapYear)
 	{
-		assert(a_month>=1 && a_month<=12);
+		asd_DAssert(a_month>=1 && a_month<=12);
 		int r = Days[a_month];
 		if (a_isLeapYear && a_month==2) {
-			assert(r + 1 == 29);
+			asd_DAssert(r + 1 == 29);
 			return r + 1;
 		}
 		return r;
@@ -135,15 +135,15 @@ namespace asd
 							IN int a_day,
 							IN bool a_isLeapYear)
 	{
-		assert(a_month>=1 && a_month<=12);
-		assert(a_day>=1 && a_day<=GetLastDay(a_month, a_isLeapYear));
+		asd_DAssert(a_month>=1 && a_month<=12);
+		asd_DAssert(a_day>=1 && a_day<=GetLastDay(a_month, a_isLeapYear));
 
 		int r = 0;
 		const int m = a_month - 1;
 		for (int i=1; i<=m; ++i)
 			r += GetLastDay(i, a_isLeapYear);
 		r += a_day - 1;
-		assert(r >= 0);
+		asd_DAssert(r >= 0);
 		return r;
 	}
 
@@ -153,9 +153,9 @@ namespace asd
 							IN int a_month,
 							IN int a_day)
 	{
-		assert(a_year != 0);
-		assert(a_month>=1 && a_month<=12);
-		assert(a_day>=1 && a_day<=31);
+		asd_DAssert(a_year != 0);
+		asd_DAssert(a_month>=1 && a_month<=12);
+		asd_DAssert(a_day>=1 && a_day<=31);
 
 		bool isLeapYear = IsLeapYear(a_year);
 		int dayCnt = GetDayOffset(a_month, a_day, isLeapYear);
@@ -194,7 +194,7 @@ namespace asd
 	inline MString ToString(IN const char* a_format,
 							IN const tm& a_tm)
 	{
-		assert(a_format != nullptr);
+		asd_DAssert(a_format != nullptr);
 		MString ret;
 		const size_t Limit = 1024 * 1024;
 		size_t bufsize = 64;
@@ -207,10 +207,10 @@ namespace asd
 									   &a_tm);
 			if (len > 0) {
 				ret.resize(len);
-				assert(ret.length() == len);
+				asd_DAssert(ret.length() == len);
 				break;
 			}
-			assert(len == 0);
+			asd_DAssert(len == 0);
 			bufsize *= 2;
 		} while (bufsize <= Limit);
 		return ret;
@@ -332,7 +332,7 @@ namespace asd
 	{
 		CheckParam_Year(a_year);
 		m_year = a_year;
-		assert(Year() == a_year);
+		asd_DAssert(Year() == a_year);
 		return *this;
 	}
 
@@ -347,7 +347,7 @@ namespace asd
 	{
 		CheckParam_Month(a_month);
 		m_month = a_month;
-		assert(Month() == a_month);
+		asd_DAssert(Month() == a_month);
 		return *this;
 	}
 	
@@ -362,14 +362,14 @@ namespace asd
 	{
 		CheckParam_Day(a_day);
 		m_day = a_day;
-		assert(Day() == a_day);
+		asd_DAssert(Day() == a_day);
 		return *this;
 	}
 
 
-	DayOfTheWeek Date::DayOfTheWeek() const
+	DayOfTheWeek Date::GetDayOfTheWeek() const
 	{
-		return GetDayOfTheWeek(Year(), Month(), Day());
+		return asd::GetDayOfTheWeek(Year(), Month(), Day());
 	}
 
 
@@ -539,7 +539,7 @@ namespace asd
 	{
 		CheckParam_Hour(a_hour);
 		m_hour = a_hour;
-		assert(Hour() == a_hour);
+		asd_DAssert(Hour() == a_hour);
 		return *this;
 	}
 
@@ -554,7 +554,7 @@ namespace asd
 	{
 		CheckParam_Minute(a_minute);
 		m_minute = a_minute;
-		assert(Minute() == a_minute);
+		asd_DAssert(Minute() == a_minute);
 		return *this;
 	}
 
@@ -569,7 +569,7 @@ namespace asd
 	{
 		CheckParam_Second(a_second);
 		m_second = a_second;
-		assert(Second() == a_second);
+		asd_DAssert(Second() == a_second);
 		return *this;
 	}
 
@@ -584,7 +584,7 @@ namespace asd
 	{
 		CheckParam_Millisecond(a_millisecond);
 		m_millisecond = a_millisecond;
-		assert(Millisecond() == a_millisecond);
+		asd_DAssert(Millisecond() == a_millisecond);
 		return *this;
 	}
 
@@ -853,9 +853,9 @@ namespace asd
 	}
 
 
-	DayOfTheWeek DateTime::DayOfTheWeek() const
+	DayOfTheWeek DateTime::GetDayOfTheWeek() const
 	{
-		return m_date.DayOfTheWeek();
+		return m_date.GetDayOfTheWeek();
 	}
 
 
@@ -1040,11 +1040,11 @@ namespace asd
 	asd_Define_UnitTest(GetLastDay)
 	{
 		for (int m=1; m<=12; ++m) {
-			assert(GetLastDay(m, false) == Days[m]);
+			asd_DAssert(GetLastDay(m, false) == Days[m]);
 			if (m != 2)
-				assert(GetLastDay(m, true) == Days[m]);
+				asd_DAssert(GetLastDay(m, true) == Days[m]);
 		}
-		assert(GetLastDay(2, true) == 29);
+		asd_DAssert(GetLastDay(2, true) == 29);
 	}
 
 
@@ -1054,33 +1054,31 @@ namespace asd
 		for (int y=1; y<=TestCount; ++y) {
 			if (IsLeapYear(y)) {
 				if (y % 400 == 0)
-					assert(true);
+					asd_DAssert(true);
 				else {
-					assert(y % 100 != 0);
-					assert(y % 4 == 0);
+					asd_DAssert(y % 100 != 0);
+					asd_DAssert(y % 4 == 0);
 				}
 			}
 			int dayOffset = GetDayOffset(y, 1, 1);
 			int pos = GetLeapDayCount(y);
 			int neg = GetLeapDayCount(-y);
-			assert(pos >= 0 && neg <= 0);
-			assert(dayOffset == ((y-1)*365) + pos);
-			assert(GetLeapDayCount(y, -y) == pos - neg);
-			assert(GetLeapDayCount(-y, y) == pos - neg);
+			asd_DAssert(pos >= 0 && neg <= 0);
+			asd_DAssert(dayOffset == ((y-1)*365) + pos);
+			asd_DAssert(GetLeapDayCount(y, -y) == pos - neg);
+			asd_DAssert(GetLeapDayCount(-y, y) == pos - neg);
 		}
 
 		for (int y=-1; y>=-TestCount; --y) {
 			if (IsLeapYear(y)) {
 				int t = y - 3;
-				if (t % 400 == 0)
-					assert(true);
-				else {
-					assert(t % 100 != 0 &&
-						   t % 4 == 0);
+				if (t % 400 != 0){
+					asd_DAssert(t % 100 != 0 &&
+								t % 4 == 0);
 				}
 			}
 			int dayOffset = GetDayOffset(y, 1, 1);
-			assert(dayOffset == (y*365) + GetLeapDayCount(y));
+			asd_DAssert(dayOffset == (y*365) + GetLeapDayCount(y));
 		}
 	}
 

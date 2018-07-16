@@ -7,24 +7,26 @@
 
 namespace asdtest_iconv
 {
+#define HX(code) ((char)0x ## code)
+
 	// abc 가나다
-	const char TestStr_CP949[]   = {0x61, 0x62, 0x63, 0x20, 
-									0xB0, 0xA1, 0xB3, 0xAA, 0xB4, 0xD9, 0x00};
+	const char TestStr_CP949[]   = {HX(61), HX(62), HX(63), HX(20),
+									HX(B0), HX(A1), HX(B3), HX(AA), HX(B4), HX(D9), HX(00) };
 
-	const char TestStr_UTF8[]    = {0x61, 0x62, 0x63, 0x20, 
-									0xEA, 0xB0, 0x80, 0xEB, 0x82, 0x98, 0xEB, 0x8B, 0xA4, 0x00};
+	const char TestStr_UTF8[]    = {HX(61), HX(62), HX(63), HX(20),
+									HX(EA), HX(B0), HX(80), HX(EB), HX(82), HX(98), HX(EB), HX(8B), HX(A4), HX(00) };
 
-	const char TestStr_UTF16LE[] = {0x61, 0x00, 0x62, 0x00, 0x63, 0x00, 0x20, 0x00,
-									0x00, 0xAC, 0x98, 0xB0, 0xE4, 0xB2, 0x00, 0x00};
+	const char TestStr_UTF16LE[] = {HX(61), HX(00), HX(62), HX(00), HX(63), HX(00), HX(20), HX(00),
+									HX(00), HX(AC), HX(98), HX(B0), HX(E4), HX(B2), HX(00), HX(00) };
 
-	const char TestStr_UTF16BE[] = {0x00, 0x61, 0x00, 0x62, 0x00, 0x63, 0x00, 0x20,
-									0xAC, 0x00, 0xB0, 0x98, 0xB2, 0xE4, 0x00, 0x00};
+	const char TestStr_UTF16BE[] = {HX(00), HX(61), HX(00), HX(62), HX(00), HX(63), HX(00), HX(20),
+									HX(AC), HX(00), HX(B0), HX(98), HX(B2), HX(E4), HX(00), HX(00) };
 
-	const char TestStr_UTF32LE[] = {0x61, 0x00, 0x00, 0x00, 0x62, 0x00, 0x00, 0x00, 0x63, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00,
-									0x00, 0xAC, 0x00, 0x00, 0x98, 0xB0, 0x00, 0x00, 0xE4, 0xB2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	const char TestStr_UTF32LE[] = {HX(61), HX(00), HX(00), HX(00), HX(62), HX(00), HX(00), HX(00), HX(63), HX(00), HX(00), HX(00), HX(20), HX(00), HX(00), HX(00),
+									HX(00), HX(AC), HX(00), HX(00), HX(98), HX(B0), HX(00), HX(00), HX(E4), HX(B2), HX(00), HX(00), HX(00), HX(00), HX(00), HX(00) };
 	
-	const char TestStr_UTF32BE[] = {0x00, 0x00, 0x00, 0x61, 0x00, 0x00, 0x00, 0x62, 0x00, 0x00, 0x00, 0x63, 0x00, 0x00, 0x00, 0x20, 
-									0x00, 0x00, 0xAC, 0x00, 0x00, 0x00, 0xB0, 0x98, 0x00, 0x00, 0xB2, 0xE4, 0x00, 0x00, 0x00, 0x00};
+	const char TestStr_UTF32BE[] = {HX(00), HX(00), HX(00), HX(61), HX(00), HX(00), HX(00), HX(62), HX(00), HX(00), HX(00), HX(63), HX(00), HX(00), HX(00), HX(20),
+									HX(00), HX(00), HX(AC), HX(00), HX(00), HX(00), HX(B0), HX(98), HX(00), HX(00), HX(B2), HX(E4), HX(00), HX(00), HX(00), HX(00) };
 
 
 	struct TestSource
@@ -91,6 +93,11 @@ namespace asdtest_iconv
 									  asd::Encoding, const char*, TestSource) > testRoutine )
 	{
 		Init();
+		auto descriptionW = asd::ConvToW(description);
+		auto descriptionU8 = asd::ConvToM(descriptionW, asd::Encoding::UTF8);
+		auto description2 = asd::ConvToM(descriptionU8, asd::Encoding::UTF8, asd::GetDefaultEncoding<char>());
+		ASSERT_TRUE(asd::MString(description) == description2);
+
 		for (auto it1 : g_TestStringMap) {
 			for (auto it2 : g_TestStringMap) {
 				auto encodig_enum1 = it1.first;
@@ -102,7 +109,7 @@ namespace asdtest_iconv
 
 				// it1 -> it2
 				bool success = testRoutine(encodig_enum1, encodig_str1, it1.second,
-											encodig_enum2, encodig_str2, it2.second);
+										   encodig_enum2, encodig_str2, it2.second);
 				EXPECT_TRUE(success);
 				if (success == false) {
 					printf("Fail - %s\n", description);
@@ -122,27 +129,25 @@ namespace asdtest_iconv
 					asd::Encoding encodig_enum2, const char* encodig_str2, TestSource src2) -> bool
 		{
 			const int BufferSize = 512;
-			int ret;
 			
 			// 생성 및 초기화
 			asd::IconvWrap icv;
-			ret = icv.Init(encodig_enum1, encodig_enum2);
-			EXPECT_GE(ret, 0);
-			if (ret < 0)
+			int r1 = icv.Init(encodig_enum1, encodig_enum2);
+			EXPECT_EQ(r1, 0);
+			if (r1 < 0)
 				return false;
 
 			// 변환
-			char outbuf[BufferSize] ={0xFF};
+			char outbuf[BufferSize] = { HX(FF) };
 			size_t outsize = BufferSize;
-			ret = icv.Convert(src1.buffer,
-							  src1.size,
-							  outbuf,
-							  outsize);
+			size_t r2 = icv.Convert(src1.buffer,
+									src1.size,
+									outbuf,
+									outsize);
 			// 결과 확인 1
-			auto e = errno;
-			EXPECT_GE(ret, 0);
-			if (ret < 0) {
-				printf("ret : %d\n", ret);
+			EXPECT_NE(r2, asd_IconvWrap_ConvertError);
+			if (r2 == asd_IconvWrap_ConvertError) {
+				int e = errno;
 				printf("errno : %d\n", e);
 				return false;
 			}

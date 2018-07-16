@@ -79,14 +79,14 @@ namespace asd
 				if (conn == nullptr) {
 					conn = New();
 					if (conn == nullptr) {
-						asd_RAssert(false, "fail New()");
+						asd_OnErr("fail New()");
 						continue;
 					}
 				}
 
 				if (!conn->IsConnected()){
 					if (!Connect(conn)) {
-						asd_RAssert(false, "fail Connect()");
+						asd_OnErr("fail Connect()");
 						delete conn;
 						continue;
 					}
@@ -99,7 +99,10 @@ namespace asd
 
 		void Free(IN Connection* a_conn)
 		{
-			asd_ChkErrAndRet(a_conn == nullptr, "invalid a_conn");
+			if (a_conn == nullptr) {
+				asd_OnErr("invalid a_conn");
+				return;
+			}
 
 			Resource res;
 			res.connection = a_conn;

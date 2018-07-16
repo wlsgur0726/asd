@@ -117,7 +117,7 @@ namespace asd
 
 		virtual uint8_t* GetBuffer() const override
 		{
-			return const_cast<uint8_t*>(data());
+			return const_cast<uint8_t*>(this->data());
 		}
 
 		virtual size_t Capacity() const override
@@ -127,7 +127,7 @@ namespace asd
 
 		virtual size_t GetSize() const override
 		{
-			assert(m_size <= Bytes);
+			asd_DAssert(m_size <= Bytes);
 			return m_size;
 		}
 
@@ -157,20 +157,20 @@ namespace asd
 
 		virtual uint8_t* GetBuffer() const override
 		{
-			assert(size() > 0);
-			return reinterpret_cast<uint8_t*>(data());
+			asd_DAssert(this->size() > 0);
+			return reinterpret_cast<uint8_t*>(this->data());
 		}
 
 		virtual size_t Capacity() const override
 		{
-			assert(size() > 0);
+			asd_DAssert(this->size() > 0);
 			return GetSize();
 		}
 
 		virtual size_t GetSize() const override
 		{
-			assert(size() > 0);
-			return size() * sizeof(T);
+			asd_DAssert(this->size() > 0);
+			return this->size() * sizeof(T);
 		}
 
 		virtual bool SetSize(IN size_t a_bytes) override
@@ -219,7 +219,7 @@ namespace asd
 
 		virtual bool SetSize(IN size_t a_bytes) override
 		{
-			asd_RAssert(false, "banned call (send only)");
+			asd_OnErr("banned call (send only)");
 			return false; // not use
 		}
 	};

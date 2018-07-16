@@ -16,7 +16,7 @@ namespace asd
 
 		TempBuffer(IN size_t a_count)
 		{
-			assert(a_count > 0);
+			asd_DAssert(a_count > 0);
 			auto buf = std::get_temporary_buffer<Object>((ptrdiff_t)a_count);
 			m_arr = buf.first;
 			m_count = buf.second;
@@ -52,21 +52,21 @@ namespace asd
 
 		inline operator void* () const
 		{
-			assert(m_arr != nullptr);
+			asd_DAssert(m_arr != nullptr);
 			return m_arr;
 		}
 
 
 		inline operator Object* () const
 		{
-			assert(m_arr != nullptr);
+			asd_DAssert(m_arr != nullptr);
 			return m_arr;
 		}
 
 
 		inline size_t GetCount() const
 		{
-			assert(m_count > 0);
+			asd_DAssert(m_count > 0);
 			return m_count;
 		}
 

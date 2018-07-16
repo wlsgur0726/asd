@@ -31,7 +31,8 @@ namespace asd
 				, m_lock(a_ownerLock)
 				, m_dbg(a_start)
 			{
-				asd_ChkErrAndRet(m_lock == nullptr, "unknown error");
+				if (m_lock == nullptr)
+					asd_OnErr("unknown error");
 			}
 
 			Context(REF Context* a_owner)
@@ -40,7 +41,10 @@ namespace asd
 				, m_lock(a_owner->m_lock)
 				, m_dbg(a_owner->m_dbg.startPoint)
 			{
-				asd_ChkErrAndRet(m_owner == nullptr, "unknown error");
+				if (m_owner == nullptr) {
+					asd_OnErr("unknown error");
+					return;
+				}
 				m_dbg.loopDepth = m_owner->m_dbg.loopDepth + 1;
 			}
 
@@ -276,16 +280,28 @@ namespace asd
 
 		ThisType& Then(Task&& a_task)
 		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, *this, "already started");
-			asd_ChkErrAndRetVal(a_task == nullptr, *this, "invalid task");
+			if (m_ctx == nullptr) {
+				asd_OnErr("already started");
+				return *this;
+			}
+			if (a_task == nullptr) {
+				asd_OnErr("invalid task");
+				return *this;
+			}
 			m_ctx->m_tasks.emplace_back(std::forward<Task>(a_task));
 			return *this;
 		}
 
 		ThisType& Loop()
 		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, *this, "already started");
-			asd_ChkErrAndRetVal(m_loop && m_loop->m_ctx, *this, "you maybe forgot to call EndLoop() at sub loop");
+			if (m_ctx == nullptr) {
+				asd_OnErr("already started");
+				return *this;
+			}
+			if (m_loop && m_loop->m_ctx) {
+				asd_OnErr("you maybe forgot to call EndLoop() at sub loop");
+				return *this;
+			}
 			if (m_loop)
 				m_loop->InitLoop();
 			else
@@ -295,8 +311,14 @@ namespace asd
 
 		ThisType& While(WhileCondition&& a_cond)
 		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, *this, "already started");
-			asd_ChkErrAndRetVal(a_cond == nullptr, *this, "invalid task");
+			if (m_ctx == nullptr) {
+				asd_OnErr("already started");
+				return *this;
+			}
+			if (a_cond == nullptr) {
+				asd_OnErr("invalid task");
+				return *this;
+			}
 			return Loop().Then([this, cond=std::forward<WhileCondition>(a_cond)](Ctx ctx)
 			{
 				if (cond(ctx)) {
@@ -316,9 +338,18 @@ namespace asd
 
 		ThisType& EndLoop()
 		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, *this, "already started");
-			asd_ChkErrAndRetVal(m_owner == nullptr, *this, "is not Loop");
-			asd_ChkErrAndRetVal(m_loop && m_loop->m_ctx, *this, "you maybe forgot to call EndLoop() at sub loop");
+			if (m_ctx == nullptr) {
+				asd_OnErr("already started");
+				return *this;
+			}
+			if (m_owner == nullptr) {
+				asd_OnErr("is not Loop");
+				return *this;
+			}
+			if (m_loop && m_loop->m_ctx) {
+				asd_OnErr("you maybe forgot to call EndLoop() at sub loop");
+				return *this;
+			}
 
 			return m_owner->Then([ctx=std::move(m_ctx)](Ctx)
 			{
@@ -329,7 +360,10 @@ namespace asd
 
 		ThisType& Finally(Task&& a_task)
 		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, *this, "already started");
+			if (m_ctx == nullptr) {
+				asd_OnErr("already started");
+				return *this;
+			}
 			asd_DAssert(m_ctx->m_finally == nullptr);
 			m_ctx->m_finally = std::forward<Task>(a_task);
 			return *this;
@@ -338,8 +372,14 @@ namespace asd
 		template <typename... ThreadPoolArgs>
 		auto Run(ThreadPoolArgs&&... a_args) -> decltype(Ctx()->Next(std::forward<ThreadPoolArgs>(a_args)...))
 		{
-			asd_ChkErrAndRetVal(m_ctx == nullptr, nullptr, "already started");
-			asd_ChkErrAndRetVal(m_loop && m_loop->m_ctx, nullptr, "you maybe forgot to call EndLoop() at sub loop");
+			if (m_ctx == nullptr) {
+				asd_OnErr("already started");
+				return nullptr;
+			}
+			if (m_loop && m_loop->m_ctx) {
+				asd_OnErr("you maybe forgot to call EndLoop() at sub loop");
+				return nullptr;
+			}
 			auto ctx = std::move(m_ctx);
 			auto lock = std::move(m_lock);
 			Context::TopRef::Instance().Insert((uintptr_t)ctx.get(), ctx);

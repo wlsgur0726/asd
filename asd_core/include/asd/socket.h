@@ -113,10 +113,10 @@ namespace asd
 							 IN SizeType a_bufferSize,
 							 IN int a_flags = 0)
 		{
-			asd_ChkErrAndRetVal(a_bufferSize > std::numeric_limits<int>::max(),
-								IoResult(0, -1),
-								"size overflow, a_bufferSize:{}",
-								a_bufferSize);
+			if (a_bufferSize > std::numeric_limits<int>::max()) {
+				asd_OnErr("size overflow, a_bufferSize:{}", a_bufferSize);
+				return IoResult(0, -1);
+			}
 			return Send(a_buffer,
 						(int)a_bufferSize,
 						a_flags);
@@ -134,10 +134,10 @@ namespace asd
 							   IN const IpAddress& a_dest,
 							   IN int a_flags = 0)
 		{
-			asd_ChkErrAndRetVal(a_bufferSize > std::numeric_limits<int>::max(),
-								IoResult(0, -1),
-								"size overflow, a_bufferSize:{}",
-								a_bufferSize);
+			if (a_bufferSize > std::numeric_limits<int>::max()) {
+				asd_OnErr("size overflow, a_bufferSize:{}", a_bufferSize);
+				return IoResult(0, -1);
+			}
 			return SendTo(a_buffer,
 						  (int)a_bufferSize,
 						  a_dest,
@@ -154,12 +154,12 @@ namespace asd
 							 IN SizeType a_bufferSize,
 							 IN int a_flags = 0)
 		{
-			asd_ChkErrAndRetVal(a_bufferSize > std::numeric_limits<int>::max(),
-								IoResult(0, -1),
-								"size overflow, a_bufferSize:{}",
-								a_bufferSize);
+			if (a_bufferSize > std::numeric_limits<int>::max()) {
+				asd_OnErr("size overflow, a_bufferSize:{}", a_bufferSize);
+				return IoResult(0, -1);
+			}
 			return Recv(a_buffer,
-				(int)a_bufferSize,
+						(int)a_bufferSize,
 						a_flags);
 		}
 
@@ -175,12 +175,12 @@ namespace asd
 								 OUT IpAddress& a_src,
 								 IN int a_flags = 0)
 		{
-			asd_ChkErrAndRetVal(a_bufferSize > std::numeric_limits<int>::max(),
-								IoResult(0, -1),
-								"size overflow, a_bufferSize:{}",
-								a_bufferSize);
+			if (a_bufferSize > std::numeric_limits<int>::max()) {
+				asd_OnErr("size overflow, a_bufferSize:{}", a_bufferSize);
+				return IoResult(0, -1);
+			}
 			return RecvFrom(a_buffer,
-				(int)a_bufferSize,
+							(int)a_bufferSize,
 							a_src,
 							a_flags);
 		}

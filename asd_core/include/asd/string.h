@@ -143,7 +143,7 @@ namespace asd
 	template<typename CHARTYPE>
 	inline CHARTYPE toupper(IN CHARTYPE a_char)
 	{
-		if (a_char < 'a' || a_char > 'z')
+		if (a_char < 'a' || 'z' < a_char)
 			return a_char;
 		return a_char - 0x20;
 	}
@@ -151,7 +151,7 @@ namespace asd
 	template<typename CHARTYPE>
 	inline CHARTYPE tolower(IN CHARTYPE a_char)
 	{
-		if (a_char < 'A' || a_char > 'Z')
+		if (a_char < 'A' || 'Z' < a_char)
 			return a_char;
 		return a_char + 0x20;
 	}

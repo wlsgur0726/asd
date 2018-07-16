@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "asd/string.h"
+#include "asd/random.h"
 #include <unordered_map>
 #include <iostream>
 #include <functional>
@@ -27,9 +28,8 @@ namespace asdtest_string
 				buf[i++] = c;
 		}
 		else {
-			std::srand(std::time(nullptr));
 			for (i=0; i<26; ++i) {
-				if (std::rand() % 2 == 0)
+				if (asd::Random::Uniform(0, 1) % 2 == 0)
 					buf[i] = 'A' + i;
 				else
 					buf[i] = 'a' + i;

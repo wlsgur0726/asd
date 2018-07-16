@@ -39,8 +39,8 @@
 								<option id="gnu.cpp.compiler.option.debugging.level.282200447" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.935140980" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_redis/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/include}&quot;"/>
 									<listOptionValue builtIn="false" value="../../../"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/include}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.748525578" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++14 -fpermissive -lhiredis" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.506484787" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -100,8 +100,8 @@
 								<option id="gnu.cpp.compiler.option.debugging.level.1195586566" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.129103668" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_redis/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/include}&quot;"/>
 									<listOptionValue builtIn="false" value="../../../"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/include}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1063883502" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++14 -fpermissive -lhiredis" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.19009072" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>

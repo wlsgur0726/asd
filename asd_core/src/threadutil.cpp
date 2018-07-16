@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/threadutil.h"
 #include "asd/lock.h"
 #include <atomic>
@@ -18,25 +18,15 @@
 
 namespace asd
 {
-#if asd_Platform_Windows
-	typedef uint32_t	tid_t;
-#else
-	typedef pthread_t	tid_t;
-#endif
-
 	struct ThreadManager
 	{
 		Mutex m_lock;
-		std::unordered_map<uint32_t, tid_t> m_map;
+		std::unordered_map<uint32_t, uint32_t> m_map;
 
 		void Register()
 		{
 			uint32_t seq = GetCurrentThreadSequence();
-#if asd_Platform_Windows
-			tid_t tid = GetCurrentThreadID();
-#else
-			tid_t tid = ::pthread_self();
-#endif
+			uint32_t tid = GetCurrentThreadID();
 			auto lock = GetLock(m_lock);
 			m_map[seq] = tid;
 		}
@@ -129,18 +119,5 @@ namespace asd
 	size_t GetAliveThreadCount()
 	{
 		return g_threadManager.Count();
-	}
-
-
-
-	void srand()
-	{
-		thread_local int t_seed;
-		intptr_t a = (intptr_t)&t_seed;
-		time_t b = time(nullptr);
-		t_seed = (int)(a^b);
-		if (GetCurrentThreadSequence() % 2 == 0)
-			t_seed = t_seed;
-		std::srand(t_seed);
 	}
 }

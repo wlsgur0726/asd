@@ -59,8 +59,8 @@ namespace asd
 		bool m_sendSignal = false;
 
 		// OS별 특수 데이터
-		static UniquePtr<AsyncSocketNative> InitNative();
-		UniquePtr<AsyncSocketNative> m_native = InitNative();
+		static std::shared_ptr<AsyncSocketNative> InitNative();
+		std::shared_ptr<AsyncSocketNative> m_native = InitNative();
 
 
 	public:

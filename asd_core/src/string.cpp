@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/string.h"
 #include "asd/tempbuffer.h"
 
@@ -308,7 +308,7 @@ namespace asd
 	size_t strlen(IN const void* a_str,
 				  IN int a_sizeOfChar)
 	{
-		assert(a_sizeOfChar==1 || a_sizeOfChar==2 || a_sizeOfChar==4);
+		asd_DAssert(a_sizeOfChar==1 || a_sizeOfChar==2 || a_sizeOfChar==4);
 		switch (a_sizeOfChar) {
 			case 1:
 				return asd::strlen((const char*)a_str);
@@ -337,7 +337,7 @@ namespace asd
 		for (; *a_src!='\0' && offset<a_dstBufCount; ++a_src, ++a_dst) {
 			if (AsciiOnly) {
 				bool isAsciiChar = (0x7F - *a_src) >= 0;
-				assert(isAsciiChar);
+				asd_DAssert(isAsciiChar);
 			}
 			*a_dst = (ReturnType)*a_src;
 		}
@@ -348,7 +348,7 @@ namespace asd
 			return;
 		}
 
-		assert(*a_src == '\0');
+		asd_DAssert(*a_src == '\0');
 		*a_dst = (ReturnType)*a_src;
 	}
 

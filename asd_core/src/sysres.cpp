@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/sysres.h"
 #include "asd/classutil.h"
 #include "asd/timer.h"
@@ -44,8 +44,10 @@ namespace asd
 
 		~CPU()
 		{
-			if (m_lastTimer != nullptr)
+			if (m_lastTimer != nullptr) {
 				m_lastTimer->Cancel();
+				m_lastTimer = nullptr;
+			}
 		}
 
 		void RegisterSamplingEvemt()
@@ -149,8 +151,14 @@ namespace asd
 													  m_spicti.data(),
 													  expLen,
 													  &retLen);
-				asd_ChkErrAndRetVal(ret != STATUS_SUCCESS, -1, "fail NtQuerySystemInformation, ret:{}", ret);
-				asd_ChkErrAndRetVal(expLen != retLen, -1, "unexpected length, expLen:{}, retLen:{}", expLen, retLen);
+				if (ret != STATUS_SUCCESS) {
+					asd_OnErr("fail NtQuerySystemInformation, ret:{}", ret);
+					return -1;
+				}
+				if (expLen != retLen) {
+					asd_OnErr("unexpected length, expLen:{}, retLen:{}", expLen, retLen);
+					return -1;
+				}
 
 				uint64_t cur = 0;
 				for (auto& spicti : m_spicti)
@@ -169,8 +177,14 @@ namespace asd
 													  m_spci.data(),
 													  expLen,
 													  &retLen);
-				asd_ChkErrAndRetVal(ret != STATUS_SUCCESS, -1, "fail NtQuerySystemInformation, ret:{}", ret);
-				asd_ChkErrAndRetVal(expLen != retLen, -1, "unexpected length, expLen:{}, retLen:{}", expLen, retLen);
+				if (ret != STATUS_SUCCESS) {
+					asd_OnErr("fail NtQuerySystemInformation, ret:{}", ret);
+					return -1;
+				}
+				if (expLen != retLen) {
+					asd_OnErr("unexpected length, expLen:{}, retLen:{}", expLen, retLen);
+					return -1;
+				}
 
 				uint64_t cur = 0;
 				for (auto& spci : m_spci)
@@ -196,8 +210,14 @@ namespace asd
 						return ret;
 					}
 				}();
-				asd_ChkErrAndRetVal(ret != STATUS_SUCCESS, -1, "fail NtQuerySystemInformation, ret:{}", ret);
-				asd_ChkErrAndRetVal(m_spiBuffer.empty(), -1, "unknown error");
+				if (ret != STATUS_SUCCESS) {
+					asd_OnErr("fail NtQuerySystemInformation, ret:{}", ret);
+					return -1;
+				}
+				if (m_spiBuffer.empty()) {
+					asd_OnErr("unknown error");
+					return -1;
+				}
 
 				uint64_t newCycle = 0;
 				std::unordered_map<PID, ProcessInfo> processMap;
@@ -256,7 +276,7 @@ namespace asd
 			FILETIME idle, kernel, user;
 			if (::GetSystemTimes(&idle, &kernel, &user) == FALSE) {
 				auto e = ::GetLastError();
-				asd_RAssert(false, "fail GetSystemTimes, GetLastError:{}", e);
+				asd_OnErr("fail GetSystemTimes, GetLastError:{}", e);
 				return -1;
 			}
 
@@ -287,10 +307,10 @@ namespace asd
 #else
 		struct Stat
 		{
-			uint64_t user = 0;
-			uint64_t nice = 0;
-			uint64_t system = 0;
-			uint64_t idle = 0;
+			unsigned long long user = 0;
+			unsigned long long nice = 0;
+			unsigned long long system = 0;
+			unsigned long long idle = 0;
 		};
 
 		Stat m_lastStat;
@@ -319,7 +339,10 @@ namespace asd
 		double GetSample()
 		{
 			Stat stat;
-			asd_ChkErrAndRetVal(GetStat(stat) == false, -1, "fail GetStat, errno:{}", errno);
+			if (GetStat(stat) == false) {
+				asd_OnErr("fail GetStat, errno:{}", errno);
+				return -1;
+			}
 
 			auto dUser = stat.user - m_lastStat.user;
 			auto dNice = stat.nice - m_lastStat.nice;

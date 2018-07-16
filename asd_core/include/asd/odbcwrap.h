@@ -61,6 +61,40 @@ namespace asd
 		UNKNOWN_TYPE
 	};
 
+	template <typename T>
+	struct ParamBinder
+	{
+		static const SQLType Type = SQLType::UNKNOWN_TYPE;
+		static void* Buffer(REF T& a_var) { return &a_var; }
+		int BufferLength(REF T& a_var) { return sizeof(a_var); }
+	};
+
+	template<>
+	struct ParamBinder<int8_t> { static const SQLType Type = SQLType::TINYINT; };
+	template<>
+	struct ParamBinder<uint8_t> { static const SQLType Type = SQLType::TINYINT; };
+	template<>
+	struct ParamBinder<int16_t> { static const SQLType Type = SQLType::SMALLINT; };
+	template<>
+	struct ParamBinder<uint16_t> { static const SQLType Type = SQLType::SMALLINT; };
+	template<>
+	struct ParamBinder<int32_t> { static const SQLType Type = SQLType::INTEGER; };
+	template<>
+	struct ParamBinder<uint32_t> { static const SQLType Type = SQLType::INTEGER; };
+	template<>
+	struct ParamBinder<int64_t> { static const SQLType Type = SQLType::BIGINT; };
+	template<>
+	struct ParamBinder<uint64_t> { static const SQLType Type = SQLType::BIGINT; };
+	template<>
+	struct ParamBinder<float> { static const SQLType Type = SQLType::FLOAT; };
+	template<>
+	struct ParamBinder<double> { static const SQLType Type = SQLType::DOUBLE; };
+	template<>
+	struct ParamBinder<bool> { static const SQLType Type = SQLType::BIT; };
+	template<>
+	struct ParamBinder<std::string> { static const SQLType Type = SQLType::VARCHAR; };
+	template<>
+	struct ParamBinder<MString> { static const SQLType Type = SQLType::VARCHAR; };
 
 
 	struct DBConnectionHandle;
@@ -80,6 +114,8 @@ namespace asd
 		void RollbackTran();
 
 		void Close();
+
+		inline void Disconnect() { Close(); }
 
 		virtual ~DBConnection();
 	};

@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/lock.h"
 #include "asd/threadutil.h"
 #include <thread>
@@ -395,7 +395,7 @@ namespace asd
 
 		static void IsDeadLock(IN int a_line)
 		{
-			asd_RAssert(false, "deadlock detected({})", a_line);
+			asd_OnErr("deadlock detected({})", a_line);
 			for (;;)
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
@@ -647,7 +647,10 @@ namespace asd
 
 	void AsyncMutex::GetLock(Callback&& a_callback)
 	{
-		asd_ChkErrAndRet(a_callback == nullptr, "a_callback is null");
+		if (a_callback == nullptr) {
+			asd_OnErr("a_callback must not null");
+			return;
+		}
 		m_data->Next(std::forward<Callback>(a_callback));
 	}
 

@@ -22,7 +22,7 @@ namespace asd
 	private:
 		struct ObjHeader : public HasMagicCode<HandleType>
 		{
-			ID ID;
+			ID id;
 		};
 
 		using PoolType = ObjectPoolShardSet<
@@ -67,7 +67,7 @@ namespace asd
 			if (header->IsValidMagicCode() == false)
 				return Null;
 
-			return header->ID;
+			return header->id;
 		}
 
 		inline ID GetID() const
@@ -111,7 +111,7 @@ namespace asd
 
 			ObjHeader* header = PoolType::template GetHeader<ObjHeader>(obj.get());
 			new(header) ObjHeader(); // init MagicCode
-			header->ID = m_id;
+			header->id = m_id;
 			return obj;
 		}
 

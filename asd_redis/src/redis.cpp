@@ -1,5 +1,6 @@
 #include "asd/redis.h"
 #include "hiredis/hiredis.h"
+#include "string.h"
 
 #if asd_Platform_Windows
 #include <WinSock2.h>

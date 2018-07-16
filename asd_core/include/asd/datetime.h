@@ -105,7 +105,7 @@ namespace asd
 		int Day() const;
 		Date& Day(IN int a_day);
 
-		DayOfTheWeek DayOfTheWeek() const;
+		DayOfTheWeek GetDayOfTheWeek() const;
 
 		MString ToString(const char* a_format = "%Y-%m-%d") const;
 
@@ -220,7 +220,7 @@ namespace asd
 		int Millisecond() const;
 		DateTime& Millisecond(IN int a_millisecond);
 
-		DayOfTheWeek DayOfTheWeek() const;
+		DayOfTheWeek GetDayOfTheWeek() const;
 
 		MString ToString(const char* a_format = "%Y-%m-%d %H:%M:%S") const;
 

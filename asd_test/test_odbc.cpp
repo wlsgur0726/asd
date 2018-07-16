@@ -519,7 +519,7 @@ namespace asdtest_odbc
 				// ConnectionString에 접속할 DB정보를 추가하고 재접속
 				ConnectionString << "Database=" << DBName << ";";
 				stmt.Close();
-				con.Close();
+				con.Disconnect();
 				con.Open(ConnectionString);
 				stmt.Init(con);
 			}

@@ -100,7 +100,8 @@ namespace asd
 
 
 		// 리턴 직후의 a_outSize_byte = (호출 당시 입력한 a_outSize_byte) - (a_outBuffer에 write한 byte 수 ('\0' 포함))
-		// 리턴값이 음수이면 실패 (errno 확인요망)
+		// 리턴값이 asd_IconvWrap_ConvertError 이면 실패 (errno 확인요망)
+		#define asd_IconvWrap_ConvertError ((size_t)-1)
 		size_t Convert(IN const void* a_inBuffer,
 					   IN size_t a_inBufSize_byte,
 					   OUT void* a_outBuffer,

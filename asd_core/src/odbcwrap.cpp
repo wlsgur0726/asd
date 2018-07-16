@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/odbcwrap.h"
 #include "asd/util.h"
 #include <sql.h>
@@ -67,13 +67,13 @@ namespace asd
 
 		TypeTableInitializer()
 		{
-#define asd_InitTypeTable(ENUM)													\
-			{																	\
-				const SQLSMALLINT TypeCode = SQL_ ## ENUM;						\
-				assert(m_codeToEnum.find(TypeCode) == m_codeToEnum.end());		\
-				m_codeToEnum[TypeCode] = SQLType::ENUM;							\
-				m_enumToCode[(short)SQLType::ENUM] = TypeCode;					\
-			}																	\
+#define asd_InitTypeTable(ENUM)														\
+			{																		\
+				const SQLSMALLINT TypeCode = SQL_ ## ENUM;							\
+				asd_DAssert(m_codeToEnum.find(TypeCode) == m_codeToEnum.end());		\
+				m_codeToEnum[TypeCode] = SQLType::ENUM;								\
+				m_enumToCode[(short)SQLType::ENUM] = TypeCode;						\
+			}																		\
 
 			asd_InitTypeTable(CHAR);
 			asd_InitTypeTable(VARCHAR);
@@ -150,38 +150,38 @@ namespace asd
 			// 유효한 파라메터인지 검사
 			SQLHANDLE inputHandle;
 			if (a_inputHandle == nullptr) {
-				assert(a_handleType == SQL_HANDLE_ENV);
+				asd_DAssert(a_handleType == SQL_HANDLE_ENV);
 				inputHandle = SQL_NULL_HANDLE;
 			}
 			else {
-				assert(a_handleType != SQL_HANDLE_ENV);
+				asd_DAssert(a_handleType != SQL_HANDLE_ENV);
 				if (a_handleType == SQL_HANDLE_DBC)
-					assert(a_inputHandle->m_handleType == SQL_HANDLE_ENV);
+					asd_DAssert(a_inputHandle->m_handleType == SQL_HANDLE_ENV);
 				else {
-					assert(a_handleType==SQL_HANDLE_DESC || a_handleType==SQL_HANDLE_STMT);
-					assert(a_inputHandle->m_handleType == SQL_HANDLE_DBC);
+					asd_DAssert(a_handleType==SQL_HANDLE_DESC || a_handleType==SQL_HANDLE_STMT);
+					asd_DAssert(a_inputHandle->m_handleType == SQL_HANDLE_DBC);
 				}
 				inputHandle = a_inputHandle->m_handle;
 			}
 
 			// 할당
-			SQLRETURN r = SQLAllocHandle(a_handleType,
-										 inputHandle,
-										 &m_handle);
+			SQLRETURN r = ::SQLAllocHandle(a_handleType,
+										   inputHandle,
+										   &m_handle);
 			asd_CheckError(r);
 
 			// 환경핸들인 경우 환경설정
 			if (a_handleType == SQL_HANDLE_ENV) {
-				r = SQLSetEnvAttr(m_handle,
-								  SQL_ATTR_ODBC_VERSION,
-								  (SQLPOINTER)SQL_OV_ODBC3,
-								  SQL_IS_INTEGER);
+				r = ::SQLSetEnvAttr(m_handle,
+									SQL_ATTR_ODBC_VERSION,
+									(SQLPOINTER)SQL_OV_ODBC3,
+									SQL_IS_INTEGER);
 				asd_CheckError(r);
 			}
 
 			// 마무리
 			m_handleType = a_handleType;
-			assert(m_handle != SQL_NULL_HANDLE);
+			asd_DAssert(m_handle != SQL_NULL_HANDLE);
 		}
 
 
@@ -245,9 +245,9 @@ namespace asd
 
 				DBDiagInfo diagInfo;
 				errMsg[errMsgLen] = '\0';
-				memcpy(diagInfo.m_state,
-					   state,
-					   sizeof(diagInfo.m_state));
+				std::memcpy(diagInfo.m_state,
+							state,
+							sizeof(diagInfo.m_state));
 				diagInfo.m_nativeError = nativeError;
 				diagInfo.m_message = (const char*)errMsg;
 				m_diagInfoList.emplace_back(diagInfo);
@@ -258,7 +258,7 @@ namespace asd
 		void Close()
 		{
 			if (m_handle != SQL_NULL_HANDLE) {
-				asd_CheckError(SQLFreeHandle(m_handleType, m_handle));
+				asd_CheckError(::SQLFreeHandle(m_handleType, m_handle));
 				m_handle = SQL_NULL_HANDLE;
 				m_handleType = 0;
 				m_diagInfoList.clear();
@@ -303,14 +303,14 @@ namespace asd
 		{
 			Init();
 			SQLSMALLINT t;
-			SQLRETURN r = SQLDriverConnect(m_handle,
-										   nullptr,
-										   (SQLCHAR*)a_constr,
-										   SQL_NTS,
-										   nullptr,
-										   0,
-										   &t,
-										   SQL_DRIVER_NOPROMPT);
+			SQLRETURN r = ::SQLDriverConnect(m_handle,
+											 nullptr,
+											 (SQLCHAR*)a_constr,
+											 SQL_NTS,
+											 nullptr,
+											 0,
+											 &t,
+											 SQL_DRIVER_NOPROMPT);
 			asd_CheckError(r);
 			m_connected = true;
 		}
@@ -319,10 +319,10 @@ namespace asd
 		void SetAutoCommit(IN bool a_auto)
 		{
 #pragma warning(disable:4312)
-			SQLRETURN r = SQLSetConnectAttr(m_handle,
-											SQL_ATTR_AUTOCOMMIT,
-											reinterpret_cast<SQLPOINTER>(a_auto ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF),
-											SQL_IS_INTEGER);
+			SQLRETURN r = ::SQLSetConnectAttr(m_handle,
+											  SQL_ATTR_AUTOCOMMIT,
+											  reinterpret_cast<SQLPOINTER>(a_auto ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF),
+											  SQL_IS_INTEGER);
 #pragma warning(default:4312)
 			asd_CheckError(r);
 			m_autoCommit = a_auto;
@@ -331,9 +331,9 @@ namespace asd
 
 		void EndTran(IN bool a_commit)
 		{
-			asd_CheckError(SQLEndTran(m_handleType,
-									  m_handle,
-									  a_commit ? SQL_COMMIT : SQL_ROLLBACK));
+			asd_CheckError(::SQLEndTran(m_handleType,
+										m_handle,
+										a_commit ? SQL_COMMIT : SQL_ROLLBACK));
 			SetAutoCommit(true);
 		}
 
@@ -344,7 +344,7 @@ namespace asd
 				EndTran(false);
 
 			if (m_connected) {
-				asd_CheckError(SQLDisconnect(m_handle));
+				asd_CheckError(::SQLDisconnect(m_handle));
 				m_connected = false;
 			}
 			Close();
@@ -364,7 +364,7 @@ namespace asd
 
 	void DBConnection::Open(IN const char* a_constr)
 	{
-		m_handle = DBConnectionHandle_ptr(new DBConnectionHandle);
+		m_handle.reset(new DBConnectionHandle);
 		m_handle->Open(a_constr);
 	}
 
@@ -391,7 +391,7 @@ namespace asd
 	{
 		if (m_handle != nullptr) {
 			m_handle->CloseConnectoin();
-			m_handle = DBConnectionHandle_ptr(nullptr);
+			m_handle = nullptr;
 		}
 	}
 
@@ -451,7 +451,7 @@ namespace asd
 		{
 			CloseStatement();
 
-			assert(a_conHandle != nullptr);
+			asd_DAssert(a_conHandle != nullptr);
 			m_conHandle = a_conHandle;
 			OdbcHandle::Init(SQL_HANDLE_STMT, m_conHandle.get());
 		}
@@ -461,9 +461,9 @@ namespace asd
 		{
 			m_paramMap_byParamNum.clear();
 			m_paramMap_byBoundPtr.clear();
-			asd_CheckError(SQLPrepare(m_handle,
-									  (SQLCHAR*)a_query,
-									  SQL_NTS));
+			asd_CheckError(::SQLPrepare(m_handle,
+										(SQLCHAR*)a_query,
+										SQL_NTS));
 		}
 
 
@@ -473,15 +473,15 @@ namespace asd
 						  OUT SQLSMALLINT* a_scale,
 						  OUT SQLSMALLINT* a_nullable)
 		{
-			asd_CheckError(SQLDescribeParam(m_handle,
-											a_paramNumber,
-											a_columnType,
-											a_columnSize,
-											a_scale,
-											a_nullable));
+			asd_CheckError(::SQLDescribeParam(m_handle,
+											  a_paramNumber,
+											  a_columnType,
+											  a_columnSize,
+											  a_scale,
+											  a_nullable));
 
 			if (a_columnSize != nullptr) {
-				assert(a_columnType != nullptr);
+				asd_DAssert(a_columnType != nullptr);
 				if (*a_columnType==SQL_WCHAR || *a_columnType==SQL_WVARCHAR)
 					*a_columnSize *= 4;
 			}
@@ -519,28 +519,17 @@ namespace asd
 										  buffer,
 										  indicator);
 
-				asd_CheckError(SQLBindParameter(m_handle,
-												param.first,
-												direction,
-												appType,
-												dbType,
-												bufferSize,
-												columnsScale,
-												buffer,
-												bufferSize,
-												indicator));
+				asd_CheckError(::SQLBindParameter(m_handle,
+												  param.first,
+												  direction,
+												  appType,
+												  dbType,
+												  bufferSize,
+												  columnsScale,
+												  buffer,
+												  bufferSize,
+												  indicator));
 			}
-		}
-
-
-		int GetMarkerCount(IN const char* a_query)
-		{
-			int cnt = 0;
-			for (auto p=a_query; *p!='\0'; ++p) {
-				if (*p == '?')
-					++cnt;
-			}
-			return cnt;
 		}
 
 
@@ -550,18 +539,18 @@ namespace asd
 			// 1. BindParameter, Execute
 			if (a_query == nullptr) {
 				BindParameter();
-				asd_CheckError(SQLExecute(m_handle));
+				asd_CheckError(::SQLExecute(m_handle));
 			}
 			else {
-				if (m_paramMap_byParamNum.size()>0 && GetMarkerCount(a_query)>0)
+				if (m_paramMap_byParamNum.size() > 0)
 					BindParameter();
-				asd_CheckError(SQLExecDirect(m_handle,
-											 (SQLCHAR*)a_query,
-											 SQL_NTS));
+				asd_CheckError(::SQLExecDirect(m_handle,
+											   (SQLCHAR*)a_query,
+											   SQL_NTS));
 			}
 
 			SQLLEN rows;
-			asd_CheckError(SQLRowCount(m_handle, &rows));
+			asd_CheckError(::SQLRowCount(m_handle, &rows));
 
 			// 2. Fetch Loop
 			int result = 1;
@@ -570,8 +559,8 @@ namespace asd
 				{
 					// 2-1-1. 컬럼의 개수를 구한다.
 					SQLSMALLINT colCount = -1;
-					asd_CheckError(SQLNumResultCols(m_handle, &colCount));
-					assert(colCount >= 0);
+					asd_CheckError(::SQLNumResultCols(m_handle, &colCount));
+					asd_DAssert(colCount >= 0);
 
 					// 2-1-2. 컬럼명 목록을 초기화한다.
 					m_columnIndexMap.clear();
@@ -589,7 +578,7 @@ namespace asd
 				// 2-2. 일괄적으로 Fetch를 수행하면서 FetchCallback을 호출해준다.
 				int record = 1;
 				while (true) {
-					SQLRETURN r = SQLFetch(m_handle);
+					SQLRETURN r = ::SQLFetch(m_handle);
 					if (r == SQL_NO_DATA_FOUND)
 						break; // 현재 Result에서 모든 Record를 Fetch했음.
 
@@ -602,7 +591,7 @@ namespace asd
 
 						if (0 == asd::strcmp("24000", a_err.m_state, false)) {
 							// 커서가 열리지 않은 경우
-							assert(invalid == false);
+							asd_DAssert(invalid == false);
 							invalid = true;
 							return true;
 						}
@@ -628,8 +617,8 @@ namespace asd
 
 		bool MoreResult()
 		{
-			assert(m_conHandle != nullptr);
-			SQLRETURN r = SQLMoreResults(m_handle);
+			asd_DAssert(m_conHandle != nullptr);
+			SQLRETURN r = ::SQLMoreResults(m_handle);
 			if (r == SQL_NO_DATA)
 				return false;
 
@@ -647,13 +636,13 @@ namespace asd
 			if (ret.length() == 0) {
 				SQLCHAR buf[SQL_MAX_MESSAGE_LENGTH];
 				SQLSMALLINT retlen;
-				asd_CheckError(SQLColAttribute(m_handle,
-											   a_colIndex,
-											   SQL_DESC_NAME,
-											   (SQLPOINTER)buf,
-											   sizeof(buf),
-											   &retlen,
-											   nullptr));
+				asd_CheckError(::SQLColAttribute(m_handle,
+												 a_colIndex,
+												 SQL_DESC_NAME,
+												 (SQLPOINTER)buf,
+												 sizeof(buf),
+												 &retlen,
+												 nullptr));
 				ret.append((const char*)buf, retlen);
 			}
 			return ret;
@@ -675,12 +664,12 @@ namespace asd
 					   IN SQLLEN a_bufLen)
 		{
 			SQLLEN indicator = 0;
-			asd_CheckError(SQLGetData(m_handle,
-									  a_colIndex,
-									  a_returnType,
-									  a_buf,
-									  a_bufLen,
-									  &indicator));
+			asd_CheckError(::SQLGetData(m_handle,
+										a_colIndex,
+										a_returnType,
+										a_buf,
+										a_bufLen,
+										&indicator));
 			return indicator;
 		}
 
@@ -711,7 +700,7 @@ namespace asd
 
 		void ClearParam()
 		{
-			asd_CheckError(SQLFreeStmt(m_handle, SQL_RESET_PARAMS));
+			asd_CheckError(::SQLFreeStmt(m_handle, SQL_RESET_PARAMS));
 			m_paramMap_byParamNum.clear();
 			m_paramMap_byBoundPtr.clear();
 		}
@@ -725,7 +714,7 @@ namespace asd
 			});
 
 			if (m_conHandle != nullptr) {
-				asd_CheckError(SQLCloseCursor(m_handle),
+				asd_CheckError(::SQLCloseCursor(m_handle),
 							   [](IN SQLRETURN a_ret,
 								  IN const DBDiagInfo& a_err)
 				{
@@ -766,21 +755,21 @@ namespace asd
 
 	void DBStatement::Init(REF DBConnection& a_conHandle)
 	{
-		m_handle = DBStatementHandle_ptr(new DBStatementHandle);
+		m_handle.reset(new DBStatementHandle);
 		m_handle->Init(a_conHandle.m_handle);
 	}
 
 
 	void DBStatement::Prepare(IN const char* a_query)
 	{
-		assert(m_handle != nullptr);
+		asd_DAssert(m_handle != nullptr);
 		m_handle->Prepare(a_query);
 	}
 
 
 	int64_t DBStatement::Execute(IN FetchCallback a_callback)
 	{
-		assert(m_handle != nullptr);
+		asd_DAssert(m_handle != nullptr);
 		return m_handle->Execute(nullptr, a_callback);
 	}
 
@@ -788,29 +777,29 @@ namespace asd
 	int64_t DBStatement::Execute(IN const char* a_query,
 								 IN FetchCallback a_callback)
 	{
-		assert(m_handle != nullptr);
+		asd_DAssert(m_handle != nullptr);
 		return m_handle->Execute(a_query, a_callback);
 	}
 
 
 	void DBStatement::ClearParam()
 	{
-		assert(m_handle != nullptr);
+		asd_DAssert(m_handle != nullptr);
 		m_handle->ClearParam();
 	}
 
 
 	MString DBStatement::GetColumnName(IN uint16_t a_columnIndex)
 	{
-		assert(m_handle != nullptr);
+		asd_DAssert(m_handle != nullptr);
 		return m_handle->GetColumnName(a_columnIndex);
 	}
 
 
 	uint16_t DBStatement::GetColumnCount() const
 	{
-		assert(m_handle != nullptr);
-		assert(m_handle->m_columnNameList.size() <= std::numeric_limits<uint16_t>::max());
+		asd_DAssert(m_handle != nullptr);
+		asd_DAssert(m_handle->m_columnNameList.size() <= std::numeric_limits<uint16_t>::max());
 		return (uint16_t)m_handle->m_columnNameList.size();
 	}
 
@@ -944,7 +933,7 @@ namespace asd
 			if (indicator == SQL_NO_TOTAL)
 				addLen = BufSize;
 			else {
-				assert(indicator > 0);
+				asd_DAssert(indicator > 0);
 				addLen = std::min(indicator, BufSize);
 				loop = indicator > BufSize;
 			}
@@ -958,7 +947,7 @@ namespace asd
 	Caster::operator PtrClass<Type>() const													\
 	{																						\
 		/* unused function, avoid build error */											\
-		assert(false);																		\
+		asd_DAssert(false);																	\
 		return t_lastCaster->operator PtrClass<Type>();										\
 	}																						\
 																							\
@@ -975,14 +964,14 @@ namespace asd
 	Caster::operator Type() const															\
 	{																						\
 		/* unused function, avoid build error */											\
-		assert(false);																		\
+		asd_DAssert(false);																	\
 		return t_lastCaster->operator Type();												\
 	}																						\
 																							\
 	Caster::operator Type*() const															\
 	{																						\
 		/* unused function, avoid build error */											\
-		assert(false);																		\
+		asd_DAssert(false);																	\
 		return t_lastCaster->operator Type*();												\
 	}																						\
 																							\
@@ -1132,7 +1121,7 @@ namespace asd
 			a_dataLen = sizeof(Type);																			\
 		}																										\
 		else {																									\
-			assert(sizeof(Type) == a_dataLen);																	\
+			asd_DAssert(sizeof(Type) == a_dataLen);																\
 			a_data = *((Type*)a_bufPtr);																		\
 		}																										\
 	}																											\
@@ -1151,8 +1140,8 @@ namespace asd
 			if (IsString) {																						\
 				addSize = a_dataLen / sizeof(ValType);															\
 				ValType* p = (ValType*)a_bufPtr;																\
-				assert(a_dataLen % sizeof(ValType) == 0);														\
-				assert(p[addSize] == '\0');																		\
+				asd_DAssert(a_dataLen % sizeof(ValType) == 0);													\
+				asd_DAssert(p[addSize] == '\0');																\
 			}																									\
 			else {																								\
 				addSize = a_dataLen;																			\
@@ -1276,9 +1265,9 @@ namespace asd
 			const bool SetNotNull = (Bind==false && a_nullInput==false);
 			switch (Param_Direction) {
 				case SQL_PARAM_INPUT: {
-					assert((a_bindingTarget == nullptr) == a_nullInput);
+					asd_DAssert((a_bindingTarget == nullptr) == a_nullInput);
 					if (SetNotNull) {
-						assert(a_bindingTarget != nullptr);
+						asd_DAssert(a_bindingTarget != nullptr);
 						m_temp = *a_bindingTarget;
 						m_bindingTarget = &m_temp;
 					}
@@ -1286,7 +1275,7 @@ namespace asd
 				}
 				case SQL_PARAM_OUTPUT: {
 					if (Bind)
-						assert((a_bindingTarget == nullptr) == a_nullInput);
+						asd_DAssert((a_bindingTarget == nullptr) == a_nullInput);
 					if (SetNotNull)
 						m_bindingTarget = &m_temp;
 					break;
@@ -1295,15 +1284,15 @@ namespace asd
 					if (Bind == false) {
 						m_bindingTarget = &m_temp;
 						if (a_nullInput == false) {
-							assert(a_bindingTarget != nullptr);
+							asd_DAssert(a_bindingTarget != nullptr);
 							m_temp = *a_bindingTarget;
 						}
 					}
-					assert(m_bindingTarget != nullptr);
+					asd_DAssert(m_bindingTarget != nullptr);
 					break;
 				}
 				default:
-					assert(false);
+					asd_DAssert(false);
 					break;
 			}
 		}
@@ -1313,7 +1302,7 @@ namespace asd
 							  IN SQLUSMALLINT a_paramNumber)
 		{
 			const auto& MaramMap = a_stmtHandle.m_paramMap_byParamNum;
-			assert(MaramMap.find(a_paramNumber) != MaramMap.end());
+			asd_DAssert(MaramMap.find(a_paramNumber) != MaramMap.end());
 			if (m_dbType != SQL_UNKNOWN_TYPE)
 				return;
 
@@ -1350,10 +1339,10 @@ namespace asd
 						a_bufferSize = 0;
 					}
 					else {
-						assert(m_bindingTarget != nullptr);
+						asd_DAssert(m_bindingTarget != nullptr);
 						ConvertStream<Type>(Left_To_Right, *m_bindingTarget, a_buffer, m_indicator);
 						a_bufferSize = m_indicator;
-						assert(m_indicator >= 0);
+						asd_DAssert(m_indicator >= 0);
 					}
 					break;
 				}
@@ -1363,23 +1352,23 @@ namespace asd
 						a_bufferSize = 0;
 					}
 					else {
-						assert(m_bindingTarget != nullptr);
+						asd_DAssert(m_bindingTarget != nullptr);
 						ConvertStream<Type>(Left_To_Right, *m_bindingTarget, a_buffer, m_indicator);
-						assert(m_indicator >= 0);
+						asd_DAssert(m_indicator >= 0);
 						if (m_bufferSize < (SQLULEN)m_indicator)
 							m_bufferSize = (SQLULEN)m_indicator;
-						assert(m_bufferSize >= (SQLULEN)m_indicator);
+						asd_DAssert(m_bufferSize >= (SQLULEN)m_indicator);
 						a_bufferSize = m_bufferSize;
 					}
 					break;
 				}
 				case SQL_PARAM_INPUT_OUTPUT: {
-					assert(m_bindingTarget != nullptr);
+					asd_DAssert(m_bindingTarget != nullptr);
 					SQLLEN inputLen;
 					ConvertStream<Type>(Left_To_Right, *m_bindingTarget, a_buffer, inputLen);
 					if (m_indicator != SQL_NULL_DATA) {
 						m_indicator = inputLen;
-						assert(m_indicator >= 0);
+						asd_DAssert(m_indicator >= 0);
 						if (m_bufferSize < (SQLULEN)m_indicator)
 							m_bufferSize = (SQLULEN)m_indicator;
 					}
@@ -1387,7 +1376,7 @@ namespace asd
 					break;
 				}
 				default:
-					assert(false);
+					asd_DAssert(false);
 					break;
 			}
 		}
@@ -1438,7 +1427,7 @@ namespace asd
 
 		inline static size_t ToCharCount(IN const size_t a_byte)
 		{
-			assert(a_byte % sizeof(ValType) == 0);
+			asd_DAssert(a_byte % sizeof(ValType) == 0);
 			if (IsStringType)
 				return a_byte / sizeof(ValType);
 			else
@@ -1460,13 +1449,13 @@ namespace asd
 			SQLLEN inputSize = SQL_NULL_DATA;
 			if (Param_Direction != SQL_PARAM_INPUT) {
 				BaseType::RequestParamInfo(a_requester, a_paramNumber);
-				assert(m_bufferSize > 0);
+				asd_DAssert(m_bufferSize > 0);
 				if (m_indicator == SQL_NULL_DATA)
-					assert(Param_Direction == SQL_PARAM_OUTPUT);
+					asd_DAssert(Param_Direction == SQL_PARAM_OUTPUT);
 				else {
-					assert(m_bindingTarget != nullptr);
+					asd_DAssert(m_bindingTarget != nullptr);
 					inputSize = m_bindingTarget->size();
-					assert(inputSize >= 0);
+					asd_DAssert(inputSize >= 0);
 					if (m_bufferSize > (SQLULEN)inputSize) {
 						const size_t NullChar = IsStringType ? 1 : 0;
 						m_bindingTarget->resize(ToCharCount(m_bufferSize) - NullChar);
@@ -1498,10 +1487,10 @@ namespace asd
 			if (Param_Direction != SQL_PARAM_INPUT) {
 				if (m_indicator != SQL_NULL_DATA) {
 					m_indicator = inputSize;
-					assert(m_indicator != SQL_NULL_DATA);
-					assert(m_indicator >= 0);
-					assert(m_bindingTarget != nullptr);
-					assert(m_bindingTarget->size() >= (size_t)m_indicator);
+					asd_DAssert(m_indicator != SQL_NULL_DATA);
+					asd_DAssert(m_indicator >= 0);
+					asd_DAssert(m_bindingTarget != nullptr);
+					asd_DAssert(m_bindingTarget->size() >= (size_t)m_indicator);
 				}
 			}
 		}
@@ -1516,12 +1505,12 @@ namespace asd
 				return;
 
 			if (m_bindingTarget == nullptr) {
-				assert(Param_Direction == SQL_PARAM_OUTPUT);
+				asd_DAssert(Param_Direction == SQL_PARAM_OUTPUT);
 				return;
 			}
 
-			assert(m_indicator >= 0);
-			assert((size_t)m_indicator <= m_bindingTarget->size());
+			asd_DAssert(m_indicator >= 0);
+			asd_DAssert((size_t)m_indicator <= m_bindingTarget->size());
 			m_bindingTarget->resize(ToCharCount(m_indicator));
 		}
 	};
@@ -1581,7 +1570,7 @@ namespace asd
 								 OUT void*& a_buffer,
 								 OUT SQLLEN*& a_indicator) override
 		{
-			assert(m_proxyParam != nullptr);
+			asd_DAssert(m_proxyParam != nullptr);
 
 			const bool NeedCopy = Bind
 							   && Param_Direction != SQL_PARAM_OUTPUT
@@ -1607,7 +1596,7 @@ namespace asd
 
 		virtual void AfterFetch() override
 		{
-			assert(m_proxyParam != nullptr);
+			asd_DAssert(m_proxyParam != nullptr);
 			m_proxyParam->AfterFetch();
 
 			if (Bind && Param_Direction!=SQL_PARAM_INPUT) {
@@ -1616,7 +1605,7 @@ namespace asd
 				m_proxyParam->GetBoundObj(p, ind);
 
 				if (p!=nullptr && m_bindingTarget!=nullptr && ind!=SQL_NULL_DATA) {
-					assert(p == &m_proxyObj);
+					asd_DAssert(p == &m_proxyObj);
 					Call_ConvertData<ProxyType, T>(m_proxyObj, *m_bindingTarget);
 				}
 			}
@@ -1626,7 +1615,7 @@ namespace asd
 		virtual void GetBoundObj(OUT void*& a_objPtr,
 								 OUT SQLLEN& a_indicator) const override
 		{
-			assert(m_proxyParam != nullptr);
+			asd_DAssert(m_proxyParam != nullptr);
 
 			void* p;
 			m_proxyParam->GetBoundObj(p, a_indicator);
@@ -1639,7 +1628,7 @@ namespace asd
 					a_objPtr = nullptr;
 				else {
 					thread_local T t_tempObj;
-					assert(p == &m_proxyObj);
+					asd_DAssert(p == &m_proxyObj);
 					Call_ConvertData<ProxyType, T>(m_proxyObj, t_tempObj);
 					a_objPtr = &t_tempObj;
 				}

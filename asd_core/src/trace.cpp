@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/trace.h"
 #include "asd/threadutil.h"
 #include "asd/lock.h"

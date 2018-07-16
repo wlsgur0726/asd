@@ -57,8 +57,8 @@ namespace asdtest_lock
 		double max = 0;
 		double total = 0;
 		for (auto c : counts) {
-			if (max < c)
-				max = c;
+			if (max < (double)c)
+				max = (double)c;
 			total += c;
 		}
 		ASSERT_EQ(total, totalCount);
@@ -130,10 +130,7 @@ namespace asdtest_lock
 
 	auto g_handleTask = []()
 	{
-		struct TestData
-		{
-			std::vector<int> data;
-		};
+		struct TestData { std::vector<int> data; };
 		using TestHandle = asd::Handle<TestData>;
 
 		static TestHandle s_handle;

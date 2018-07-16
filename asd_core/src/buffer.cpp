@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/buffer.h"
 
 namespace asd
@@ -56,8 +56,8 @@ namespace asd
 
 	void BufferList::ReserveBuffer(IN size_t a_bytes /*= asd_BufferList_DefaultWriteBufferSize*/)
 	{
-		assert(m_total_capacity >= m_total_write);
-		assert(size() >= m_writeOffset);
+		asd_DAssert(m_total_capacity >= m_total_write);
+		asd_DAssert(size() >= m_writeOffset);
 
 		while (m_total_capacity - m_total_write < a_bytes) {
 			m_total_capacity += asd_BufferList_DefaultWriteBufferSize;
@@ -68,8 +68,8 @@ namespace asd
 
 	void BufferList::ReserveBuffer(MOVE Buffer_ptr&& a_buffer)
 	{
-		assert(m_total_capacity >= m_total_write);
-		assert(size() >= m_writeOffset);
+		asd_DAssert(m_total_capacity >= m_total_write);
+		asd_DAssert(size() >= m_writeOffset);
 
 		if (a_buffer == nullptr)
 			return;
@@ -88,15 +88,15 @@ namespace asd
 
 	void BufferList::PushBack(MOVE Buffer_ptr&& a_buffer)
 	{
-		assert(size() >= m_writeOffset);
+		asd_DAssert(size() >= m_writeOffset);
 		if (a_buffer == nullptr)
 			return;
 
 		const size_t capacity = a_buffer->Capacity();
 		const size_t sz = a_buffer->GetSize();
 
-		assert(capacity > 0);
-		assert(capacity >= sz);
+		asd_DAssert(capacity > 0);
+		asd_DAssert(capacity >= sz);
 		m_total_capacity += capacity;
 		emplace_back(std::move(a_buffer));
 
@@ -112,7 +112,7 @@ namespace asd
 		while (++before != rend()) {
 			sz_before = (*before)->GetSize();
 			if (sz_before > 0) {
-				assert(writeOffset > 0);
+				asd_DAssert(writeOffset > 0);
 				break;
 			}
 			std::swap(*before, *newbe);
@@ -120,7 +120,7 @@ namespace asd
 			--writeOffset;
 		}
 
-		assert(before==rend() ? writeOffset==0 : true);
+		asd_DAssert(before==rend() ? writeOffset==0 : true);
 		if (writeOffset > 0) {
 			// 마지막 버퍼에 남은 여분을 사용할 수 없게 되므로 총 Capacity가 감소한다.
 			const size_t remain = (*before)->Capacity() - sz_before;
@@ -152,16 +152,16 @@ namespace asd
 
 	void BufferList::PushFront(MOVE Buffer_ptr&& a_buffer)
 	{
-		assert(m_readOffset == Offset());
-		assert(size() >= m_writeOffset);
+		asd_DAssert(m_readOffset == Offset());
+		asd_DAssert(size() >= m_writeOffset);
 		if (a_buffer == nullptr)
 			return;
 
 		const size_t capacity = a_buffer->Capacity();
 		const size_t sz = a_buffer->GetSize();
 
-		assert(capacity > 0);
-		assert(capacity >= sz);
+		asd_DAssert(capacity > 0);
+		asd_DAssert(capacity >= sz);
 		m_total_capacity += capacity;
 
 		if (sz == 0) {
@@ -173,14 +173,14 @@ namespace asd
 		const size_t remain = capacity - sz;
 		if (m_total_write == 0) {
 			// 빈 상태에서 새로 추가된 경우
-			assert(m_writeOffset == 0);
+			asd_DAssert(m_writeOffset == 0);
 			if (remain == 0)
 				++m_writeOffset;
 		}
 		else {
 			// Write가 진행중인 버퍼 앞에 추가시키는 경우
-			assert(size() > 0);
-			assert(at(0)->GetSize() > 0);
+			asd_DAssert(size() > 0);
+			asd_DAssert(at(0)->GetSize() > 0);
 			++m_writeOffset;
 			m_total_capacity -= remain;
 		}
@@ -207,37 +207,37 @@ namespace asd
 
 	void BufferList::Flush()
 	{
-		assert(size() >= m_readOffset.Row);
+		asd_DAssert(size() >= m_readOffset.Row);
 		for (; m_readOffset.Row!=0; --m_readOffset.Row) {
 			const auto sz = at(0)->GetSize();
 			m_total_read -= sz;
 			m_total_write -= min(m_total_write, sz);
 			pop_front();
 		}
-		assert(m_readOffset.Row == 0);
-		assert(m_readOffset.Col == m_total_read);
+		asd_DAssert(m_readOffset.Row == 0);
+		asd_DAssert(m_readOffset.Col == m_total_read);
 	}
 
 
 	bool BufferList::Readable(IN size_t a_bytes) const
 	{
-		assert(size() >= m_readOffset.Row);
-		assert(m_total_capacity >= m_total_write);
-		assert(m_total_write >= m_total_read);
+		asd_DAssert(size() >= m_readOffset.Row);
+		asd_DAssert(m_total_capacity >= m_total_write);
+		asd_DAssert(m_total_write >= m_total_read);
 #if asd_Debug
 		{
 			size_t total_read = 0;
 			for (size_t i=0; i<m_readOffset.Row; ++i) {
 				size_t sz = at(i)->GetSize();
-				assert(sz > 0);
+				asd_DAssert(sz > 0);
 				total_read += sz;
 			}
 			if (size() > m_readOffset.Row)
-				assert(m_readOffset.Col <= at(m_readOffset.Row)->GetSize());
+				asd_DAssert(m_readOffset.Col <= at(m_readOffset.Row)->GetSize());
 			else
-				assert(m_readOffset.Col == 0);
+				asd_DAssert(m_readOffset.Col == 0);
 			total_read += m_readOffset.Col;
-			assert(total_read == m_total_read);
+			asd_DAssert(total_read == m_total_read);
 		}
 #endif
 		return a_bytes <= m_total_write - m_total_read;
@@ -252,14 +252,14 @@ namespace asd
 		const uint8_t* src = reinterpret_cast<const uint8_t*>(a_data);
 		for (size_t cp = 0;;) {
 			BufferInterface* buf = at(m_writeOffset).get();
-			assert(buf != nullptr);
+			asd_DAssert(buf != nullptr);
 
 			const size_t capacity = buf->Capacity();
 			const size_t sz = buf->GetSize();
 			const size_t reserve = capacity - sz;
 			uint8_t* dst = buf->GetBuffer() + sz;
-			assert(capacity >= sz);
-			assert(dst != reinterpret_cast<uint8_t*>(sz)); // buf->GetBuffer() null check
+			asd_DAssert(capacity >= sz);
+			asd_DAssert(dst != reinterpret_cast<uint8_t*>(sz)); // buf->GetBuffer() null check
 
 			const size_t remain = a_bytes - cp;
 			if (reserve >= remain) {
@@ -274,7 +274,7 @@ namespace asd
 			asd_RAssert(buf->SetSize(capacity), "SetSize({})", capacity);
 
 			++m_writeOffset;
-			assert(size() > m_writeOffset);
+			asd_DAssert(size() > m_writeOffset);
 		}
 
 		m_total_write += a_bytes;
@@ -291,11 +291,11 @@ namespace asd
 		uint8_t* dst = reinterpret_cast<uint8_t*>(a_data);
 		for (size_t cp = 0;;) {
 			BufferInterface* buf = at(m_readOffset.Row).get();
-			assert(buf != nullptr);
+			asd_DAssert(buf != nullptr);
 
 			const size_t sz = buf->GetSize() - m_readOffset.Col;
 			const uint8_t* src = buf->GetBuffer() + m_readOffset.Col;
-			assert(src != reinterpret_cast<uint8_t*>(m_readOffset.Col));
+			asd_DAssert(src != reinterpret_cast<uint8_t*>(m_readOffset.Col));
 
 			const size_t remain = a_bytes - cp;
 			if (sz >= remain) {
@@ -309,7 +309,7 @@ namespace asd
 
 			m_readOffset.Col = 0;
 			++m_readOffset.Row;
-			assert(size() > m_readOffset.Row);
+			asd_DAssert(size() > m_readOffset.Row);
 		}
 
 		m_total_read += a_bytes;

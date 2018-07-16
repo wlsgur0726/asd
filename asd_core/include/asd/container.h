@@ -44,7 +44,7 @@ namespace asd
 
 		inline ShardSet(IN size_t a_shardCount = 2*Get_HW_Concurrency())
 		{
-			m_shardCount = max(a_shardCount, 1);
+			m_shardCount = max(a_shardCount, 1u);
 			m_memory.resize(sizeof(Container) * m_shardCount);
 			m_shards = (Container*)m_memory.data();
 			for (size_t i=0; i<m_shardCount; ++i)
@@ -107,7 +107,7 @@ namespace asd
 		bool Insert(IN const key_type& a_key,
 					IN const mapped_type& a_val)
 		{
-			auto shard = GetShard(a_key);
+			auto shard = this->GetShard(a_key);
 			auto lock = shard->GetLock();
 			return shard->emplace(a_key, a_val).second;
 		}
@@ -115,7 +115,7 @@ namespace asd
 
 		mapped_type Find(IN const key_type& a_key)
 		{
-			auto shard = GetShard(a_key);
+			auto shard = this->GetShard(a_key);
 			auto lock = shard->GetLock();
 			auto it = shard->find(a_key);
 			if (it == shard->end())
@@ -126,7 +126,7 @@ namespace asd
 
 		const mapped_type Find(IN const key_type& a_key) const
 		{
-			auto shard = GetShard(a_key);
+			auto shard = this->GetShard(a_key);
 			auto lock = shard->GetLock();
 			auto it = shard->find(a_key);
 			if (it == shard->end())
@@ -137,7 +137,7 @@ namespace asd
 
 		mapped_type Erase(IN const key_type& a_key)
 		{
-			auto shard = GetShard(a_key);
+			auto shard = this->GetShard(a_key);
 			auto lock = shard->GetLock();
 			auto it = shard->find(a_key);
 			if (it == shard->end())

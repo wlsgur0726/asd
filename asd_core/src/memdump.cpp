@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/filedef.h"
 #include "asd/lock.h"
 #include "asd/memdump.h"
@@ -53,7 +53,7 @@ namespace asd
 								OUT FChar* a_dst,
 								IN size_t a_dstBufCnt)
 		{
-			assert(Encoding::UTF8 == GetDefaultEncoding<char>());
+			asd_DAssert(Encoding::UTF8 == GetDefaultEncoding<char>());
 			MString conv = ConvToM(a_str);
 			asd::strcpy(a_dst, conv.c_str(), a_dstBufCnt);
 		}

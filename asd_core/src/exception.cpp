@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/exception.h"
 #include "asd/log.h"
 #include <atomic>

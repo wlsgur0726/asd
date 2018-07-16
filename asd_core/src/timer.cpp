@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/timer.h"
 
 #if !asd_Platform_Windows
@@ -64,7 +64,7 @@ namespace asd
 		std::vector<std::deque<Task_ptr>> taskList;
 		taskList.reserve(100);
 		for (bool run;;) {
-			for (auto lock=GetLock(m_lock); run=m_run; lock.lock()) {
+			for (auto lock=GetLock(m_lock); (run=m_run); lock.lock()) {
 				for (auto it=m_taskList.begin(); it!=m_taskList.end(); ) {
 					if (it->first > m_offset)
 						break;

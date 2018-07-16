@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/socket.h"
 #include "asd/exception.h"
 #include <string>
@@ -57,7 +57,7 @@ namespace asd
 				::Sleep(0);
 				continue;
 			}
-			asd_RAssert(false, "fail closesocket, WSAGetLastError:{}", e);
+			asd_OnErr("fail closesocket, WSAGetLastError:{}", e);
 			break;
 		}
 	}
@@ -101,7 +101,7 @@ namespace asd
 	inline void CloseSocket(const Socket::Handle& socket) {
 		if (0 != ::close(socket)) {
 			auto e = GetErrorNumber();
-			asd_RAssert(false, "fail close, errno:{}", e);
+			asd_OnErr("fail close, errno:{}", e);
 		}
 	}
 
@@ -272,7 +272,6 @@ namespace asd
 		if (ret != 0)
 			return ret;
 
-		const sockaddr* addr = a_addr;
 		if (::bind(m_handle, a_addr, a_addr.GetAddrLen()) == -1)
 			ret = GetErrorNumber();
 
@@ -749,7 +748,7 @@ namespace asd
 				break;
 			}
 			default:
-				asd_RAssert(false, "unknown address family, {}", addr->sa_family);
+				asd_OnErr("unknown address family, {}", addr->sa_family);
 				return -1;
 		}
 		return 0;

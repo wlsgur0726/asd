@@ -110,7 +110,7 @@ namespace asd
 		: public Global<Logger>
 	{
 	public:
-		typedef std::function<FString(IN uint64_t a_logNumber, IN DateTime a_now)> GenText;
+		using GenText = std::function<FString(IN uint64_t a_logNumber, IN DateTime a_now)>;
 
 
 	private:

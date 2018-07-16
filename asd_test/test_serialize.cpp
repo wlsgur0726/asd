@@ -61,13 +61,15 @@ namespace asdtest_serialize
 	template <typename T>
 	void Test_Endian_Reverse_1()
 	{
-		const T src = static_cast<T>(0xABCDEF);
+		static_assert(sizeof(T)==2 || sizeof(T)==4, "unexpected size");
+
+		const T src = (T)0xABCD;
 		T asd = asd::Reverse(src);
 		T libc;
 		if (sizeof(T) == 2)
-			libc = htons(src);
+			libc = (T)htons(src);
 		else if (sizeof(T) == 4)
-			libc = htonl(src);
+			libc = (T)htonl(src);
 		else
 			return;
 
@@ -77,7 +79,7 @@ namespace asdtest_serialize
 	template <typename T>
 	void Test_Endian_Reverse_2()
 	{
-		const T src = static_cast<T>(0xABCDEF01020304);
+		const T src = (T)(0xABCDEF01020304);
 		const T reverse1 = asd::Reverse(src);
 		const T reverse2 = asd::Reverse(reverse1);
 		const T reverse3 = asd::Reverse(reverse2);
@@ -221,7 +223,7 @@ namespace asdtest_serialize
 							32,
 							-64,
 							64,
-							1.23,
+							1.23f,
 							4.56,
 							100);
 		Test_WriteRead<TestTuple, SmallBuf>(src);

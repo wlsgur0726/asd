@@ -29,8 +29,8 @@ namespace asdtest_datetime
 	{
 		tm t = *asd::localtime();
 		asd::Date d = t;
-		EXPECT_EQ(t.tm_wday, (int)d.DayOfTheWeek());
-		EXPECT_EQ(asd::Date(1, 1, 1).DayOfTheWeek(), asd::DayOfTheWeek::Monday);
+		EXPECT_EQ(t.tm_wday, (int)d.GetDayOfTheWeek());
+		EXPECT_EQ(asd::Date(1, 1, 1).GetDayOfTheWeek(), asd::DayOfTheWeek::Monday);
 	}
 
 

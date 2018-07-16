@@ -5,9 +5,9 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.cross.exe.debug.908670506" moduleId="org.eclipse.cdt.core.settings" name="Debug">
 				<externalSettings>
 					<externalSetting>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/asd"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/asd/Debug"/>
-						<entry flags="RESOLVED" kind="libraryFile" name="asd" srcPrefixMapping="" srcRootPath=""/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/asd_core"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/asd_core/Debug"/>
+						<entry flags="RESOLVED" kind="libraryFile" name="asd_core" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
 				<extensions>
@@ -23,7 +23,7 @@
 					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.908670506." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1359018705" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.341595058" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder buildPath="${workspace_loc:/asd}/Debug" id="cdt.managedbuild.target.gnu.builder.base.1555100403" keepEnvironmentInBuildfile="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<builder buildPath="${workspace_loc:/asd_core}/Debug" id="cdt.managedbuild.target.gnu.builder.base.1555100403" keepEnvironmentInBuildfile="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.base"/>
 							<tool command="ar" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.gnu.archiver.base.399737166" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.163275502" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 								<option id="gnu.cpp.compiler.option.optimization.level.1882702913" name="Optimization Level" superClass="gnu.cpp.compiler.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
@@ -31,9 +31,9 @@
 								<option id="gnu.cpp.compiler.option.dialect.std.553928721" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.other.other.461609473" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fpermissive -std=c++14 -lptrhead  -lodbc" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1361845725" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/built-in/cppformat}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/built-in/cppformat}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/src}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.667382166" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_DEBUG"/>
@@ -46,9 +46,9 @@
 								<option id="gnu.c.compiler.option.dialect.std.320266314" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.misc.other.1759398732" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fpermissive -lptrhead -lodbc" valueType="string"/>
 								<option id="gnu.c.compiler.option.include.paths.305772811" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/built-in/cppformat}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/built-in/cppformat}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/src}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1537225907" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_DEBUG"/>
@@ -70,9 +70,9 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.cross.exe.release.215518828" moduleId="org.eclipse.cdt.core.settings" name="Release">
 				<externalSettings>
 					<externalSetting>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/asd"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/asd/Release"/>
-						<entry flags="RESOLVED" kind="libraryFile" name="asd" srcPrefixMapping="" srcRootPath=""/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/asd_core"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/asd_core/Release"/>
+						<entry flags="RESOLVED" kind="libraryFile" name="asd_core" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
 				<extensions>
@@ -88,15 +88,15 @@
 					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.release.215518828." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.exe.release.1598432176" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.exe.release">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross.730183576" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
-							<builder buildPath="${workspace_loc:/asd}/Release" id="cdt.managedbuild.builder.gnu.cross.38276991" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.builder.gnu.cross"/>
+							<builder buildPath="${workspace_loc:/asd_core}/Release" id="cdt.managedbuild.builder.gnu.cross.38276991" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.builder.gnu.cross"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.778704292" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
 								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.option.optimization.level.1466452354" name="Optimization Level" superClass="gnu.c.compiler.option.optimization.level" useByScannerDiscovery="false" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.debugging.level.152340484" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.misc.other.2132693858" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fpermissive -lptrhead -lodbc" valueType="string"/>
 								<option id="gnu.c.compiler.option.include.paths.630055926" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/built-in/cppformat}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/built-in/cppformat}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/src}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1141808340" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -105,9 +105,9 @@
 								<option id="gnu.cpp.compiler.option.debugging.level.84077946" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.other.other.1907502966" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fpermissive -std=c++14 -lptrhead  -lodbc" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.paths.637615954" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/built-in/cppformat}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/built-in/cppformat}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/asd_core/src}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1908259152" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -130,15 +130,15 @@
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="asd.cdt.managedbuild.target.gnu.cross.exe.1740529210" name="Executable" projectType="cdt.managedbuild.target.gnu.cross.exe"/>
+		<project id="asd_core.cdt.managedbuild.target.gnu.cross.exe.1740529210" name="Executable" projectType="cdt.managedbuild.target.gnu.cross.exe"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Debug">
-			<resource resourceType="PROJECT" workspacePath="/asd"/>
+			<resource resourceType="PROJECT" workspacePath="/asd_core"/>
 		</configuration>
 		<configuration configurationName="Release">
-			<resource resourceType="PROJECT" workspacePath="/asd"/>
+			<resource resourceType="PROJECT" workspacePath="/asd_core"/>
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">

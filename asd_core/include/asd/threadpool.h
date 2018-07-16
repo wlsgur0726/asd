@@ -216,7 +216,10 @@ namespace asd
 				return;
 
 			auto lock = GetLock(data->lock);
-			asd_ChkErrAndRet(data->run, "already started");
+			if (data->run) {
+				asd_OnErr("already started");
+				return;
+			}
 			data->run = true;
 			lock.unlock();
 
@@ -534,7 +537,10 @@ namespace asd
 				asd_ThreadPool_WorkingMap_FindShard(a_keyInfo, shard);
 
 				auto it = shard.find(a_keyInfo);
-				asd_ChkErrAndRet(it == shard.end(), "unknown error");
+				if (it == shard.end()) {
+					asd_OnErr("unknown error");
+					return;
+				}
 				auto& work = it->second;
 
 				if (--work.procCount == 0) {
@@ -826,7 +832,10 @@ namespace asd
 
 				curWorker.tid = GetCurrentThreadID();
 
-				asd_ChkErrAndRet(!a_data->workers.emplace(curWorker.tid, &curWorker).second, "already registered thread");
+				if (!a_data->workers.emplace(curWorker.tid, &curWorker).second) {
+					asd_OnErr("already registered thread");
+					return;
+				}
 				a_data->workerList.emplace_back(&curWorker);
 				asd_RAssert(a_data->workers.size() == a_data->workerList.size(), "unknown error");
 				a_data->stats.threadCount = a_data->workers.size();
@@ -882,7 +891,10 @@ namespace asd
 			if (it == a_data->workers.end())
 				return;
 
-			asd_ChkErrAndRet(a_worker != it->second, "unknown error");
+			if (a_worker != it->second) {
+				asd_OnErr("unknown error");
+				return;
+			}
 
 			if (a_worker->selfDeleting)
 				a_data->selfDeletingCnt--;

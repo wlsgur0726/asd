@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/semaphore.h"
 
 #if !defined(asd_Platform_Windows)
@@ -33,7 +33,7 @@ namespace asd
 		{
 			if (::CloseHandle(m_handle) == 0) {
 				auto e = ::GetLastError();
-				asd_RAssert(false, "GetLastError:{}", e);
+				asd_OnErr("GetLastError:{}", e);
 			}
 		}
 	};
@@ -57,7 +57,7 @@ namespace asd
 		{
 			if (0 != ::sem_destroy(&m_handle)) {
 				auto e = errno;
-				asd_RAssert(false, "fail sem_destroy(), errno:{}", e);
+				asd_OnErr("fail sem_destroy(), errno:{}", e);
 			}
 		}
 	};

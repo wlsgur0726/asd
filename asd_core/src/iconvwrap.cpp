@@ -1,4 +1,4 @@
-﻿#include "asd_pch.h"
+﻿#include "stdafx.h"
 #include "asd/iconvwrap.h"
 #include "asd/util.h"
 #include <cwchar>
@@ -36,9 +36,9 @@ namespace asd
 					 , m_maxSize(a_maxSize)
 					 , m_encodingName(a_encodingName)
 		{
-			assert(a_minSize > 0);
-			assert(a_avgSize > 0);
-			assert(a_maxSize > 0);
+			asd_DAssert(a_minSize > 0);
+			asd_DAssert(a_avgSize > 0);
+			asd_DAssert(a_maxSize > 0);
 		}
 	};
 
@@ -74,7 +74,7 @@ namespace asd
 		static bool g_checkedTable = false;
 		if (g_checkedTable == false) {
 			for (int i=0; i<(int)Encoding::Last; ++i) {
-				assert(GetEncodingInfo((Encoding)i).m_encoding == (Encoding)i);
+				asd_RAssert(GetEncodingInfo((Encoding)i).m_encoding == (Encoding)i, "encoding table error");
 			}
 			g_checkedTable = true;
 		}
@@ -87,7 +87,7 @@ namespace asd
 	{
 		Check_EncodingInfo_Table();
 		if (IsValidEncoding(a_enc) == false) {
-			assert(false);
+			asd_DAssert(false);
 			return nullptr;
 		}
 		return GetEncodingInfo(a_enc).m_encodingName;
@@ -122,10 +122,10 @@ namespace asd
 
 
 #define asd_Define_GetDefaultEncoding(CharType)								\
-	Encoding GetDefaultEncoding(IN const CharType*)			\
+	Encoding GetDefaultEncoding(IN const CharType*)							\
 	{																		\
 		Encoding ret = DefaultEncoding::GlobalInstance().m_ ## CharType;	\
-		assert(IsValidEncoding(ret));										\
+		asd_DAssert(IsValidEncoding(ret));									\
 		return ret;															\
 	}																		\
 
@@ -141,9 +141,9 @@ namespace asd
 
 #define asd_Define_SetDefaultEncoding(CharType)								\
 	void SetDefaultEncoding(IN Encoding a_enc,								\
-							IN const CharType*)				\
+							IN const CharType*)								\
 	{																		\
-		assert(IsValidEncoding(a_enc));										\
+		asd_DAssert(IsValidEncoding(a_enc));								\
 		DefaultEncoding::GlobalInstance().m_ ## CharType = a_enc;			\
 	}																		\
 
@@ -192,7 +192,7 @@ namespace asd
 			iconv_close(a_icd);
 			a_icd = ICONV_InvalidDescriptor;
 		}
-		assert(a_icd == ICONV_InvalidDescriptor);
+		asd_DAssert(a_icd == ICONV_InvalidDescriptor);
 	}
 
 
@@ -244,7 +244,7 @@ namespace asd
 		float ratio_avg = (float)SizeOfCharUnit_Avg(m_after) / SizeOfCharUnit_Avg(m_before);
 		float ratio_max = (float)SizeOfCharUnit_Max(m_after) / SizeOfCharUnit_Max(m_before);
 		m_ratio = asd::max(ratio_min, ratio_avg, ratio_max);
-		assert(m_ratio > 0);
+		asd_DAssert(m_ratio > 0);
 		return 0;
 	}
 
@@ -255,11 +255,15 @@ namespace asd
 							  OUT void* a_outBuffer,
 							  INOUT size_t& a_outSize_byte) const
 	{
-		assert(m_icd != ICONV_InvalidDescriptor);
-		assert(m_before != Encoding::Last);
-		assert(m_after != Encoding::Last);
+		asd_DAssert(m_icd != ICONV_InvalidDescriptor);
+		asd_DAssert(m_before != Encoding::Last);
+		asd_DAssert(m_after != Encoding::Last);
 
+#if asd_Platform_Windows
 		const char* inBuf = (const char*)a_inBuffer;
+#else
+		char* inBuf = (char*)a_inBuffer;
+#endif
 		size_t inSiz = a_inBufSize_byte;
 		char* outBuf = (char*)a_outBuffer;
 		auto ret = iconv(m_icd,
@@ -267,8 +271,6 @@ namespace asd
 						 &inSiz,
 						 &outBuf,
 						 &a_outSize_byte);
-		if (ret < 0)
-			ret = errno;
 		return ret;
 	}
 
@@ -278,16 +280,16 @@ namespace asd
 											 IN size_t a_inSize,
 											 OUT size_t* a_outSize_byte /*= nullptr*/) const
 	{
-		assert(m_ratio > 0);
+		asd_DAssert(m_ratio > 0);
 		size_t bufsize = (size_t)(a_inSize * m_ratio + 1);
 		for(int i=0; i<3; ++i) {
 			size_t outsize = bufsize;
 			char* buf = new char[bufsize];
 
-			if (Convert(a_inBuffer, a_inSize, buf, outsize) == 0) {
+			if (Convert(a_inBuffer, a_inSize, buf, outsize) != asd_IconvWrap_ConvertError) {
 				// 성공
-				assert(bufsize - outsize > 0);
-				assert(outsize >= 0);
+				asd_DAssert(bufsize - outsize > 0);
+				asd_DAssert(outsize >= 0);
 				if (a_outSize_byte != nullptr)
 					*a_outSize_byte = bufsize - outsize;
 				return std::shared_ptr<char>(buf, std::default_delete<char[]>());
@@ -297,6 +299,7 @@ namespace asd
 			bufsize *= 2;
 		}
 
+		asd_OnErr("fail Convert, before:{}, after:{}", GetEncodingName(m_before), GetEncodingName(m_after));
 		return std::shared_ptr<char>(nullptr);
 	}
 
@@ -319,9 +322,9 @@ namespace asd
 		if (ic == nullptr) {
 			ic = IconvWrap_ptr(new IconvWrap);
 			bool initSuccess = (0 == ic->Init(a_srcEncoding, a_dstEncoding));
-			assert(initSuccess);
+			asd_DAssert(initSuccess);
 		}
-		assert(ic != nullptr);
+		asd_DAssert(ic != nullptr);
 		return *ic;
 	}
 
@@ -362,7 +365,7 @@ namespace asd
 
 	// To Multi-Byte
 #define asd_Define_ConvToM(CharType)														\
-	MString ConvToM(IN const CharType* a_srcString)							\
+	MString ConvToM(IN const CharType* a_srcString)											\
 	{																						\
 		return ConvTo_Internal<MString>(a_srcString,										\
 										GetDefaultEncoding<CharType>(),						\
@@ -370,7 +373,7 @@ namespace asd
 	}																						\
 																							\
 	MString ConvToM(IN const CharType* a_srcString,											\
-					IN Encoding a_dstEncoding)									\
+					IN Encoding a_dstEncoding)												\
 	{																						\
 		if (IsWideEncoding(a_dstEncoding)) {												\
 			asd_PrintStdErr("invalid parameter (a_dstEncoding)");							\
@@ -405,7 +408,7 @@ namespace asd
 
 	// To Wide
 #define asd_Define_ConvToX(X, ReturnType, SrcCharType)										\
-	ReturnType ConvTo ## X (IN const SrcCharType* a_srcString)					\
+	ReturnType ConvTo ## X (IN const SrcCharType* a_srcString)								\
 	{																						\
 		return ConvTo_Internal<ReturnType>(a_srcString,										\
 										   GetDefaultEncoding<SrcCharType>(),				\

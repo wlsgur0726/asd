@@ -15,6 +15,4 @@ namespace asd
 
 	void KillThread(IN uint32_t a_threadSequence);
 
-	void srand();
-
 }

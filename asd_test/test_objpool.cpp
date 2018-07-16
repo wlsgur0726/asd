@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "asd/objpool.h"
 #include "asd/util.h"
+#include "asd/random.h"
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -141,7 +142,6 @@ namespace asdtest_objpool
 			for (auto& t : threads) {
 				t = std::thread([&]() 
 				{
-					asd::srand();
 					while (start == false);
 
 					for (int i=0; i<TestCount; ++i) {
@@ -159,7 +159,7 @@ namespace asdtest_objpool
 
 						// 3-3. 랜덤하게 Clear나 AddCount등을 호출하여 
 						//      Thread Safe 여부를 테스트
-						switch (std::rand() % 4) {
+						switch (asd::Random::Uniform(0, 3)) {
 							case 0:
 								objPool.Clear();
 								break;

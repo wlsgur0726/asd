@@ -83,7 +83,7 @@ namespace asd
 			if (a_obj == nullptr)
 				return true;
 
-			if (IsValidMagicCode() == false) {
+			if (this->IsValidMagicCode() == false) {
 				a_obj->~OBJECT_TYPE();
 				FreeMemory(a_obj);
 				return false;
@@ -185,19 +185,19 @@ namespace asd
 		public:
 			inline Object* pop()
 			{
-				size_t s = size();
+				size_t s = this->size();
 				if (s == 0)
 					return nullptr;
 
 				size_t i = s - 1;
-				Object* ret = data()[i];
-				resize(i);
+				Object* ret = this->data()[i];
+				this->resize(i);
 				return ret;
 			}
 
 			inline void push(IN Object* a_obj)
 			{
-				emplace_back(a_obj);
+				this->emplace_back(a_obj);
 			}
 		};
 		const size_t m_limitCount;
@@ -296,11 +296,14 @@ namespace asd
 			if (a_obj == nullptr)
 				return true;
 
-			const size_t offset = offsetof(Node, m_data);
+			const auto offset = offsetof(Node, m_data);
 			Node* node = (Node*)((uint8_t*)a_obj - offset);
 
-			if (IsValidMagicCode() == false) {
-				asd_ChkErrAndRetVal(!node->IsValidMagicCode(), false, "invaild Node pointer");
+			if (this->IsValidMagicCode() == false) {
+				if (!node->IsValidMagicCode()) {
+					asd_OnErr("invaild Node pointer");
+					return false;
+				}
 				a_obj->~OBJECT_TYPE();
 				delete node;
 				return false;
@@ -421,7 +424,10 @@ namespace asd
 		bool PushNode(IN Node* a_node)
 		{
 			asd_DAssert(a_node != nullptr);
-			asd_ChkErrAndRetVal(!a_node->IsValidMagicCode(), false, "invaild Node pointer");
+			if (!a_node->IsValidMagicCode()) {
+				asd_OnErr("invaild Node pointer");
+				return false;
+			}
 
 			a_node->SafeWait(&m_popContention);
 			if (++m_pooledCount > m_limitCount) {
@@ -498,7 +504,7 @@ namespace asd
 		ObjectPoolShardSet(IN size_t a_shardCount = 4*Get_HW_Concurrency(),
 						   IN size_t a_totalLimitCount = std::numeric_limits<size_t>::max(),
 						   IN size_t a_initCount = 0)
-			: m_shardCount(max(1, a_shardCount))
+			: m_shardCount(max(1u, a_shardCount))
 		{
 			m_memory.resize(m_shardCount * sizeof(Pool));
 			m_shards = (Pool*)m_memory.data();

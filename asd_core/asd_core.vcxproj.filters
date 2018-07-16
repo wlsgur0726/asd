@@ -2,7 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="include\asd\address.h" />
-    <ClInclude Include="src\asd_pch.h" />
     <ClInclude Include="include\asd\asdbase.h" />
     <ClInclude Include="include\asd\buffer.h" />
     <ClInclude Include="include\asd\caster.h" />
@@ -12,7 +11,6 @@
     <ClInclude Include="include\asd\file.h" />
     <ClInclude Include="include\asd\filedef.h" />
     <ClInclude Include="include\asd\iconvwrap.h" />
-    <ClInclude Include="include\asd\ioevent.h" />
     <ClInclude Include="include\asd\lock.h" />
     <ClInclude Include="include\asd\log.h" />
     <ClInclude Include="include\asd\memdump.h" />
@@ -35,6 +33,7 @@
     <ClInclude Include="include\asd\container.h" />
     <ClInclude Include="include\asd\task.h" />
     <ClInclude Include="include\asd\sysres.h" />
+    <ClInclude Include="include\asd\connpool.h" />
     <ClInclude Include="built-in\cppformat\fmt\ostream.h">
       <Filter>built-in\cppformat</Filter>
     </ClInclude>
@@ -57,12 +56,11 @@
       <Filter>built-in\cppformat</Filter>
     </ClInclude>
     <ClInclude Include="include\asd\actx.h" />
-    <ClInclude Include="include\asd\connpool.h" />
-    <ClInclude Include="include\asd\redisconnpool.h" />
+    <ClInclude Include="include\asd\ioevent.h" />
+    <ClInclude Include="src\stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\address.cpp" />
-    <ClCompile Include="src\asd_pch.cpp" />
     <ClCompile Include="src\buffer.cpp" />
     <ClCompile Include="src\datetime.cpp" />
     <ClCompile Include="src\exception.cpp" />
@@ -95,7 +93,7 @@
     <ClCompile Include="built-in\cppformat\fmt\format.cc">
       <Filter>built-in\cppformat</Filter>
     </ClCompile>
-    <ClCompile Include="src\redisconnpool.cpp" />
+    <ClCompile Include="src\stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="built-in">
