@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "asd/string.h"
 #include "asd/actx.h"
+#include "asd/semaphore.h"
 
 
 namespace asdtest_actx
@@ -26,7 +27,7 @@ namespace asdtest_actx
 	TEST(Actx, Simple)
 	{
 		asd::ThreadPoolOption option;
-		asd::ThreadPool<int> tp(option);
+		asd::ThreadPool tp(option);
 		tp.Start();
 
 		auto data = std::make_shared<TestData>();
@@ -63,7 +64,7 @@ namespace asdtest_actx
 	TEST(Actx, While)
 	{
 		asd::ThreadPoolOption option;
-		asd::ThreadPool<int> tp(option);
+		asd::ThreadPool tp(option);
 		tp.Start();
 
 		struct WhileTestData : public TestData
@@ -175,7 +176,7 @@ namespace asdtest_actx
 	TEST(Actx, NestedLoop)
 	{
 		asd::ThreadPoolOption option;
-		asd::ThreadPool<int> tp(option);
+		asd::ThreadPool tp(option);
 		tp.Start();
 
 		struct NestedLoopData : public TestData

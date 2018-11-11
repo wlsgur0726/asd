@@ -3,6 +3,8 @@
 #include "threadpool.h"
 #include "container.h"
 #include "classutil.h"
+#include <unordered_set>
+
 
 namespace asd
 {

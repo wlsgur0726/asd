@@ -57,12 +57,12 @@
 									<listOptionValue builtIn="false" value="../../../hiredis"/>
 								</option>
 								<option id="gnu.cpp.link.option.libs.1572672720" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="asd"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="pthread"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gtest"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="odbc"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="asd_redis"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="hiredis"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="asd_core"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.2393561" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -130,12 +130,12 @@
 									<listOptionValue builtIn="false" value="../../../hiredis"/>
 								</option>
 								<option id="gnu.cpp.link.option.libs.614699031" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="asd"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="pthread"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gtest"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="odbc"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="asd_redis"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="hiredis"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="asd_core"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.394496170" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>

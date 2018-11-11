@@ -243,7 +243,7 @@ namespace asdtest_socket
 	{
 		asd::Mutex m_lock;
 		std::unordered_map<asd::AsyncSocketHandle, std::shared_ptr<Peer>> m_peers;
-		asd::ThreadPool<asd::AsyncSocketHandle> m_threadPool = asd::ThreadPool<asd::AsyncSocketHandle>(asd::ThreadPoolOption());
+		asd::ThreadPool m_threadPool = asd::ThreadPool(asd::ThreadPoolOption());
 
 		bool Add(std::shared_ptr<Peer> peer)
 		{

@@ -121,7 +121,7 @@ namespace asd
 		Date m_today; // 로그파일명 리프레시를 위한 플래그
 		uint64_t m_logNumber = 0;
 
-		ThreadPool<uint64_t> m_writer;
+		ThreadPool m_writer;
 		ObjectPool<asd::Log> m_logObjPool = ObjectPool<asd::Log>(100);
 
 		std::shared_ptr<GenText> m_genHead;

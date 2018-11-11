@@ -3,6 +3,7 @@
 #include "asd/threadpool.h"
 #include "asd/threadutil.h"
 #include "asd/random.h"
+#include "asd/sysres.h"
 #include <atomic>
 
 
@@ -216,7 +217,7 @@ namespace asdtest_threadpool
 		tpopt.CollectStats = true;
 		//tpopt.UseNotifier = false;
 		//tpopt.PickAlgorithm = asd::ThreadPoolOption::Pick::RoundRobin;
-		asd::ThreadPool<int64_t> tp(tpopt);
+		asd::ThreadPool tp(tpopt);
 		tp.Start();
 
 		PushPopOverheadTest(tp, CreatePushFunc(tp));
@@ -228,7 +229,7 @@ namespace asdtest_threadpool
 		tpopt.CollectStats = true;
 		//tpopt.UseNotifier = false;
 		//tpopt.PickAlgorithm = asd::ThreadPoolOption::Pick::RoundRobin;
-		asd::ThreadPool<int64_t> tp(tpopt);
+		asd::ThreadPool tp(tpopt);
 		tp.Start();
 
 		PushPopOverheadTest(tp, CreatePushSeqFunc(tp));
@@ -236,7 +237,7 @@ namespace asdtest_threadpool
 
 	TEST(ThreadPool, PushPopOverheadTest_ScalableThreadPool)
 	{
-		asd::ScalableThreadPool::Option tpopt;
+		asd::ScalableThreadPoolOption tpopt;
 		tpopt.MinWorkerCount = tpopt.MaxWorkerCount = asd::Get_HW_Concurrency();
 		asd::ScalableThreadPool tp(tpopt);
 
@@ -280,7 +281,7 @@ namespace asdtest_threadpool
 		//tpopt.UseNotifier = false;
 		tpopt.UseEmbeddedTimer = true;
 
-		asd::ThreadPool<int64_t> tp(tpopt);
+		asd::ThreadPool tp(tpopt);
 		tp.Start();
 
 		StressTest(tp, true, CreatePushFunc(tp));
@@ -293,7 +294,7 @@ namespace asdtest_threadpool
 		//tpopt.UseNotifier = false;
 		tpopt.UseEmbeddedTimer = true;
 
-		asd::ThreadPool<int64_t> tp(tpopt);
+		asd::ThreadPool tp(tpopt);
 		tp.Start();
 
 		StressTest(tp, true, CreatePushSeqFunc(tp));
@@ -301,7 +302,7 @@ namespace asdtest_threadpool
 
 	TEST(ThreadPool, StressTest_CPU_ScalableThreadPool)
 	{
-		asd::ScalableThreadPool::Option tpopt;
+		asd::ScalableThreadPoolOption tpopt;
 		tpopt.MinWorkerCount = tpopt.MaxWorkerCount = asd::Get_HW_Concurrency();
 		asd::ScalableThreadPool tp(tpopt);
 
@@ -310,7 +311,7 @@ namespace asdtest_threadpool
 
 	TEST(ThreadPool, StressTest_IO_ScalableThreadPool)
 	{
-		asd::ScalableThreadPool::Option tpopt;
+		asd::ScalableThreadPoolOption tpopt;
 		asd::ScalableThreadPool tp(tpopt);
 
 		StressTest(tp, false, CreatePushFunc(tp));
@@ -323,12 +324,12 @@ namespace asdtest_threadpool
 		asd::ThreadPoolOption tpopt;
 		tpopt.CollectStats = true;
 
-		asd::ThreadPool<int64_t> tp(tpopt);
+		asd::ThreadPool tp(tpopt);
 		tp.Start();
 
 		const auto pushThreadCount = asd::Get_HW_Concurrency();
 		const auto keyCount = pushThreadCount * 10;
-		auto counts = new std::atomic_uint64_t[keyCount];
+		auto counts = new std::atomic<uint64_t>[keyCount];
 		for (uint32_t i=0; i<keyCount; ++i)
 			counts[i] = 0;
 
