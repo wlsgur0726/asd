@@ -55,8 +55,7 @@ namespace asd
 	auto Logger_writer_option = []()
 	{
 		ThreadPoolOption option;
-		option.StartThreadCount = 1;
-		option.AutoScaling.Use = false;
+		option.ThreadCount = 1;
 		option.UseNotifier = true;
 		return option;
 	};

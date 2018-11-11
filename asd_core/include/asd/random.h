@@ -9,10 +9,10 @@ namespace asd
 		template <typename T>
 		std::mt19937_64& Genrator()
 		{
-			thread_local std::random_device g_rd;
-			thread_local std::uniform_int_distribution<T> g_dist;
-			thread_local std::mt19937_64 g_generator(g_dist(g_rd));
-			return g_generator;
+			thread_local std::random_device t_rd;
+			thread_local std::uniform_int_distribution<T> t_dist;
+			thread_local std::mt19937_64 t_generator(t_dist(t_rd));
+			return t_generator;
 		}
 
 

@@ -57,7 +57,7 @@ namespace asdtest_timer
 		bool first = true;
 		for (auto& it : eventHistory) {
 #if !asd_Debug
-			EXPECT_GE(Tolerance, it.second.size());
+			EXPECT_GE((size_t)Tolerance, it.second.size());
 #endif
 			for (int value : it.second) {
 				auto term = it.first - Tick(Start);

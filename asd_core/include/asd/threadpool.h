@@ -14,34 +14,106 @@
 
 namespace asd
 {
+	template <typename ELEM>
+	class SimpleQueue
+	{
+	public:
+		SimpleQueue()
+			: m_nodePool(10000)
+		{
+		}
+
+		size_t size() const
+		{
+			return m_size;
+		}
+
+		bool empty() const
+		{
+			return m_size == 0;
+		}
+
+		void emplace_back(MOVE ELEM&& a_data)
+		{
+			Node* newNode = m_nodePool.Alloc(std::move(a_data));
+			push(newNode, newNode, 1);
+		}
+
+		ELEM& front()
+		{
+			return m_head->data;
+		}
+
+		void pop_front()
+		{
+			if (m_head == nullptr)
+				return;
+			Node* head = m_head;
+			m_head = head->next;
+			if (m_tail == head)
+				m_tail = nullptr;
+			m_nodePool.Free(head);
+			--m_size;
+		}
+
+		void clear()
+		{
+			while (size() > 0)
+				pop_front();
+			m_nodePool.Clear();
+		}
+
+		~SimpleQueue()
+		{
+			clear();
+		}
+
+	private:
+		struct Node
+		{
+			ELEM data;
+			Node* next = nullptr;
+			Node(MOVE ELEM&& a_mv) : data(std::move(a_mv)) {}
+		};
+
+		inline void push(IN Node* a_head,
+						 IN Node* a_tail,
+						 IN size_t a_size)
+		{
+			if (m_tail != nullptr)
+				m_tail->next = a_head;
+			else
+				m_head = a_head;
+			m_tail = a_tail;
+			m_size += a_size;
+		}
+
+		ObjectPool<Node> m_nodePool;
+
+		size_t m_size = 0;
+		Node* m_head = nullptr;
+		Node* m_tail = nullptr;
+	};
+
+
+
 	struct ThreadPoolOption
 	{
-		uint32_t StartThreadCount = Get_HW_Concurrency();
-
-		struct AutoScaling
-		{
-			bool Use = false;
-			double CpuUsageHigh = 0.95; // 95%
-			double CpuUsageLow = (1.0 / Get_HW_Concurrency()) * (Get_HW_Concurrency() - 1);
-			uint32_t MinThreadCount = 1;
-			uint32_t MaxThreadCount = std::numeric_limits<uint32_t>::max();
-			Timer::Millisec Interval = Timer::Millisec(1000);
-			uint32_t IncreaseCount = Get_HW_Concurrency();
-		} AutoScaling;
+		uint32_t ThreadCount = Get_HW_Concurrency();
 
 		bool CollectStats = false;
 		Timer::Millisec CollectStats_Interval = Timer::Millisec(1000);
 
-		bool UseNotifier = false;
+		bool UseNotifier = true;
 		int SpinWaitCount = 5;
 
 		bool UseEmbeddedTimer = false;
 
-
-		inline bool UseCenterQueue() const
-		{
-			return AutoScaling.Use;
-		}
+		enum struct Pick {
+			ShortestQueue,
+			RoundRobin,
+		};
+		Pick PickAlgorithm = Pick::ShortestQueue;
 	};
 
 
@@ -90,9 +162,9 @@ namespace asd
 
 		double TotalConflictRate() const
 		{
-			if (totalProcCount == 0)
+			if (totalPushCount == 0)
 				return 0;
-			return totalConflictCount / (double)totalProcCount;
+			return totalConflictCount / (double)totalPushCount;
 		}
 
 		void Refresh()
@@ -183,26 +255,15 @@ namespace asd
 			if (data->timer != nullptr)
 				data->timer.reset();
 
-			if (data->option.UseCenterQueue()) {
-				lock.unlock();
-				for (auto centerQueueLock=GetLock(data->centerQueueLock); data->centerQueue.size()>0; centerQueueLock.lock()) {
-					while (data->standby.size() > 0)
-						NeedNotify(data.get(), nullptr).Notify();
-					centerQueueLock.unlock();
-					std::this_thread::sleep_for(Timer::Millisec(1));
-				}
-				lock.lock();
-			}
-
-			while (data->workers.size() > 0) {
-				for (Worker* worker : data->workerList) {
-					auto workerLock = GetLock(worker->lock);
-					worker->run = false;
-					NeedNotify(data.get(), worker).Notify();
+			for (; data->workers.size() > 0; lock.lock()) {
+				for (uint32_t i=0; i<data->workerCount; ++i) {
+					Worker& worker = data->workerList[i];
+					auto workerLock = GetLock(worker.lock);
+					worker.run = false;
+					NeedNotify(data.get(), &worker).Notify();
 				}
 				lock.unlock();
 				std::this_thread::sleep_for(Timer::Millisec(1));
-				lock.lock();
 			}
 
 			return data->stats;
@@ -212,8 +273,10 @@ namespace asd
 		void Start()
 		{
 			auto data = std::atomic_load(&m_data);
-			if (data == nullptr)
+			if (data == nullptr) {
+				asd_OnErr("is stopped. plz call Reset()");
 				return;
+			}
 
 			auto lock = GetLock(data->lock);
 			if (data->run) {
@@ -221,33 +284,24 @@ namespace asd
 				return;
 			}
 			data->run = true;
-			lock.unlock();
 
-			if (data->option.AutoScaling.Use)
-				CpuUsage(); // 인스턴스 초기화를 위해 호출
+			data->workerCount = max(data->option.ThreadCount, 1U);
+			if (data->workerList)
+				asd_RaiseException("unknown error");
 
-			uint32_t startThreadCount = max(data->option.StartThreadCount, 1U);
-			if (data->option.AutoScaling.Use) {
-				auto MinCnt = data->option.AutoScaling.MinThreadCount;
-				auto MaxCnt = data->option.AutoScaling.MaxThreadCount;
-				if (MinCnt > MaxCnt || MaxCnt == 0)
-					asd_RaiseException("invalid AutoScaling option - ThreadCount");
-				if (data->option.AutoScaling.IncreaseCount <= 0)
-					asd_RaiseException("invalid AutoScaling option - IncreaseCount");
-				startThreadCount = max(startThreadCount, MinCnt);
-				startThreadCount = min(startThreadCount, MaxCnt);
-				data->curIncrCnt = data->option.AutoScaling.IncreaseCount;
+			data->workerList = new Worker[data->workerCount];
+
+			for (uint32_t i=0; i<data->workerCount; ++i) {
+				data->workerList[i].index = i;
+				std::thread(&ThisType::Working, data, i).detach();
 			}
-			AddWorker(data, startThreadCount);
+			lock.unlock();
 
 			if (data->option.UseEmbeddedTimer)
 				data->timer.reset(new Timer);
 
 			if (data->option.CollectStats)
 				PushStatTask(data);
-
-			if (data->option.AutoScaling.Use)
-				PushAutoScalingTask(data);
 		}
 
 
@@ -262,28 +316,50 @@ namespace asd
 			lock.unlock_shared();
 			return stats;
 		}
-		
+
+
+		Task_ptr Push(MOVE Task_ptr&& a_task)
+		{
+			TaskObj taskObj;
+			taskObj.seq = false;
+			taskObj.task = std::move(a_task);
+			auto data = std::atomic_load(&m_data);
+			return PushTask(data, taskObj);
+		}
+
+
+		inline Task_ptr Push(IN const Task_ptr& a_task)
+		{
+			return Push(Task_ptr(a_task));
+		}
+
 
 		template <typename FUNC, typename... PARAMS>
 		inline Task_ptr Push(FUNC&& a_func,
 							 PARAMS&&... a_params)
 		{
-			TaskObj taskObj;
-			taskObj.seq = false;
-			taskObj.task = CreateTask(std::forward<FUNC>(a_func),
-									  std::forward<PARAMS>(a_params)...);
-			auto data = std::atomic_load(&m_data);
-			return PushTask(data, taskObj);
+			return Push(CreateTask(std::forward<FUNC>(a_func),
+								   std::forward<PARAMS>(a_params)...));
 		}
 
-		template <typename FUNC, typename... PARAMS>
-		inline Task_ptr PushAfter(IN Timer::Millisec a_afterMs,
-								  FUNC&& a_func,
-								  PARAMS&&... a_params)
+
+		Task_ptr PushAt(IN Timer::TimePoint a_timepoint,
+						MOVE Task_ptr&& a_task)
 		{
-			return PushAt(Timer::Now() + a_afterMs,
-						  std::forward<FUNC>(a_func),
-						  std::forward<PARAMS>(a_params)...);
+			TaskObj taskObj;
+			taskObj.seq = false;
+			taskObj.task = std::move(a_task);
+			auto data = std::atomic_load(&m_data);
+			return PushTimerTask(std::move(data),
+								 a_timepoint,
+								 std::move(taskObj));
+		}
+
+
+		inline Task_ptr PushAt(IN Timer::TimePoint a_timepoint,
+							   IN const Task_ptr& a_task)
+		{
+			return PushAt(a_timepoint, Task_ptr(a_task));
 		}
 
 
@@ -292,14 +368,61 @@ namespace asd
 							   FUNC&& a_func,
 							   PARAMS&&... a_params)
 		{
+			return PushAt(a_timepoint,
+						  CreateTask(std::forward<FUNC>(a_func),
+									 std::forward<PARAMS>(a_params)...));
+		}
+
+
+		template <typename DURATION>
+		inline Task_ptr PushAfter(IN DURATION a_after,
+								  MOVE Task_ptr&& a_task)
+		{
+			return PushAt(Timer::Now() + a_after,
+						  std::move(a_task));
+		}
+
+
+		template <typename DURATION>
+		inline Task_ptr PushAfter(IN DURATION a_after,
+								  IN const Task_ptr& a_task)
+		{
+			return PushAt(Timer::Now() + a_after,
+						  a_task);
+		}
+
+
+		template <typename DURATION, typename FUNC, typename... PARAMS>
+		inline Task_ptr PushAfter(IN DURATION a_after,
+								  FUNC&& a_func,
+								  PARAMS&&... a_params)
+		{
+			return PushAfter(a_after,
+							 CreateTask(std::forward<FUNC>(a_func),
+										std::forward<PARAMS>(a_params)...));
+		}
+
+
+		template <typename KEY>
+		Task_ptr PushSeq(KEY&& a_key,
+						 MOVE Task_ptr&& a_task)
+		{
 			TaskObj taskObj;
-			taskObj.seq = false;
-			taskObj.task = CreateTask(std::forward<FUNC>(a_func),
-									  std::forward<PARAMS>(a_params)...);
+			taskObj.seq = true;
+			taskObj.keyInfo.hash = HASH()(a_key);
+			taskObj.keyInfo.key = std::forward<KEY>(a_key);
+			taskObj.task = std::move(a_task);
 			auto data = std::atomic_load(&m_data);
-			return PushTimerTask(std::move(data),
-								 a_timepoint,
-								 std::move(taskObj));
+			return PushTask(data, taskObj);
+		}
+
+
+		template <typename KEY>
+		inline Task_ptr PushSeq(KEY&& a_key,
+								IN const Task_ptr& a_task)
+		{
+			return PushSeq(std::forward<KEY>(a_key),
+						   Task_ptr(a_task));
 		}
 
 
@@ -308,27 +431,37 @@ namespace asd
 								FUNC&& a_func,
 								PARAMS&&... a_params)
 		{
+			return PushSeq(std::forward<KEY>(a_key),
+						   CreateTask(std::forward<FUNC>(a_func),
+									  std::forward<PARAMS>(a_params)...));
+		}
+
+
+		template <typename KEY>
+		Task_ptr PushSeqAt(IN Timer::TimePoint a_timepoint,
+						   KEY&& a_key,
+						   MOVE Task_ptr&& a_task)
+		{
 			TaskObj taskObj;
 			taskObj.seq = true;
 			taskObj.keyInfo.hash = HASH()(a_key);
 			taskObj.keyInfo.key = std::forward<KEY>(a_key);
-			taskObj.task = CreateTask(std::forward<FUNC>(a_func),
-									  std::forward<PARAMS>(a_params)...);
+			taskObj.task = std::move(a_task);
 			auto data = std::atomic_load(&m_data);
-			return PushTask(data, taskObj);
+			return PushTimerTask(std::move(data),
+								 a_timepoint,
+								 std::move(taskObj));
 		}
 
 
-		template <typename KEY, typename FUNC, typename... PARAMS>
-		inline Task_ptr PushSeqAfter(IN Timer::Millisec a_afterMs,
-									 KEY&& a_key,
-									 FUNC&& a_func,
-									 PARAMS&&... a_params)
+		template <typename KEY>
+		inline Task_ptr PushSeqAt(IN Timer::TimePoint a_timepoint,
+								  KEY&& a_key,
+								  const Task_ptr& a_task)
 		{
-			return PushSeqAt(Timer::Now() + a_afterMs,
+			return PushSeqAt(a_timepoint,
 							 std::forward<KEY>(a_key),
-							 std::forward<FUNC>(a_func),
-							 std::forward<PARAMS>(a_params)...);
+							 Task_ptr(a_task));
 		}
 
 
@@ -338,22 +471,50 @@ namespace asd
 								  FUNC&& a_func,
 								  PARAMS&&... a_params)
 		{
-			TaskObj taskObj;
-			taskObj.seq = true;
-			taskObj.keyInfo.hash = HASH()(a_key);
-			taskObj.keyInfo.key = std::forward<KEY>(a_key);
-			taskObj.task = CreateTask(std::forward<FUNC>(a_func),
-									  std::forward<PARAMS>(a_params)...);
-			auto data = std::atomic_load(&m_data);
-			return PushTimerTask(std::move(data),
-								 a_timepoint,
-								 std::move(taskObj));
+			return PushSeqAt(a_timepoint,
+							 std::forward<KEY>(a_key),
+							 CreateTask(std::forward<FUNC>(a_func),
+										std::forward<PARAMS>(a_params)...));
+		}
+
+
+		template <typename DURATION, typename KEY>
+		inline Task_ptr PushSeqAfter(IN DURATION a_after,
+									 KEY&& a_key,
+									 MOVE Task_ptr&& a_task)
+		{
+			return PushSeqAt(Timer::Now() + a_after,
+							 std::forward<KEY>(a_key),
+							 std::move(a_task));
+		}
+
+
+		template <typename DURATION, typename KEY>
+		inline Task_ptr PushSeqAfter(IN DURATION a_after,
+									 KEY&& a_key,
+									 IN const Task_ptr& a_task)
+		{
+			return PushSeqAt(Timer::Now() + a_after,
+							 std::forward<KEY>(a_key),
+							 a_task);
+		}
+
+
+		template <typename DURATION, typename KEY, typename FUNC, typename... PARAMS>
+		inline Task_ptr PushSeqAfter(IN DURATION a_after,
+									 KEY&& a_key,
+									 FUNC&& a_func,
+									 PARAMS&&... a_params)
+		{
+			return PushSeqAfter(a_after,
+								std::forward<KEY>(a_key),
+								CreateTask(std::forward<FUNC>(a_func),
+										   std::forward<PARAMS>(a_params)...));
 		}
 
 
 	private:
 		struct Data;
-
 
 		struct SeqKeyInfo
 		{
@@ -367,80 +528,6 @@ namespace asd
 			bool seq;
 			SeqKeyInfo keyInfo;
 		};
-
-		class TaskQueue
-		{
-		public:
-			size_t size() const
-			{
-				return m_size;
-			}
-
-			bool empty() const
-			{
-				return m_size == 0;
-			}
-
-			void emplace_back(MOVE TaskObj&& a_data)
-			{
-				Node* newNode = m_nodePool.Alloc(std::move(a_data));
-				push(newNode, newNode, 1);
-			}
-
-			TaskObj& front()
-			{
-				return m_head->data;
-			}
-
-			void pop_front()
-			{
-				if (m_head == nullptr)
-					return;
-				Node* head = m_head;
-				m_head = head->next;
-				if (m_tail == head)
-					m_tail = nullptr;
-				m_nodePool.Free(head);
-				--m_size;
-			}
-
-			void clear()
-			{
-				while (size() > 0)
-					pop_front();
-			}
-
-			~TaskQueue()
-			{
-				clear();
-			}
-
-		private:
-			struct Node
-			{
-				TaskObj data;
-				Node* next = nullptr;
-				Node(MOVE TaskObj&& a_mv) : data(std::move(a_mv)) {}
-			};
-
-			inline void push(IN Node* a_head,
-							 IN Node* a_tail,
-							 IN size_t a_size)
-			{
-				if (m_tail != nullptr)
-					m_tail->next = a_head;
-				else
-					m_head = a_head;
-				m_tail = a_tail;
-				m_size += a_size;
-			}
-
-			ObjectPool<Node> m_nodePool;
-
-			size_t m_size = 0;
-			Node* m_head = nullptr;
-			Node* m_tail = nullptr;
-		};//TaskQueue
 
 
 		struct Notifier
@@ -461,13 +548,11 @@ namespace asd
 			size_t index = std::numeric_limits<size_t>::max();
 
 			bool run = true;
-			TaskQueue queue[2];
-			TaskQueue* publicQueue = &queue[0];
-			TaskQueue* privateQueue = &queue[1];
+			SimpleQueue<TaskObj> queue[2];
+			SimpleQueue<TaskObj>* publicQueue = &queue[0];
+			SimpleQueue<TaskObj>* privateQueue = &queue[1];
 
-			bool selfDeleting = false;
-
-			bool sleep = false; // UseCenterQueue() == false 경우에만 사용
+			bool waitNotify = false;
 			Semaphore notify;
 		};
 
@@ -505,30 +590,11 @@ namespace asd
 			{
 				asd_ThreadPool_WorkingMap_FindWork(a_keyInfo, work);
 
-				if (a_data->option.UseCenterQueue()) {
-					++work.reserveCount;
-				}
-				else {
-					++work.procCount;
-					if (work.worker == nullptr)
-						work.worker = a_data->PickWorker();
-					else
-						++a_data->stats.totalConflictCount;
-				}
-				return work.worker;
-			}
-
-			Worker* SetWorker(IN const SeqKeyInfo& a_keyInfo,
-							  REF Worker* a_worker)
-			{
-				asd_ThreadPool_WorkingMap_FindWork(a_keyInfo, work);
-
-				--work.reserveCount;
 				++work.procCount;
-
 				if (work.worker == nullptr)
-					work.worker = a_worker;
-
+					work.worker = a_data->PickWorker();
+				else
+					++a_data->stats.totalConflictCount;
 				return work.worker;
 			}
 
@@ -583,7 +649,8 @@ namespace asd
 			// 작업쓰레드 목록 관련
 			mutable SharedMutex lock;
 			std::unordered_map<uint32_t, Worker*> workers;
-			std::vector<Worker*> workerList;
+			Worker* workerList = nullptr;
+			uint32_t workerCount = 0;
 			std::atomic<size_t> RRSeq;
 			bool run = false; // 종료 중 Push를 막기 위한 플래그
 
@@ -596,15 +663,6 @@ namespace asd
 			// 내장 타이머 (UseEmbeddedTimer == true 경우에만 사용)
 			std::unique_ptr<Timer> timer;
 
-			// 중앙큐 관련 (AutoScaling.Use == true 경우에만 사용)
-			mutable Mutex centerQueueLock;
-			TaskQueue centerQueue;
-			std::unordered_set<Worker*> standby;
-
-			// AutoScailing
-			uint64_t prevWaitCnt = 0;
-			uint32_t curIncrCnt = 0;
-			size_t selfDeletingCnt = 0;
 
 			Data(IN const ThreadPoolOption& a_option)
 				: option(a_option)
@@ -612,23 +670,51 @@ namespace asd
 				RRSeq = 0;
 			}
 
+			~Data()
+			{
+				if (workerList)
+					delete[] workerList;
+			}
+
 			Worker* PickWorker()
 			{
-				return workerList[++RRSeq % workerList.size()];
+				switch (option.PickAlgorithm) {
+					case ThreadPoolOption::Pick::RoundRobin:
+						return PickWorkerT<ThreadPoolOption::Pick::RoundRobin>();
+
+					case ThreadPoolOption::Pick::ShortestQueue:
+					default:
+						return PickWorkerT<ThreadPoolOption::Pick::ShortestQueue>();
+				}
+			}
+
+			template <ThreadPoolOption::Pick>
+			Worker* PickWorkerT();
+
+			template<>
+			Worker* PickWorkerT<ThreadPoolOption::Pick::RoundRobin>()
+			{
+				const size_t beginIdx = ++RRSeq % workerCount;
+				for (size_t i=0; i<workerCount; ++i) {
+					Worker* worker = &workerList[(beginIdx+i) % workerCount];
+					if (worker->run)
+						return worker;
+				}
+				return nullptr;
+			}
+
+			template<>
+			Worker* PickWorkerT<ThreadPoolOption::Pick::ShortestQueue>()
+			{
+				Worker* workerA = &workerList[0];
+				for (size_t i=1; i<workerCount; ++i) {
+					Worker* workerB = &workerList[i];
+					if (workerB->run && workerA->publicQueue->size() > workerB->publicQueue->size())
+						workerA = workerB;
+				}
+				return workerA;
 			}
 		};
-
-
-		// 작업쓰레드 추가
-		static void AddWorker(IN std::shared_ptr<Data> a_data,
-							  IN uint32_t a_count)
-		{
-			for (uint32_t i=0; i<a_count; ++i) {
-				asd_BeginTry();
-				std::thread(&ThisType::Working, a_data).detach();
-				asd_EndTryUnknown_Default();
-			}
-		}
 
 
 		// 타이머 작업 예약
@@ -640,8 +726,11 @@ namespace asd
 				return nullptr;
 
 			auto lock = GetSharedLock(a_data->lock);
-			if (!a_data->run)
+
+			if (!a_data->run) {
+				asd_OnErr("thread-pool was stopped");
 				return nullptr;
+			}
 
 			auto timer = a_data->timer ? a_data->timer.get() : &Timer::GlobalInstance();
 			return timer->PushAt(a_timePoint,
@@ -661,33 +750,34 @@ namespace asd
 
 			auto lock = GetSharedLock(a_data->lock);
 
-			if (!a_data->run)
+			if (!a_data->run) {
+				asd_OnErr("thread-pool was stopped");
 				return nullptr;
-
-			Notifier notifier;
-			if (a_data->option.UseCenterQueue()) {
-				if (a_task.seq)
-					a_data->workingMap.Reserve(a_task.keyInfo, a_data.get());
-
-				auto centerQueueLock = GetLock(a_data->centerQueueLock);
-				a_data->centerQueue.emplace_back(std::move(a_task));
-
-				notifier = NeedNotify(a_data.get(), nullptr);
-				lock.unlock_shared();
 			}
-			else {
-				Worker* worker;
-				if (a_task.seq)
-					worker = a_data->workingMap.Reserve(a_task.keyInfo, a_data.get());
-				else
-					worker = a_data->PickWorker();
 
-				auto workerLock = GetLock(worker->lock);
-				lock.unlock_shared();
+			Worker* worker;
+			if (a_task.seq)
+				worker = a_data->workingMap.Reserve(a_task.keyInfo, a_data.get());
+			else
+				worker = a_data->PickWorker();
 
-				worker->publicQueue->emplace_back(std::move(a_task));
-				notifier = NeedNotify(a_data.get(), worker);
+			if (worker == nullptr) {
+				asd_OnErr("empty thread");
+				return nullptr;
 			}
+
+			auto workerLock = GetLock(worker->lock);
+			lock.unlock_shared();
+
+			if (!worker->run) {
+				asd_OnErr("thread-pool was stopped");
+				return nullptr;
+			}
+
+			worker->publicQueue->emplace_back(std::move(a_task));
+			Notifier notifier = NeedNotify(a_data.get(), worker);
+
+			workerLock.unlock();
 
 			notifier.Notify();
 			a_data->stats.Push();
@@ -699,36 +789,18 @@ namespace asd
 		static Notifier NeedNotify(REF Data* a_data,
 								   REF Worker* a_worker)
 		{
+			// already acquired a_worker->lock
+
 			Notifier ret;
 			if (!a_data->option.UseNotifier)
 				return ret;
 
-			if (a_data->option.UseCenterQueue()) {
-				// acquired a_data->centerQueueLock
-				Worker* worker = a_worker;
-				if (worker == nullptr) {
-					if (a_data->standby.empty())
-						return ret;
-					auto it = a_data->standby.begin();
-					worker = *it;
-					a_data->standby.erase(it);
-					ret.notify = &worker->notify;
-					return ret;
-				}
-				else {
-					if (1 == a_data->standby.erase(worker))
-						ret.notify = &worker->notify;
-					return ret;
-				}
+			if (a_worker == nullptr) {
+				asd_OnErr("unknown error");
 			}
-			else {
-				// acquired a_worker->lock
-				asd_DAssert(a_worker != nullptr);
-				if (a_worker->sleep) {
-					a_worker->sleep = false;
-					ret.notify = &a_worker->notify;
-				}
-				return ret;
+			else if (a_worker->waitNotify) {
+				a_worker->waitNotify = false;
+				ret.notify = &a_worker->notify;
 			}
 			return ret;
 		}
@@ -752,51 +824,9 @@ namespace asd
 					spin = true;
 					--spinCount;
 				}
-				a_worker->sleep = !spin && a_data->option.UseNotifier;
+				a_worker->waitNotify = !spin && a_data->option.UseNotifier;
 
 				workerLock.unlock();
-
-				if (a_data->option.AutoScaling.Use) {
-					double cpu = CpuUsage();
-					if (cpu > a_data->option.AutoScaling.CpuUsageHigh) {
-						auto lock = GetLock(a_data->lock);
-						if (a_data->workers.size() > Get_HW_Concurrency() + a_data->selfDeletingCnt) {
-							a_worker->selfDeleting = true;
-							a_data->selfDeletingCnt++;
-							return false;
-						}
-					}
-				}
-
-				Notifier notifier;
-				if (a_data->option.UseCenterQueue()) {
-					Worker* responsibleWorker = nullptr;
-					auto centerQueueLock = GetLock(a_data->centerQueueLock);
-					if (a_data->centerQueue.size() > 0) {
-						TaskObj& taskObj = a_data->centerQueue.front();
-						if (taskObj.seq)
-							responsibleWorker = a_data->workingMap.SetWorker(taskObj.keyInfo, a_worker);
-						else
-							responsibleWorker = a_worker;
-
-						auto responsibleWorkerLock = GetLock(responsibleWorker->lock);
-						responsibleWorker->publicQueue->emplace_back(std::move(taskObj));
-						a_data->centerQueue.pop_front();
-						responsibleWorkerLock.unlock();
-
-						if (responsibleWorker == a_worker)
-							continue;
-
-						++a_data->stats.totalConflictCount;
-						notifier = NeedNotify(a_data, responsibleWorker);
-					}
-
-					if (a_data->centerQueue.size() > 0)
-						spin = true;
-					else if (!spin && a_data->option.UseNotifier)
-						a_data->standby.emplace(a_worker);
-				}
-				notifier.Notify();
 
 				if (spin) {
 					std::this_thread::yield();
@@ -811,54 +841,48 @@ namespace asd
 				}
 			}
 
-			a_worker->sleep = false;
+			a_worker->waitNotify = false;
 			std::swap(a_worker->publicQueue, a_worker->privateQueue);
 			return true;
 		}
 
 
 		// 작업쓰레드 메인루프
-		static void Working(REF std::shared_ptr<Data> a_data)
+		static void Working(REF std::shared_ptr<Data> a_data,
+							IN uint32_t a_workerIdx)
 		{
 			asd_BeginTry();
 			if (a_data == nullptr)
 				return;
 
-			Worker curWorker;
-			{
+			Worker& curWorker = [&]() -> Worker& {
 				auto lock = GetLock(a_data->lock);
-				if (a_data->workers.size() >= a_data->option.AutoScaling.MaxThreadCount)
-					return;
 
+				Worker& curWorker = a_data->workerList[a_workerIdx];
 				curWorker.tid = GetCurrentThreadID();
 
 				if (!a_data->workers.emplace(curWorker.tid, &curWorker).second) {
 					asd_OnErr("already registered thread");
-					return;
+					return curWorker;
 				}
-				a_data->workerList.emplace_back(&curWorker);
-				asd_RAssert(a_data->workers.size() == a_data->workerList.size(), "unknown error");
 				a_data->stats.threadCount = a_data->workers.size();
-
-				curWorker.index = a_data->workerList.size() - 1;
-			}
+				return curWorker;
+			}();
 
 			while (Ready(a_data.get(), &curWorker)) {
 				while (curWorker.privateQueue->size() > 0) {
-					asd_BeginTry();
-
 					TaskObj& taskObj = curWorker.privateQueue->front();
 
+					asd_BeginTry();
 					taskObj.task->Execute();
 					taskObj.task.reset();
+					asd_EndTryUnknown_Default();
 
 					if (taskObj.seq)
 						a_data->workingMap.Finish(taskObj.keyInfo);
 
-					a_data->stats.Pop();
 					curWorker.privateQueue->pop_front();
-
-					asd_EndTryUnknown_Default();
+					a_data->stats.Pop();
 				}
 			}
 
@@ -877,16 +901,6 @@ namespace asd
 		{
 			auto lock = GetLock(a_data->lock);
 
-			const bool AutoScalingProc = a_worker == nullptr;
-			const size_t last = a_data->workerList.size() - 1;
-
-			if (AutoScalingProc) {
-				a_data->curIncrCnt = a_data->option.AutoScaling.IncreaseCount;
-				if (a_data->workerList.size() <= max(a_data->option.AutoScaling.MinThreadCount, 1U))
-					return;
-				a_worker = a_data->workerList[last];
-			}
-
 			auto it = a_data->workers.find(a_worker->tid);
 			if (it == a_data->workers.end())
 				return;
@@ -896,102 +910,16 @@ namespace asd
 				return;
 			}
 
-			if (a_worker->selfDeleting)
-				a_data->selfDeletingCnt--;
-
 			Notifier notifier;
 			{
-				auto centerQueueLock = GetLock(a_data->centerQueueLock);
 				auto workerLock = GetLock(a_worker->lock);
 				a_worker->run = false;
 				notifier = NeedNotify(a_data.get(), a_worker);
 			}
 			notifier.Notify();
 
-			std::swap(a_data->workerList[a_worker->index], a_data->workerList[last]);
-
-			a_data->workerList[a_worker->index]->index = a_worker->index;
-			a_data->workerList.resize(last);
-
 			a_data->workers.erase(it);
 			a_data->stats.threadCount = a_data->workers.size();
-			asd_RAssert(a_data->workers.size() == a_data->workerList.size(), "unknown error");
-
-			if (a_data->run && a_data->workers.empty())
-				AddWorker(a_data, 1);
-		}
-
-
-		// AutoScaling 기능
-		static void PushAutoScalingTask(IN std::shared_ptr<Data> a_data)
-		{
-			if (a_data == nullptr)
-				return;
-
-			auto task = CreateTask([a_data]() mutable
-			{
-				auto lock = GetSharedLock(a_data->lock);
-
-				if (!a_data->run)
-					return;
-
-				size_t workerCount = a_data->workers.size();
-
-				auto proc = [&]() -> std::function<void()>{
-					static const auto s_none = [](){};
-
-					uint64_t waitCnt = a_data->stats.WaitingCount();
-					if (0 < a_data->prevWaitCnt && a_data->prevWaitCnt < waitCnt) {
-						double addRate = waitCnt / (double)a_data->prevWaitCnt;
-						a_data->curIncrCnt = (uint32_t)std::ceil(a_data->curIncrCnt * addRate);
-					}
-					a_data->prevWaitCnt = waitCnt;
-
-					if (workerCount <= 0) {
-						a_data->curIncrCnt = a_data->option.AutoScaling.IncreaseCount;
-						return [&](){ AddWorker(a_data, 1); };
-					}
-
-					double cpu = CpuUsage();
-					if (cpu < a_data->option.AutoScaling.CpuUsageLow) {
-						uint64_t sleepingThreadCount = a_data->stats.sleepingThreadCount;
-						if (sleepingThreadCount > max(1.0, workerCount*0.2) || workerCount>a_data->option.AutoScaling.MaxThreadCount) {
-							sleepingThreadCount = (uint64_t)(sleepingThreadCount * 0.1);
-							return [=](){
-								for (auto i=sleepingThreadCount; i>0; --i)
-									DeleteWorker(a_data, nullptr);
-							};
-						}
-						if (sleepingThreadCount > max(1.0, workerCount*0.02))
-							return s_none;
-						return [&](){ AddWorker(a_data, a_data->curIncrCnt); };
-					}
-					else if (cpu > a_data->option.AutoScaling.CpuUsageHigh) {
-						a_data->curIncrCnt = a_data->option.AutoScaling.IncreaseCount;
-						if (workerCount <= 1)
-							return s_none;
-						return [&](){ DeleteWorker(a_data, nullptr); };
-					}
-					return s_none;
-				}();
-				lock.unlock_shared();
-				proc();
-
-				PushAutoScalingTask(a_data);
-			});
-
-			auto at = Timer::Now() + max(GetCpuUsageCheckInterval(), a_data->option.AutoScaling.Interval);
-			if (a_data->timer != nullptr) {
-				a_data->timer->PushTask(at, task);
-			}
-			else {
-				TaskObj taskObj;
-				taskObj.seq = true;
-				taskObj.keyInfo.key = SeqKey();
-				taskObj.keyInfo.hash = HASH()(taskObj.keyInfo.key);
-				taskObj.task = std::move(task);
-				PushTimerTask(std::move(a_data), at, std::move(taskObj));
-			}
 		}
 
 
@@ -1025,6 +953,84 @@ namespace asd
 				PushTimerTask(std::move(a_data), at, std::move(taskObj));
 			}
 		}
+
+		std::shared_ptr<Data> m_data;
+	};
+
+
+
+	class ScalableThreadPool
+	{
+	public:
+		struct Option
+		{
+			uint32_t MinWorkerCount = 1;
+			uint32_t MaxWorkerCount = 100 * Get_HW_Concurrency();
+			uint32_t WorkerExpireTimeMs = 1000 * 60;
+			double ScaleUpCpuUsage = 0.8;
+			double ScaleDownCpuUsage = 0.95;
+			uint32_t ScaleUpWorkerCountPerSec = 1 * Get_HW_Concurrency();
+		};
+
+		ScalableThreadPool(IN const Option& a_option);
+		~ScalableThreadPool();
+
+		bool AddWorker();
+		ThreadPoolStats Stop();
+		ThreadPoolStats GetStats();
+
+		template <typename FUNC, typename... PARAMS>
+		inline Task_ptr Push(FUNC&& a_func,
+							 PARAMS&&... a_params)
+		{
+			return Push(CreateTask(std::forward<FUNC>(a_func),
+								   std::forward<PARAMS>(a_params)...));
+		}
+
+		inline Task_ptr Push(MOVE Task_ptr&& a_task)
+		{
+			auto data = std::atomic_load(&m_data);
+			return PushTask(data, a_task);
+		}
+
+
+	private:
+		struct Worker
+		{
+			uint32_t tid = 0;
+			Semaphore notify;
+			bool signaled = false;
+		};
+
+		struct Data
+		{
+			const Option option;
+			Mutex lock;
+			bool stop = false;
+			std::unordered_map<Worker*, std::shared_ptr<Worker>> workers;
+			std::deque<Worker*> waiters;
+			SimpleQueue<Task_ptr> taskQueue;
+			ThreadPoolStats stats;
+			Timer::TimePoint beginScaleUpTime;
+			uint32_t scaleUpCount = 0;
+			Data(IN const Option& a_option) : option(a_option) {}
+		};
+
+		static bool AddWorker(REF std::shared_ptr<Data>& a_data);
+
+		static Task_ptr PushTask(REF std::shared_ptr<Data>& a_data,
+								 REF Task_ptr& a_task);
+
+		static void Working(IN std::shared_ptr<Data> a_data,
+							IN std::shared_ptr<Worker> a_worker);
+
+		static Worker* PopWaiter(REF std::shared_ptr<Data>& a_data);
+
+		static bool CheckExpired(REF std::shared_ptr<Data>& a_data,
+								 REF std::shared_ptr<Worker>& a_worker);
+
+		static void DeleteWorker(REF std::shared_ptr<Data>& a_data,
+								 IN std::shared_ptr<Worker> a_worker);
 
 		std::shared_ptr<Data> m_data;
 	};

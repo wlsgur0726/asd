@@ -25,290 +25,342 @@ namespace asdtest_threadpool
 	}
 
 
-	const uint64_t ThreadWorkCost = 1			// 1
-								//* 512 * 2		// 1K
-								//* 512 * 2		// 1M
-								//* 512 * 2		// 1G
-								;
-
-	std::atomic<uint64_t> g_count;
-	struct Counter
+	struct PerfTestReport
 	{
-		volatile uint64_t count = 0;
-		uint64_t Increase()
+		uint64_t lastCount;
+		clock::time_point beginTime;
+		clock::time_point lastPrintTime;
+
+		PerfTestReport()
 		{
-			for (auto i=ThreadWorkCost; i>0; --i) {
-				if (++count == std::numeric_limits<uint64_t>::max())
-					throw std::exception();
-			}
-			g_count += ThreadWorkCost;
-			return count;
+			lastCount = 0;
+			beginTime = lastPrintTime = clock::now();
 		}
+
+		void printStats(const asd::ThreadPoolStats& stats)
+		{
+			auto now = clock::now();
+			ms totalElapsed = std::max(ms(1), duration_cast<ms>(now - beginTime));
+			ms elapsed = std::max(ms(1), duration_cast<ms>(now - lastPrintTime));
+			double cpu = asd::CpuUsage();
+
+			auto push = stats.totalPushCount.load();
+			auto proc = stats.totalProcCount.load();
+			print("  totalElapsed   :  {} sec\n", totalElapsed.count() / 1000.0);
+			print("  cpu            :  {} %%\n", cpu * 100);
+			print("  push           :  {}\n", push);
+			print("  proc           :  {}\n", proc);
+			print("  push - proc    :  {}\n", push - proc);
+			print("  sleep thread   :  {}\n", stats.sleepingThreadCount.load());
+			print("  total thread   :  {}\n", stats.threadCount);
+			print("  waiting time   :  {} ms\n", stats.RecentWaitingTimeMs());
+			print("  speed(total)   :  {} cnt per ms\n", proc / (double)totalElapsed.count());
+			print("  speed(recent)  :  {} cnt per ms\n", (proc-lastCount) / (double)elapsed.count());
+			print("  conflict       :  {}\n", stats.totalConflictCount.load());
+			print("  conflict rate  :  {} %%\n", stats.TotalConflictRate() * 100);
+			print("---------------------------------------------\n");
+			lastCount = proc;
+			lastPrintTime = now;
+		};
+	};
+
+	using TaskGeneratorFunc = std::function<asd::Task_ptr()>;
+
+	TaskGeneratorFunc TaskGenerator_IO(ns procTime, uint64_t loopCount)
+	{
+		return [=]() -> asd::Task_ptr {
+			return asd::CreateTask([](ns procTime, uint64_t loopCount) {
+				for (uint64_t i=0; i<loopCount; ++i)
+					std::this_thread::sleep_for(procTime);
+			}, procTime, loopCount);
+		};
+	}
+
+
+	TaskGeneratorFunc TaskGenerator_CPU(ns procTime, uint64_t loopCount)
+	{
+		return [=]() -> asd::Task_ptr {
+			return asd::CreateTask([](ns procTime, uint64_t loopCount) {
+				for (uint64_t i=0; i<loopCount; ++i) {
+					auto now = clock::now();
+					auto target = now + procTime;
+					for (; now < target; now = clock::now());
+				}
+			}, procTime, loopCount);
+		};
+	}
+
+
+	using PushFunc = std::function<void(int64_t seqKey, asd::Task_ptr&& task)>;
+
+	template <typename ThreadPool>
+	PushFunc CreatePushFunc(ThreadPool& tp)
+	{
+		return [&](int64_t seqKey, asd::Task_ptr&& task)
+		{
+			tp.Push(std::move(task));
+		};
+	}
+
+	template <typename ThreadPool>
+	PushFunc CreatePushSeqFunc(ThreadPool& tp)
+	{
+		return [&](int64_t seqKey, asd::Task_ptr&& task)
+		{
+			tp.PushSeq(seqKey, std::move(task));
+		};
+	}
+
+
+	template <typename ThreadPool>
+	void SelfPushTask(std::atomic_bool& run,
+					  ThreadPool& tp,
+					  PushFunc pushFunc,
+					  int64_t SeqKeyRangeBegin,
+					  int64_t SeqKeyRangeEnd)
+	{
+		auto seqKey = asd::Random::Uniform<int64_t>(SeqKeyRangeBegin, SeqKeyRangeEnd);
+		pushFunc(seqKey, asd::CreateTask([=, &run, &tp]() mutable
+		{
+			if (run)
+				SelfPushTask(run, tp, pushFunc, SeqKeyRangeBegin, SeqKeyRangeEnd);
+		}));
+	}
+
+
+	struct LoadGeneratorOption
+	{
+		double PushSpeedPerMs = 100;
+		int64_t SeqKeyRangeBegin = 1;
+		int64_t SeqKeyRangeEnd = 1000;
+		TaskGeneratorFunc TaskGenerator;
+		PushFunc PushFunc;
+	};
+
+	class LoadGenerator
+	{
+	public:
+		LoadGenerator(const LoadGeneratorOption& option) : m_option(option) {}
+		void Start() { m_thread = std::thread(std::mem_fn(&LoadGenerator::PushThread), this); }
+		void Stop() { m_run = false; }
+		void Join()
+		{
+			Stop();
+			if (m_thread.joinable())
+				m_thread.join();
+		}
+		~LoadGenerator() { Join(); }
+
+	private:
+		void PushThread()
+		{
+			auto termNs = (typename ns::rep)(duration_cast<ns>(ms(1)).count() / m_option.PushSpeedPerMs);
+			auto term = ns(termNs);
+			for (auto tp=clock::now(); m_run; tp+=term) {
+				std::this_thread::sleep_until(tp);
+				
+				auto seqKey = asd::Random::Uniform<int64_t>(m_option.SeqKeyRangeBegin, m_option.SeqKeyRangeEnd);
+				auto task = m_option.TaskGenerator();
+				m_option.PushFunc(seqKey, std::move(task));
+			}
+		}
+		const LoadGeneratorOption& m_option;
+		std::thread m_thread;
+		volatile bool m_run = true;
+	};
+
+	class LoadGeneratorSet
+	{
+	public:
+		void Start(LoadGeneratorOption& opt, size_t threadCount, double totalPushSpeedPerMs)
+		{
+			opt.PushSpeedPerMs = totalPushSpeedPerMs / threadCount;
+			for (size_t i=0; i<threadCount; ++i)
+				m_list.emplace_back(std::unique_ptr<LoadGenerator>(new LoadGenerator(opt)));
+			for (auto& lg : m_list)
+				lg->Start();
+		}
+
+		void Stop()
+		{
+			for (auto& lg : m_list)
+				lg->Stop();
+			m_list.clear();
+		}
+
+		~LoadGeneratorSet() { Stop(); }
+
+	private:
+		std::vector<std::unique_ptr<LoadGenerator>> m_list;
 	};
 
 
-	template <typename Duration>
-	void RunTask(asd::ThreadPool<int>* tp,
-				 int range,
-				 Duration sleepTime)
+	template <typename ThreadPool>
+	void PushPopOverheadTest(ThreadPool& tp, PushFunc pushFunc)
 	{
-		auto task = [=]()
-		{
-			thread_local Counter t_counter;
-			if (sleepTime.count() > 0)
-				std::this_thread::sleep_for(sleepTime);
-			t_counter.Increase();
-			RunTask(tp, range, sleepTime);
-		};
+		PerfTestReport report;
 
-		if (range == 0) {
-			tp->Push(std::move(task));
-		}
-		else {
-			auto rnd = asd::Random::Uniform<int>(1, range);
-			tp->PushSeq(rnd, std::move(task));
-		}
+		std::atomic_bool run;
+		run = true;
+		for (size_t i=0; i<asd::Get_HW_Concurrency(); ++i)
+			SelfPushTask(run, tp, pushFunc, 1, 1000);
+
+		std::this_thread::sleep_for(ms(1000 * 10));
+		run = false;
+		report.printStats(tp.Stop());
 	}
 
-	template <typename Key, typename Duration>
-	std::vector<std::thread> CreatePushThread(asd::ThreadPool<Key>* tp,
-											  Key range,
-											  int64_t taskCount,
-											  uint32_t threadCount,
-											  ms testTime,
-											  Duration sleepTime)
+	TEST(ThreadPool, PushPopOverheadTest_ThreadPool_NonSeq)
 	{
-		std::vector<std::thread> threads(threadCount);
-		for (auto& t : threads) {
-			t = std::thread([=]() mutable
-			{
-				const auto start = clock::now();
-				const auto stop = start + testTime;
-				const auto interval = duration_cast<ns>(testTime) / (taskCount / threadCount);
-
-				auto task = [=]()
-				{
-					thread_local Counter t_counter;
-					if (sleepTime.count() > 0)
-						std::this_thread::sleep_for(sleepTime);
-					t_counter.Increase();
-				};
-
-				for (auto next=start; next<stop; next+=interval) {
-					std::this_thread::sleep_until(next);
-					if (range == 0) {
-						tp->Push(std::move(task));
-					}
-					else {
-						auto key = asd::Random::Uniform<Key>(1, range);
-						tp->PushSeq(key, std::move(task));
-					}
-				}
-			});
-		}
-		return threads;
-	}
-
-
-	TEST(ThreadPool, PerformanceTest_PushPop)
-	{
-		g_count = 0;
-		const auto SleepMs = ms(1000 * 10);
-
-		asd::ThreadPoolOption opt;
-		opt.CollectStats = true;
-		opt.UseNotifier = true;
-
-		asd::ThreadPool<int> tp(opt);
+		asd::ThreadPoolOption tpopt;
+		tpopt.CollectStats = true;
+		//tpopt.UseNotifier = false;
+		//tpopt.PickAlgorithm = asd::ThreadPoolOption::Pick::RoundRobin;
+		asd::ThreadPool<int64_t> tp(tpopt);
 		tp.Start();
 
-		print("start\n");
-		auto start = clock::now();
-		int range = 5000;
+		PushPopOverheadTest(tp, CreatePushFunc(tp));
+	}
 
-#if 0
-		auto threads = CreatePushThread(&tp,
-										range,
-										1000 * SleepMs.count(),
-										2,
-										SleepMs,
-										ms(0));
-		for (auto& t : threads)
-			t.join();
-#else
-		for (auto t=opt.StartThreadCount*(1+opt.SpinWaitCount); t>0; --t) {
-			RunTask(&tp, range, ms(0));
+	TEST(ThreadPool, PushPopOverheadTest_ThreadPool_Seq)
+	{
+		asd::ThreadPoolOption tpopt;
+		tpopt.CollectStats = true;
+		//tpopt.UseNotifier = false;
+		//tpopt.PickAlgorithm = asd::ThreadPoolOption::Pick::RoundRobin;
+		asd::ThreadPool<int64_t> tp(tpopt);
+		tp.Start();
+
+		PushPopOverheadTest(tp, CreatePushSeqFunc(tp));
+	}
+
+	TEST(ThreadPool, PushPopOverheadTest_ScalableThreadPool)
+	{
+		asd::ScalableThreadPool::Option tpopt;
+		tpopt.MinWorkerCount = tpopt.MaxWorkerCount = asd::Get_HW_Concurrency();
+		asd::ScalableThreadPool tp(tpopt);
+
+		PushPopOverheadTest(tp, CreatePushFunc(tp));
+	}
+
+
+	template <typename ThreadPool>
+	void StressTest(ThreadPool& tp, bool isCpuBoundTask, PushFunc pushFunc)
+	{
+		const uint64_t CpuTaskLoad = 100; // microsec
+
+		LoadGeneratorOption lgopt;
+		lgopt.PushFunc = std::move(pushFunc);
+		lgopt.TaskGenerator = isCpuBoundTask
+			? TaskGenerator_CPU(ns(1000), CpuTaskLoad)
+			: TaskGenerator_IO(duration_cast<ns>(ms(2)), 2);
+
+		LoadGeneratorSet lgs;
+		double pushSpeed = isCpuBoundTask
+			? (asd::Get_HW_Concurrency() * (1000/CpuTaskLoad)) * 0.8
+			: 80;
+
+		PerfTestReport report;
+		lgs.Start(lgopt, 2, pushSpeed);
+
+		for (int sec=1; sec<=60*3; ++sec) {
+			std::this_thread::sleep_for(ms(1000));
+			report.printStats(tp.GetStats());
 		}
-		std::this_thread::sleep_for(SleepMs);
-#endif
-		auto stats = tp.GetStats();
-		auto stop = clock::now();
-		auto elapsed = duration_cast<ms>(stop - start);
-		print("stop {}\n", elapsed.count());
 
-		auto total = tp.Stop().totalProcCount.load();
-		print("  result         :  {} count per millisec\n", stats.totalProcCount/(double)elapsed.count());
-		print("  proc           :  {}\n", stats.totalProcCount.load());
-		print("  total          :  {}\n", total);
-		print("  conflict       :  {}\n", stats.totalConflictCount.load());
-		print("  conflict rate  :  {} %%\n", stats.TotalConflictRate() * 100);
-		print("  waiting time   :  {} ms\n", stats.RecentWaitingTimeMs());
-		print("  point          :  {}\n", g_count.load() / (double)opt.StartThreadCount / (double)elapsed.count());
+		lgs.Stop();
+		report.printStats(tp.Stop());
+
+	}
+
+	TEST(ThreadPool, StressTest_CPU_ThreadPool_NonSeq)
+	{
+		asd::ThreadPoolOption tpopt;
+		tpopt.CollectStats = true;
+		//tpopt.UseNotifier = false;
+		tpopt.UseEmbeddedTimer = true;
+
+		asd::ThreadPool<int64_t> tp(tpopt);
+		tp.Start();
+
+		StressTest(tp, true, CreatePushFunc(tp));
+	}
+
+	TEST(ThreadPool, StressTest_CPU_ThreadPool_Seq)
+	{
+		asd::ThreadPoolOption tpopt;
+		tpopt.CollectStats = true;
+		//tpopt.UseNotifier = false;
+		tpopt.UseEmbeddedTimer = true;
+
+		asd::ThreadPool<int64_t> tp(tpopt);
+		tp.Start();
+
+		StressTest(tp, true, CreatePushSeqFunc(tp));
+	}
+
+	TEST(ThreadPool, StressTest_CPU_ScalableThreadPool)
+	{
+		asd::ScalableThreadPool::Option tpopt;
+		tpopt.MinWorkerCount = tpopt.MaxWorkerCount = asd::Get_HW_Concurrency();
+		asd::ScalableThreadPool tp(tpopt);
+
+		StressTest(tp, true, CreatePushFunc(tp));
+	}
+
+	TEST(ThreadPool, StressTest_IO_ScalableThreadPool)
+	{
+		asd::ScalableThreadPool::Option tpopt;
+		asd::ScalableThreadPool tp(tpopt);
+
+		StressTest(tp, false, CreatePushFunc(tp));
 	}
 
 
 
 	TEST(ThreadPool, SequentialTest)
 	{
-		const auto useAutoScalingOptions = {true, false};
-		for (bool useAutoScaling : useAutoScalingOptions) {
-			asd::ThreadPoolOption opt;
-			opt.AutoScaling.Use = useAutoScaling;
-			opt.CollectStats = true;
+		asd::ThreadPoolOption tpopt;
+		tpopt.CollectStats = true;
 
-			asd::ThreadPool<void*> tp(opt);
-			tp.Start();
+		asd::ThreadPool<int64_t> tp(tpopt);
+		tp.Start();
 
-			const uint64_t TestCount = 100 * 1000;
-			const auto ThreadCount = std::thread::hardware_concurrency();
+		const auto pushThreadCount = asd::Get_HW_Concurrency();
+		const auto keyCount = pushThreadCount * 10;
+		auto counts = new std::atomic_uint64_t[keyCount];
+		for (uint32_t i=0; i<keyCount; ++i)
+			counts[i] = 0;
 
-			struct TestObj
+		PerfTestReport report;
+
+		std::vector<std::thread> pushThreads;
+		for (uint32_t i=0; i<pushThreadCount; ++i) {
+			pushThreads.emplace_back(std::thread([&](uint32_t index) mutable
 			{
-				Counter expect;
-				Counter check;
-			};
-			std::vector<TestObj> testObj;
-			testObj.resize(ThreadCount);
-
-			for (auto i=TestCount; i>0; --i) {
-				for (auto j=ThreadCount; j>0; --j) {
-					TestObj* ptr = &testObj[j-1];
-					uint64_t expect = ptr->expect.Increase();
-					tp.PushSeq((void*)ptr, [ptr, expect]()
-					{
-						EXPECT_EQ(expect, ptr->check.Increase());
-					});
+				auto myKeyCount = keyCount / pushThreadCount;
+				auto beginKey = myKeyCount * index;
+				const uint64_t pushUnit = 10;
+				for (uint64_t n=0; n<pushUnit*1000; n+=pushUnit) {
+					for (int64_t k=0; k<myKeyCount; ++k) {
+						int64_t key = k + beginKey;
+						for (uint64_t num=n; num<n+pushUnit; ++num) {
+							tp.PushSeq(key, [&counts](int64_t key, uint64_t num) mutable {
+								auto& count = counts[key];
+								auto exp = num;
+								count.compare_exchange_strong(exp, num+1);
+								EXPECT_EQ(exp, num);
+							}, key, num);
+						}
+					}
 				}
-			}
-
-			auto stats = tp.Stop();
-			for (auto i=ThreadCount; i>0; --i) {
-				Counter& cnt = testObj[i-1].check;
-				EXPECT_EQ(cnt.count, TestCount * ThreadWorkCost);
-			}
-
-			print("useAutoScaling {}\n", useAutoScaling);
-			print("  total          :  {}\n", stats.totalProcCount.load());
-			print("  conflict       :  {}\n", stats.totalConflictCount.load());
-			print("  conflict rate  :  {} %%\n", stats.TotalConflictRate() * 100);
-			print("  waiting time   :  {} ms\n", stats.RecentWaitingTimeMs());
+			}, i));
 		}
+
+		for (auto& thread : pushThreads)
+			thread.join();
+		report.printStats(tp.Stop());
+		delete[] counts;
 	}
 
-
-
-	TEST(ThreadPool, AutoScaling)
-	{
-		auto startTime = clock::now();
-		int range = 5000;
-
-		asd::ThreadPoolOption opt;
-		opt.CollectStats = true;
-		opt.UseNotifier = true;
-		opt.AutoScaling.Use = true;
-		opt.UseEmbeddedTimer = true;
-
-		asd::ThreadPool<int> tp(opt);
-		uint64_t last = 0;
-		auto lastPrintTime = clock::now();
-		auto printStats = [&]()
-		{
-			auto now = clock::now();
-			auto stats = tp.GetStats();
-			ms totalElapsed = std::max(ms(1), duration_cast<ms>(now - startTime));
-			ms elapsed = std::max(ms(1), duration_cast<ms>(now - lastPrintTime));
-			double cpu = asd::CpuUsage();
-
-			uint64_t cur = g_count.load();
-			auto push = stats.totalPushCount.load();
-			auto proc = stats.totalProcCount.load();
-			print("  push           :  {}\n", push);
-			print("  proc           :  {}\n", proc);
-			print("  push - proc    :  {}\n", push - proc);
-			print("  conflict       :  {}\n", stats.totalConflictCount.load());
-			print("  conflict rate  :  {} %%\n", stats.TotalConflictRate() * 100);
-			print("  waiting time   :  {} ms\n", stats.RecentWaitingTimeMs());
-			print("  threadCount    :  {}\n", stats.threadCount);
-			print("  sleepThread    :  {}\n", stats.sleepingThreadCount.load());
-			print("  point(total)   :  {}\n", cur / (double)totalElapsed.count());
-			print("  point(recent)  :  {}\n", (cur-last) / (double)elapsed.count());
-			print("  cpu            :  {} %%\n", cpu * 100);
-			print("--------------------------------\n");
-			last = cur;
-			lastPrintTime = now;
-		};
-
-#if 0
-		print("cpu bound task\n");
-		{
-			g_count = 0;
-			startTime = clock::now();
-
-			tp.Reset(opt);
-			tp.Start();
-
-			ms testTime = ms(1000 * 60);
-
-			for (auto t=asd::Get_HW_Concurrency()*2; t>0; --t)
-				RunTask(&tp, range, false);
-
-			for (auto printTime=startTime; printTime<startTime+testTime;) {
-				printStats();
-				printTime += ms(1000);
-				std::this_thread::sleep_until(printTime);
-			}
-
-			tp.Stop();
-		}
-#endif
-
-		print("io bound task\n");
-		{
-			auto taskCount = range ? range : asd::Get_HW_Concurrency()*1000;
-
-			g_count = 0;
-			startTime = clock::now();
-			opt.AutoScaling.CpuUsageHigh = 0.90;
-			opt.AutoScaling.CpuUsageLow = 0.75;
-			opt.StartThreadCount = 300;
-
-			tp.Reset(opt);
-			tp.Start();
-
-			ns sleepTime = ns(1000 * 1000 * 10);
-			ms testTime = ms(1000 * 60 * 2);
-
-			auto threads = CreatePushThread(&tp,
-											0/*range*/,
-											(sleepTime.count()/(1000*100)) * (testTime.count()/2),
-											2,
-											testTime / 2,
-											sleepTime);
-
-			bool cpuBound = false;
-			for (auto printTime=startTime; printTime<startTime+testTime;) {
-				printStats();
-				printTime += ms(1000);
-				std::this_thread::sleep_until(printTime);
-				if (!cpuBound && printTime>startTime+(testTime/2)) {
-					cpuBound = true;
-					for (auto t=4; t>0; --t)
-						RunTask(&tp, 0, ms(0));
-				}
-			}
-			for (auto& t : threads)
-				t.join();
-			tp.Stop();
-		}
-	}
 }

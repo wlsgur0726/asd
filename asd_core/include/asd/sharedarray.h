@@ -16,6 +16,13 @@ namespace asd
 
 
 	protected:
+		static const ArrayType* NullPtr()
+		{
+			static const ArrayType s_null;
+			return &s_null;
+		}
+
+
 		inline ArrayType* GetArrayPtr(IN bool a_preservation = true)
 		{
 			ArrayType* orgptr = BaseType::get();
@@ -41,10 +48,7 @@ namespace asd
 		{
 			ArrayType* ptr = BaseType::get();
 			if (ptr == nullptr)
-			{
-				static const ArrayType g_null;
-				return &g_null;
-			}
+				return NullPtr();
 			return ptr;
 		}
 

@@ -94,6 +94,7 @@
       <Filter>built-in\cppformat</Filter>
     </ClCompile>
     <ClCompile Include="src\stdafx.cpp" />
+    <ClCompile Include="src\threadpool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="built-in">

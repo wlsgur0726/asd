@@ -22,16 +22,16 @@
 int main(int argc, char** argv)
 {
 	Test();
-#if 0
+#if 1
 	std::vector<char*> args;
 	args.emplace_back(argv[0]);
 
-	//char* filter = "--gtest_filter=ThreadPool.AutoScaling";
-	char* filter = "--gtest_filter=Actx.*";
+	char* filter = "--gtest_filter=ThreadPool.SequentialTest";
+	//char* filter = "--gtest_filter=Actx.*";
 	//char* filter = "--gtest_filter=Semaphore.PerfTest*";
 	args.emplace_back(filter);
 
-	argc = args.size();
+	argc = (int)args.size();
 	argv = args.data();
 #endif
 	::testing::InitGoogleTest(&argc, argv);

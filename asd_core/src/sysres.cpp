@@ -34,6 +34,7 @@ namespace asd
 		double m_last = 0;
 
 		int m_errorCount = 0;
+		bool m_run = true;
 
 	public:
 		CPU()
@@ -44,6 +45,8 @@ namespace asd
 
 		~CPU()
 		{
+			auto lock = GetLock(m_lock);
+			m_run = false;
 			if (m_lastTimer != nullptr) {
 				m_lastTimer->Cancel();
 				m_lastTimer = nullptr;
@@ -52,15 +55,17 @@ namespace asd
 
 		void RegisterSamplingEvemt()
 		{
+			if (!m_run)
+				return;
+
 			m_lastTimer = Timer::Instance().PushAt(m_timerOffset, [this]()
 			{
 				double sample = GetSample();
-				{
-					auto lock = GetLock(m_lock);
-					m_timerOffset += m_interval;
-					if (sample >= 0)
-						AddSample(sample);
-				}
+
+				auto lock = GetLock(m_lock);
+				m_timerOffset += m_interval;
+				if (sample >= 0)
+					AddSample(sample);
 				RegisterSamplingEvemt();
 			});
 		}
