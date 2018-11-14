@@ -5,27 +5,6 @@
 
 namespace asd
 {
-	struct ThreadPoolOption
-	{
-		uint32_t ThreadCount = Get_HW_Concurrency();
-
-		bool CollectStats = false;
-		Timer::Millisec CollectStats_Interval = Timer::Millisec(1000);
-
-		bool UseNotifier = true;
-		int SpinWaitCount = 5;
-
-		bool UseEmbeddedTimer = false;
-
-		enum struct Pick {
-			ShortestQueue,
-			RoundRobin,
-		};
-		Pick PickAlgorithm = Pick::ShortestQueue;
-	};
-
-
-
 	struct ThreadPoolStats
 	{
 		struct atomic_t : public std::atomic<uint64_t>
@@ -39,12 +18,12 @@ namespace asd
 				Base::operator=(0);
 			}
 
-			atomic_t(IN const atomic_t& a_copy)
+			atomic_t(const atomic_t& a_copy)
 			{
 				Base::operator=(a_copy.load());
 			}
 
-			atomic_t& operator=(IN const atomic_t& a_copy)
+			atomic_t& operator=(const atomic_t& a_copy)
 			{
 				Base::operator=(a_copy.load());
 				return *this;
@@ -114,166 +93,122 @@ namespace asd
 
 
 
+	struct ThreadPoolOption
+	{
+		uint32_t ThreadCount = Get_HW_Concurrency();
+
+		bool CollectStats = false;
+		Timer::Millisec CollectStats_Interval = Timer::Millisec(1000);
+
+		bool UseNotifier = true;
+		int SpinWaitCount = 5;
+
+		bool UseEmbeddedTimer = false;
+		 
+		enum struct Pick {
+			ShortestQueue,
+			RoundRobin,
+		};
+		Pick PickAlgorithm = Pick::ShortestQueue;
+	};
+
 	struct ThreadPoolData;
 	class ThreadPool
 	{
 	public:
-		ThreadPool(IN const ThreadPoolOption& a_option);
+		ThreadPool(const ThreadPoolOption& a_option);
+
 		virtual ~ThreadPool();
 
-
-		ThreadPoolStats Reset(IN const ThreadPoolOption& a_option);
-		ThreadPoolStats Stop();
 		void Start();
 
+		ThreadPoolStats Stop();
+
+		ThreadPoolStats Reset(const ThreadPoolOption& a_option);
 
 		ThreadPoolStats GetStats() const;
 
-
-		Task_ptr Push(MOVE Task_ptr&& a_task);
-
-		inline Task_ptr Push(IN const Task_ptr& a_task)
-		{
-			return Push(Task_ptr(a_task));
-		}
 
 		template <typename FUNC, typename... PARAMS>
 		inline Task_ptr Push(FUNC&& a_func,
 							 PARAMS&&... a_params)
 		{
-			return Push(CreateTask(std::forward<FUNC>(a_func),
-								   std::forward<PARAMS>(a_params)...));
-		}
-
-
-		Task_ptr PushAt(IN Timer::TimePoint a_timepoint,
-						MOVE Task_ptr&& a_task);
-
-		inline Task_ptr PushAt(IN Timer::TimePoint a_timepoint,
-							   IN const Task_ptr& a_task)
-		{
-			return PushAt(a_timepoint, Task_ptr(a_task));
+			return PushTask(CreateTask(std::forward<FUNC>(a_func),
+									   std::forward<PARAMS>(a_params)...));
 		}
 
 		template <typename FUNC, typename... PARAMS>
-		inline Task_ptr PushAt(IN Timer::TimePoint a_timepoint,
-							   FUNC&& a_func,
-							   PARAMS&&... a_params)
+		inline Task_ptr Push(Timer::TimePoint a_timepoint,
+							 FUNC&& a_func,
+							 PARAMS&&... a_params)
 		{
-			return PushAt(a_timepoint,
-						  CreateTask(std::forward<FUNC>(a_func),
-									 std::forward<PARAMS>(a_params)...));
-		}
-
-		template <typename DURATION>
-		inline Task_ptr PushAfter(IN DURATION a_after,
-								  MOVE Task_ptr&& a_task)
-		{
-			return PushAt(Timer::Now() + a_after,
-						  std::move(a_task));
-		}
-
-		template <typename DURATION>
-		inline Task_ptr PushAfter(IN DURATION a_after,
-								  IN const Task_ptr& a_task)
-		{
-			return PushAt(Timer::Now() + a_after,
-						  a_task);
+			return PushTask(a_timepoint,
+							CreateTask(std::forward<FUNC>(a_func),
+									   std::forward<PARAMS>(a_params)...));
 		}
 
 		template <typename DURATION, typename FUNC, typename... PARAMS>
-		inline Task_ptr PushAfter(IN DURATION a_after,
-								  FUNC&& a_func,
-								  PARAMS&&... a_params)
+		inline Task_ptr Push(DURATION a_after,
+							 FUNC&& a_func,
+							 PARAMS&&... a_params)
 		{
-			return PushAfter(a_after,
-							 CreateTask(std::forward<FUNC>(a_func),
-										std::forward<PARAMS>(a_params)...));
+			return PushTask(Timer::Now() + a_after,
+							CreateTask(std::forward<FUNC>(a_func),
+									   std::forward<PARAMS>(a_params)...));
 		}
 
-
-		Task_ptr PushSeq(IN size_t a_hash,
-						 MOVE Task_ptr&& a_task);
-
-		inline Task_ptr PushSeq(IN size_t a_hash,
-								IN const Task_ptr& a_task)
-		{
-			return PushSeq(a_hash,
-						   Task_ptr(a_task));
-		}
 
 		template <typename FUNC, typename... PARAMS>
-		inline Task_ptr PushSeq(IN size_t a_hash,
+		inline Task_ptr PushSeq(size_t a_hash,
 								FUNC&& a_func,
 								PARAMS&&... a_params)
 		{
-			return PushSeq(a_hash,
-						   CreateTask(std::forward<FUNC>(a_func),
-									  std::forward<PARAMS>(a_params)...));
-		}
-
-
-		Task_ptr PushSeqAt(IN Timer::TimePoint a_timepoint,
-						   IN size_t a_hash,
-						   MOVE Task_ptr&& a_task);
-
-		inline Task_ptr PushSeqAt(IN Timer::TimePoint a_timepoint,
-								  IN size_t a_hash,
-								  const Task_ptr& a_task)
-		{
-			return PushSeqAt(a_timepoint,
-							 a_hash,
-							 Task_ptr(a_task));
+			return PushSeqTask(a_hash,
+							   CreateTask(std::forward<FUNC>(a_func),
+										  std::forward<PARAMS>(a_params)...));
 		}
 
 		template <typename FUNC, typename... PARAMS>
-		inline Task_ptr PushSeqAt(IN Timer::TimePoint a_timepoint,
-								  IN size_t a_hash,
-								  FUNC&& a_func,
-								  PARAMS&&... a_params)
+		inline Task_ptr PushSeq(Timer::TimePoint a_timepoint,
+								IN size_t a_hash,
+								FUNC&& a_func,
+								PARAMS&&... a_params)
 		{
-			return PushSeqAt(a_timepoint,
-							 a_hash,
-							 CreateTask(std::forward<FUNC>(a_func),
-										std::forward<PARAMS>(a_params)...));
-		}
-
-		template <typename DURATION>
-		inline Task_ptr PushSeqAfter(IN DURATION a_after,
-									 IN size_t a_hash,
-									 MOVE Task_ptr&& a_task)
-		{
-			return PushSeqAt(Timer::Now() + a_after,
-							 a_hash,
-							 std::move(a_task));
-		}
-
-		template <typename DURATION>
-		inline Task_ptr PushSeqAfter(IN DURATION a_after,
-									 IN size_t a_hash,
-									 IN const Task_ptr& a_task)
-		{
-			return PushSeqAt(Timer::Now() + a_after,
-							 a_hash,
-							 a_task);
+			return PushSeqTask(a_timepoint,
+							   a_hash,
+							   CreateTask(std::forward<FUNC>(a_func),
+										  std::forward<PARAMS>(a_params)...));
 		}
 
 		template <typename DURATION, typename FUNC, typename... PARAMS>
-		inline Task_ptr PushSeqAfter(IN DURATION a_after,
-									 IN size_t a_hash,
-									 FUNC&& a_func,
-									 PARAMS&&... a_params)
+		inline Task_ptr PushSeq(DURATION a_after,
+								IN size_t a_hash,
+								FUNC&& a_func,
+								PARAMS&&... a_params)
 		{
-			return PushSeqAfter(a_after,
-								a_hash,
-								CreateTask(std::forward<FUNC>(a_func),
-										   std::forward<PARAMS>(a_params)...));
+			return PushSeqTask(Timer::Now() + a_after,
+							   a_hash,
+							   CreateTask(std::forward<FUNC>(a_func),
+										  std::forward<PARAMS>(a_params)...));
 		}
 
 
 	private:
+		Task_ptr PushTask(Task_ptr&& a_task);
+
+		Task_ptr PushTask(Timer::TimePoint a_timepoint,
+						  Task_ptr&& a_task);
+
+		Task_ptr PushSeqTask(size_t a_hash,
+							 Task_ptr&& a_task);
+
+		Task_ptr PushSeqTask(Timer::TimePoint a_timepoint,
+							 size_t a_hash,
+							 Task_ptr&& a_task);
+
 		std::shared_ptr<ThreadPoolData> m_data;
 	};
+
 
 
 	struct ScalableThreadPoolOption
@@ -286,13 +221,12 @@ namespace asd
 		uint32_t ScaleUpWorkerCountPerSec = 1 * Get_HW_Concurrency();
 	};
 
-
 	struct ScalableThreadPoolData;
 	class ScalableThreadPool
 	{
 	public:
-		ScalableThreadPool(IN const ScalableThreadPoolOption& a_option);
-		~ScalableThreadPool();
+		ScalableThreadPool(const ScalableThreadPoolOption& a_option);
+		virtual ~ScalableThreadPool();
 
 		bool AddWorker();
 		ThreadPoolStats Stop();
@@ -302,14 +236,37 @@ namespace asd
 		inline Task_ptr Push(FUNC&& a_func,
 							 PARAMS&&... a_params)
 		{
-			return Push(CreateTask(std::forward<FUNC>(a_func),
-								   std::forward<PARAMS>(a_params)...));
+			return PushTask(CreateTask(std::forward<FUNC>(a_func),
+									   std::forward<PARAMS>(a_params)...));
 		}
 
-		Task_ptr Push(MOVE Task_ptr&& a_task);
+		template <typename FUNC, typename... PARAMS>
+		inline Task_ptr Push(Timer::TimePoint a_timepoint,
+							 FUNC&& a_func,
+							 PARAMS&&... a_params)
+		{
+			return PushTask(a_timepoint,
+							CreateTask(std::forward<FUNC>(a_func),
+									   std::forward<PARAMS>(a_params)...));
+		}
+
+		template <typename DURATION, typename FUNC, typename... PARAMS>
+		inline Task_ptr Push(DURATION a_after,
+							 FUNC&& a_func,
+							 PARAMS&&... a_params)
+		{
+			return PushTask(Timer::Now() + a_after,
+							CreateTask(std::forward<FUNC>(a_func),
+									   std::forward<PARAMS>(a_params)...));
+		}
 
 
 	private:
+		Task_ptr PushTask(Task_ptr&& a_task);
+
+		Task_ptr PushTask(Timer::TimePoint a_timepoint,
+						  Task_ptr&& a_task);
+
 		std::shared_ptr<ScalableThreadPoolData> m_data;
 	};
 }

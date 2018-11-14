@@ -4,6 +4,8 @@
 	<comment></comment>
 	<projects>
 		<project>asd</project>
+		<project>asd_core</project>
+		<project>asd_redis</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

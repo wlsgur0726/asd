@@ -8,32 +8,16 @@
 void Test()
 {
 	return;
-	volatile bool run = true;
-	std::thread printer([&]()
-	{
-		while (run) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-			double cpu = asd::CpuUsage();
-			printf("%lf\n", cpu);
-		}
-	});
-
-	std::vector<std::thread> workers;
-	for (int i=0; i<2; ++i) {
-		workers.emplace_back(std::thread([&]()
-		{
-			uint64_t cnt = 0;
-			while (run) {
-				++cnt;
-			}
-			printf("cnt:%llu\n", cnt);
-		}));
-	}
-
-	for (int c=0; c!='q'; c=getchar());
-	run = false;
-	printer.join();
-	for (auto& t : workers)
-		t.join();
-	exit(0);
 }
+
+
+
+#if asd_Compiler_GCC
+#include <sql.h>
+#include "../../hiredis/hiredis.h"
+void fix_undef_ref_error()
+{
+	::SQLAllocHandle(SQLSMALLINT(), SQLHANDLE(), NULL);
+	::redisConnect("", 0);
+}
+#endif

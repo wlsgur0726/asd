@@ -58,7 +58,7 @@ namespace asd
 			if (!m_run)
 				return;
 
-			m_lastTimer = Timer::Instance().PushAt(m_timerOffset, [this]()
+			m_lastTimer = Timer::Instance().Push(m_timerOffset, [this]()
 			{
 				double sample = GetSample();
 

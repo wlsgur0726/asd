@@ -318,7 +318,6 @@ namespace asdtest_threadpool
 	}
 
 
-
 	TEST(ThreadPool, SequentialTest)
 	{
 		asd::ThreadPoolOption tpopt;
@@ -364,4 +363,81 @@ namespace asdtest_threadpool
 		delete[] counts;
 	}
 
+	template <typename ThreadPool>
+	int TimerTestMore(ThreadPool& tp,
+					  asd::Timer::TimePoint pushTime, 
+					  ms timeout,
+					  std::atomic<int>& count)
+	{
+		tp; pushTime; timeout; count;
+		return 0;
+	}
+
+	template <typename ThreadPool>
+	void TimerTest(ThreadPool& tp)
+	{
+		std::atomic<int> count;
+		count = 0;
+
+		ms timeout(1000);
+		auto pushTime = asd::Timer::Now();
+
+		tp.Push(pushTime + timeout, [&]()
+		{
+			auto elapsed = asd::Timer::Now() - pushTime;
+			EXPECT_GE(elapsed, timeout);
+			++count;
+		});
+
+		tp.Push(timeout, [&]()
+		{
+			auto elapsed = asd::Timer::Now() - pushTime;
+			EXPECT_GE(elapsed, timeout);
+			++count;
+		});
+
+		int moreTestCount = TimerTestMore(tp, pushTime, timeout, count);
+
+		std::this_thread::sleep_for(timeout + ms(5));
+		tp.Stop();
+		EXPECT_EQ(2 + moreTestCount, count.load());
+	}
+
+	template <>
+	int TimerTestMore<asd::ThreadPool>(asd::ThreadPool& tp,
+									   asd::Timer::TimePoint pushTime,
+									   ms timeout,
+									   std::atomic<int>& count)
+	{
+		tp.PushSeq(pushTime + timeout, 0, [&]()
+		{
+			auto elapsed = asd::Timer::Now() - pushTime;
+			EXPECT_GE(elapsed, timeout);
+			++count;
+		});
+
+		tp.PushSeq(pushTime + timeout, 0, [&]()
+		{
+			auto elapsed = asd::Timer::Now() - pushTime;
+			EXPECT_GE(elapsed, timeout);
+			++count;
+		});
+
+		return 2;
+	}
+
+	TEST(ThreadPool, TimerTest_ThreadPool)
+	{
+		asd::ThreadPoolOption tpopt;
+		asd::ThreadPool tp(tpopt);
+		tp.Start();
+		TimerTest(tp);
+	}
+
+	TEST(ThreadPool, TimerTest_ScalableThreadPool)
+	{
+		asd::ScalableThreadPoolOption tpopt;
+		asd::ScalableThreadPool tp(tpopt);
+		TimerTest(tp);
+	}
 }

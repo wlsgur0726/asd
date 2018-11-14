@@ -14,7 +14,7 @@ namespace asd
 		// 큐잉한 task를 취소
 		// task가 아직 실행되지 않았다면 true 리턴
 		// a_call에 true를 넘기면 task가 아직 실행되지 않은 경우 실행
-		bool Cancel(IN bool a_call = false);
+		bool Cancel(bool a_call = false);
 
 		// 실행 (1회만 실행하는 것을 보장)
 		void Execute();
@@ -52,7 +52,7 @@ namespace asd
 		struct gen_seq<0, Remains...> : seq <Remains...> {};
 
 		template <size_t... Is>
-		inline void Call(IN seq<Is...>)
+		inline void Call(seq<Is...>)
 		{
 			m_func(std::get<Is>(m_params)...);
 		}
@@ -86,10 +86,9 @@ namespace asd
 
 	using Task_ptr = std::shared_ptr<Task>;
 
-
 	template <typename FUNC, typename... PARAMS>
-	static Task_ptr CreateTask(FUNC&& a_func,
-							   PARAMS&&... a_params)
+	Task_ptr CreateTask(FUNC&& a_func,
+						PARAMS&&... a_params)
 	{
 		using TASK = TaskTemplate<FUNC, PARAMS...>;
 #if 0
@@ -102,5 +101,30 @@ namespace asd
 								 std::forward<PARAMS>(a_params)...);
 		return Task_ptr(task, [](Task* p) { s_pool.Free((TASK*)p); });
 #endif
+	}
+
+	template <>
+	inline Task_ptr CreateTask<Task_ptr>(Task_ptr&& a_task)
+	{
+		auto task = std::move(a_task);
+		return task;
+	}
+
+	template <>
+	inline Task_ptr CreateTask<Task_ptr&>(Task_ptr& a_task)
+	{
+		return a_task;
+	}
+
+	template <>
+	inline Task_ptr CreateTask<const Task_ptr&>(const Task_ptr& a_task)
+	{
+		return a_task;
+	}
+
+	template <>
+	inline Task_ptr CreateTask<const nullptr_t&>(const nullptr_t& a_task)
+	{
+		return a_task;
 	}
 }

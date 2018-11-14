@@ -30,7 +30,7 @@ namespace asd
 			return m_size == 0;
 		}
 
-		void emplace_back(MOVE ELEM&& a_data)
+		void emplace_back(ELEM&& a_data)
 		{
 			Node* newNode = m_nodePool.Alloc(std::move(a_data));
 			push(newNode, newNode, 1);
@@ -70,12 +70,12 @@ namespace asd
 		{
 			ELEM data;
 			Node* next = nullptr;
-			Node(MOVE ELEM&& a_mv) : data(std::move(a_mv)) {}
+			Node(ELEM&& a_mv) : data(std::move(a_mv)) {}
 		};
 
-		inline void push(IN Node* a_head,
-						 IN Node* a_tail,
-						 IN size_t a_size)
+		inline void push(Node* a_head,
+						 Node* a_tail,
+						 size_t a_size)
 		{
 			if (m_tail != nullptr)
 				m_tail->next = a_head;
@@ -146,8 +146,8 @@ namespace asd
 				m_locks.resize(ShardCount);
 			}
 
-			Worker* Reserve(IN size_t a_hash,
-							REF ThreadPoolData* a_data)
+			Worker* Reserve(size_t a_hash,
+							ThreadPoolData* a_data)
 			{
 				const size_t idx = a_hash % ShardCount;
 				auto lock = GetLock(m_locks[idx]);
@@ -162,7 +162,7 @@ namespace asd
 				return work.worker;
 			}
 
-			void Finish(IN size_t a_hash)
+			void Finish(size_t a_hash)
 			{
 				const size_t idx = a_hash % ShardCount;
 				auto lock = GetLock(m_locks[idx]);
@@ -206,7 +206,7 @@ namespace asd
 		std::unique_ptr<Timer> timer;
 
 
-		ThreadPoolData(IN const ThreadPoolOption& a_option)
+		ThreadPoolData(const ThreadPoolOption& a_option)
 			: option(a_option)
 		{
 			RRSeq = 0;
@@ -254,8 +254,8 @@ namespace asd
 
 
 		// 작업 대기
-		static Task_ptr PushTask(REF std::shared_ptr<ThreadPoolData>& a_data,
-								 REF TaskObj& a_task)
+		static Task_ptr PushTask(std::shared_ptr<ThreadPoolData>& a_data,
+								 TaskObj& a_task)
 		{
 			auto task = a_task.task;
 			if (a_data == nullptr)
@@ -299,9 +299,9 @@ namespace asd
 
 
 		// 타이머 작업 예약
-		static Task_ptr PushTimerTask(MOVE std::shared_ptr<ThreadPoolData>&& a_data,
-									  IN Timer::TimePoint a_timePoint,
-									  MOVE ThreadPoolData::TaskObj&& a_task)
+		static Task_ptr PushTimerTask(std::shared_ptr<ThreadPoolData>&& a_data,
+									  Timer::TimePoint a_timePoint,
+									  ThreadPoolData::TaskObj&& a_task)
 		{
 			if (a_data == nullptr)
 				return nullptr;
@@ -314,15 +314,15 @@ namespace asd
 			}
 
 			auto timer = a_data->timer ? a_data->timer.get() : &Timer::GlobalInstance();
-			return timer->PushAt(a_timePoint,
-								 &ThreadPoolData::PushTask,
-								 std::move(a_data),
-								 std::move(a_task));
+			return timer->Push(a_timePoint,
+							   &ThreadPoolData::PushTask,
+							   std::move(a_data),
+							   std::move(a_task));
 		}
 
 
-		static Notifier NeedNotify(REF ThreadPoolData* a_data,
-								   REF Worker* a_worker)
+		static Notifier NeedNotify(ThreadPoolData* a_data,
+								   Worker* a_worker)
 		{
 			// already acquired a_worker->lock
 
@@ -341,8 +341,8 @@ namespace asd
 		}
 
 
-		static bool Ready(REF ThreadPoolData* a_data,
-						  REF Worker* a_worker)
+		static bool Ready(ThreadPoolData* a_data,
+						  Worker* a_worker)
 		{
 			auto workerLock = GetLock(a_worker->lock);
 
@@ -382,8 +382,8 @@ namespace asd
 
 
 		// 작업쓰레드 메인루프
-		static void Working(REF std::shared_ptr<ThreadPoolData> a_data,
-							IN uint32_t a_workerIdx)
+		static void Working(std::shared_ptr<ThreadPoolData> a_data,
+							uint32_t a_workerIdx)
 		{
 			asd_BeginTry();
 			if (a_data == nullptr)
@@ -430,8 +430,8 @@ namespace asd
 
 
 		// 작업쓰레드 제거
-		static void DeleteWorker(REF std::shared_ptr<ThreadPoolData> a_data,
-								 REF Worker* a_worker)
+		static void DeleteWorker(std::shared_ptr<ThreadPoolData> a_data,
+								 Worker* a_worker)
 		{
 			auto lock = GetLock(a_data->lock);
 
@@ -458,7 +458,7 @@ namespace asd
 
 
 		// 통계 수집
-		static void PushStatTask(IN std::shared_ptr<ThreadPoolData> a_data)
+		static void PushStatTask(std::shared_ptr<ThreadPoolData> a_data)
 		{
 			if (a_data == nullptr)
 				return;
@@ -478,7 +478,7 @@ namespace asd
 
 			auto at = Timer::Now() + a_data->option.CollectStats_Interval;
 			if (a_data->timer != nullptr) {
-				a_data->timer->PushTask(at, task);
+				a_data->timer->Push(at, std::move(task));
 			}
 			else {
 				TaskObj taskObj;
@@ -493,7 +493,7 @@ namespace asd
 
 
 
-	ThreadPool::ThreadPool(IN const ThreadPoolOption& a_option)
+	ThreadPool::ThreadPool(const ThreadPoolOption& a_option)
 	{
 		Reset(a_option);
 	}
@@ -507,7 +507,7 @@ namespace asd
 	}
 
 
-	ThreadPoolStats ThreadPool::Reset(IN const ThreadPoolOption& a_option)
+	ThreadPoolStats ThreadPool::Reset(const ThreadPoolOption& a_option)
 	{
 		auto stats = Stop();
 		auto data = std::make_shared<ThreadPoolData>(a_option);
@@ -597,7 +597,7 @@ namespace asd
 	}
 
 
-	Task_ptr ThreadPool::Push(MOVE Task_ptr&& a_task)
+	Task_ptr ThreadPool::PushTask(Task_ptr&& a_task)
 	{
 		ThreadPoolData::TaskObj taskObj;
 		taskObj.seq = false;
@@ -607,8 +607,8 @@ namespace asd
 	}
 
 
-	Task_ptr ThreadPool::PushAt(IN Timer::TimePoint a_timepoint,
-								MOVE Task_ptr&& a_task)
+	Task_ptr ThreadPool::PushTask(Timer::TimePoint a_timepoint,
+								  Task_ptr&& a_task)
 	{
 		ThreadPoolData::TaskObj taskObj;
 		taskObj.seq = false;
@@ -620,8 +620,8 @@ namespace asd
 	}
 
 
-	Task_ptr ThreadPool::PushSeq(IN size_t a_hash,
-								 MOVE Task_ptr&& a_task)
+	Task_ptr ThreadPool::PushSeqTask(size_t a_hash,
+									 Task_ptr&& a_task)
 	{
 		ThreadPoolData::TaskObj taskObj;
 		taskObj.seq = true;
@@ -632,9 +632,9 @@ namespace asd
 	}
 
 
-	Task_ptr ThreadPool::PushSeqAt(IN Timer::TimePoint a_timepoint,
-								   IN size_t a_hash,
-								   MOVE Task_ptr&& a_task)
+	Task_ptr ThreadPool::PushSeqTask(Timer::TimePoint a_timepoint,
+									 size_t a_hash,
+									 Task_ptr&& a_task)
 	{
 		ThreadPoolData::TaskObj taskObj;
 		taskObj.seq = true;
@@ -670,11 +670,11 @@ namespace asd
 		ThreadPoolStats stats;
 		Timer::TimePoint beginScaleUpTime;
 		uint32_t scaleUpCount = 0;
-		ScalableThreadPoolData(IN const ScalableThreadPoolOption& a_option) : option(a_option) {}
+		ScalableThreadPoolData(const ScalableThreadPoolOption& a_option) : option(a_option) {}
 
 
-		static Task_ptr PushTask(REF std::shared_ptr<ScalableThreadPoolData>& a_data,
-								 REF Task_ptr& a_task)
+		static Task_ptr PushTask(std::shared_ptr<ScalableThreadPoolData>& a_data,
+								 Task_ptr& a_task)
 		{
 			auto data = a_data.get();
 			double cpuUsage = CpuUsage();
@@ -719,7 +719,7 @@ namespace asd
 		}
 
 
-		static bool AddWorker(REF std::shared_ptr<ScalableThreadPoolData>& a_data)
+		static bool AddWorker(std::shared_ptr<ScalableThreadPoolData>& a_data)
 		{
 			auto lock = GetLock(a_data->lock);
 
@@ -741,8 +741,8 @@ namespace asd
 		}
 
 
-		static void DeleteWorker(REF std::shared_ptr<ScalableThreadPoolData>& a_data,
-								 IN std::shared_ptr<Worker> a_worker)
+		static void DeleteWorker(std::shared_ptr<ScalableThreadPoolData>& a_data,
+								 std::shared_ptr<Worker> a_worker)
 		{
 			auto lock = GetLock(a_data->lock);
 
@@ -757,8 +757,8 @@ namespace asd
 		}
 
 
-		static void Working(IN std::shared_ptr<ScalableThreadPoolData> a_data,
-							IN std::shared_ptr<Worker> a_worker)
+		static void Working(std::shared_ptr<ScalableThreadPoolData> a_data,
+							std::shared_ptr<Worker> a_worker)
 		{
 			auto data = a_data.get();
 			auto worker = a_worker.get();
@@ -805,7 +805,7 @@ namespace asd
 		}
 
 
-		static Worker* PopWaiter(REF std::shared_ptr<ScalableThreadPoolData>& a_data)
+		static Worker* PopWaiter(std::shared_ptr<ScalableThreadPoolData>& a_data)
 		{
 			if (a_data->waiters.empty())
 				return nullptr;
@@ -815,8 +815,8 @@ namespace asd
 		}
 
 
-		static bool CheckExpired(REF std::shared_ptr<ScalableThreadPoolData>& a_data,
-								 REF std::shared_ptr<Worker>& a_worker)
+		static bool CheckExpired(std::shared_ptr<ScalableThreadPoolData>& a_data,
+								 std::shared_ptr<Worker>& a_worker)
 		{
 			auto lock = GetLock(a_data->lock);
 
@@ -832,7 +832,7 @@ namespace asd
 	};
 
 
-	ScalableThreadPool::ScalableThreadPool(IN const ScalableThreadPoolOption& a_option)
+	ScalableThreadPool::ScalableThreadPool(const ScalableThreadPoolOption& a_option)
 		: m_data(std::make_shared<ScalableThreadPoolData>(a_option))
 	{
 		CpuUsage(); // 인스턴스 초기화를 위해 호출
@@ -892,9 +892,20 @@ namespace asd
 	}
 
 
-	Task_ptr ScalableThreadPool::Push(MOVE Task_ptr&& a_task)
+	Task_ptr ScalableThreadPool::PushTask(Task_ptr&& a_task)
 	{
 		auto data = std::atomic_load(&m_data);
 		return ScalableThreadPoolData::PushTask(data, a_task);
+	}
+
+
+	Task_ptr ScalableThreadPool::PushTask(Timer::TimePoint a_timepoint,
+										  Task_ptr&& a_task)
+	{
+		auto data = std::atomic_load(&m_data);
+		return Timer::GlobalInstance().Push(a_timepoint,
+											&ScalableThreadPoolData::PushTask,
+											std::move(data),
+											std::move(a_task));
 	}
 }

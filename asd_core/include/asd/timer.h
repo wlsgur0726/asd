@@ -20,8 +20,8 @@ namespace asd
 		using TimePoint	= std::chrono::high_resolution_clock::time_point;
 
 		// 시차 계산
-		static Millisec Diff(IN TimePoint a_before,
-							 IN TimePoint a_after);
+		static Millisec Diff(TimePoint a_before,
+							 TimePoint a_after);
 
 		// 현재시간
 		static TimePoint Now();
@@ -32,24 +32,12 @@ namespace asd
 		// 어디까지 실행했는지
 		TimePoint CurrentOffset();
 
-		// a_afterMs 후에 수행할 task를 큐잉
-		// 큐잉된 task 리턴 (nullptr이면 실패)
-		template <typename FUNC, typename... PARAMS>
-		inline Task_ptr PushAfter(IN Millisec a_after,
-								  FUNC&& a_func,
-								  PARAMS&&... a_params)
-		{
-			return PushAt(Now() + a_after,
-						  std::forward<FUNC>(a_func),
-						  std::forward<PARAMS>(a_params)...);
-		}
-
 		// a_timepoint 시점에 수행할 task를 큐잉
 		// 큐잉된 task 리턴 (nullptr이면 실패)
 		template <typename FUNC, typename... PARAMS>
-		inline Task_ptr PushAt(IN TimePoint a_timepoint,
-							   FUNC&& a_func,
-							   PARAMS&&... a_params)
+		inline Task_ptr Push(TimePoint a_timepoint,
+							 FUNC&& a_func,
+							 PARAMS&&... a_params)
 		{
 			auto task = CreateTask(std::forward<FUNC>(a_func),
 								   std::forward<PARAMS>(a_params)...);
@@ -57,12 +45,25 @@ namespace asd
 			return task;
 		}
 
-		void PushTask(IN TimePoint a_timepoint,
-					  IN const Task_ptr& a_task);
+		// a_afterMs 후에 수행할 task를 큐잉
+		// 큐잉된 task 리턴 (nullptr이면 실패)
+		template <typename DURATION, typename FUNC, typename... PARAMS>
+		inline Task_ptr Push(DURATION a_after,
+							 FUNC&& a_func,
+							 PARAMS&&... a_params)
+		{
+			auto task = CreateTask(std::forward<FUNC>(a_func),
+								   std::forward<PARAMS>(a_params)...);
+			PushTask(Now() + a_after, task);
+			return task;
+		}
 
 		virtual ~Timer();
 
 	private:
+		void PushTask(TimePoint a_timepoint,
+					  const Task_ptr& a_task);
+
 		void PollLoop();
 
 		Mutex m_lock;
