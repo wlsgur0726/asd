@@ -34,31 +34,31 @@ namespace asd
 	public:
 		static const ID Null = 0;
 
-		inline Handle(IN ID a_id = Null)
+		inline Handle(ID a_id = Null)
 			: m_id(a_id)
 		{
 		}
 
-		inline Handle(IN const HandleType&) = default;
-		inline Handle(MOVE HandleType&& a_mv)
+		inline Handle(const HandleType&) = default;
+		inline Handle(HandleType&& a_mv)
 		{
 			operator=(std::move(a_mv));
 		}
 
-		inline HandleType& operator=(IN const HandleType&) = default;
-		inline HandleType& operator=(MOVE HandleType&& a_mv)
+		inline HandleType& operator=(const HandleType&) = default;
+		inline HandleType& operator=(HandleType&& a_mv)
 		{
 			m_id = a_mv.m_id;
 			a_mv.m_id = Null;
 			return *this;
 		}
 
-		inline static HandleType GetHandle(IN Object* a_obj)
+		inline static HandleType GetHandle(Object* a_obj)
 		{
 			return HandleType(GetID(a_obj));
 		}
 
-		inline static ID GetID(IN Object* a_obj)
+		inline static ID GetID(Object* a_obj)
 		{
 			if (a_obj == nullptr)
 				return Null;
@@ -101,7 +101,7 @@ namespace asd
 		Object_ptr Alloc(ARGS&&... a_constructorArgs)
 		{
 			Object_ptr obj(Pool::Instance().Alloc(std::forward<ARGS>(a_constructorArgs)...),
-						   [](IN Object* a_ptr) { Pool::Instance().Free(a_ptr); });
+						   [](Object* a_ptr) { Pool::Instance().Free(a_ptr); });
 
 			bool added;
 			do {
@@ -129,8 +129,8 @@ namespace asd
 			Manager::Instance().clear();
 		}
 
-		inline static int Compare(IN ID a_left,
-								  IN ID a_right)
+		inline static int Compare(ID a_left,
+								  ID a_right)
 		{
 			if (a_left < a_right)
 				return -1;
@@ -169,7 +169,7 @@ namespace std
 	template <typename OBJECT_TYPE, typename ID_TYPE>
 	struct hash< asd::Handle<OBJECT_TYPE, ID_TYPE> >
 	{
-		inline size_t operator()(IN const asd::Handle<OBJECT_TYPE, ID_TYPE>& a_handle) const
+		inline size_t operator()(const asd::Handle<OBJECT_TYPE, ID_TYPE>& a_handle) const
 		{
 			return std::hash<ID_TYPE>()(a_handle.GetID());
 		}

@@ -24,9 +24,9 @@ namespace asd
 	{
 	public:
 		DBDiagInfoList m_diagInfoList;
-		DBException(IN const DBDiagInfoList& a_diagInfoList,
-					IN const char* a_lastFileName,
-					IN int a_lastFileLine);
+		DBException(const DBDiagInfoList& a_diagInfoList,
+					const char* a_lastFileName,
+					int a_lastFileLine);
 	};
 
 
@@ -65,8 +65,8 @@ namespace asd
 	struct ParamBinder
 	{
 		static const SQLType Type = SQLType::UNKNOWN_TYPE;
-		static void* Buffer(REF T& a_var) { return &a_var; }
-		int BufferLength(REF T& a_var) { return sizeof(a_var); }
+		static void* Buffer(T& a_var) { return &a_var; }
+		int BufferLength(T& a_var) { return sizeof(a_var); }
 	};
 
 	template<>
@@ -105,7 +105,7 @@ namespace asd
 		DBConnectionHandle_ptr m_handle;
 
 	public:
-		void Open(IN const char* a_constr);
+		void Open(const char* a_constr);
 
 		void BeginTran();
 
@@ -132,14 +132,14 @@ namespace asd
 		DBStatement();
 
 
-		DBStatement(REF DBConnection& a_conHandle);
+		DBStatement(DBConnection& a_conHandle);
 
 
-		void Init(REF DBConnection& a_conHandle);
+		void Init(DBConnection& a_conHandle);
 
 
 		// 쿼리를 준비시킨다.
-		void Prepare(IN const char* a_query);
+		void Prepare(const char* a_query);
 
 
 		// Prameter 관련 함수들 설명
@@ -159,96 +159,96 @@ namespace asd
 
 		// 입력인자 셋팅
 		template <typename T>
-		void SetInParam(IN uint16_t a_paramNumber,
-						IN const T& a_value,
-						IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
-						IN uint32_t a_columnSize = 0,
-						IN uint16_t a_columnScale = 0);
+		void SetInParam(uint16_t a_paramNumber,
+						const T& a_value,
+						SQLType a_columnType = SQLType::UNKNOWN_TYPE,
+						uint32_t a_columnSize = 0,
+						uint16_t a_columnScale = 0);
 
 		// null값을 입력한다.
 		template <typename T>
-		void SetInParam_NullInput(IN uint16_t a_paramNumber,
-								  IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
-								  IN uint32_t a_columnSize = 0,
-								  IN uint16_t a_columnScale = 0);
+		void SetInParam_NullInput(uint16_t a_paramNumber,
+								  SQLType a_columnType = SQLType::UNKNOWN_TYPE,
+								  uint32_t a_columnSize = 0,
+								  uint16_t a_columnScale = 0);
 
 
 		// 입력인자 바인딩
 		template <typename T>
-		void BindInParam(IN uint16_t a_paramNumber,
-						 REF T* a_value,
-						 IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
-						 IN uint32_t a_columnSize = 0,
-						 IN uint16_t a_columnScale = 0);
+		void BindInParam(uint16_t a_paramNumber,
+						 T* a_value,
+						 SQLType a_columnType = SQLType::UNKNOWN_TYPE,
+						 uint32_t a_columnSize = 0,
+						 uint16_t a_columnScale = 0);
 
 
 
 		// 출력인자 셋팅
 		template <typename T>
-		void SetOutParam(IN uint16_t a_paramNumber,
-						 IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
-						 IN uint32_t a_columnSize = 0,
-						 IN uint16_t a_columnScale = 0);
+		void SetOutParam(uint16_t a_paramNumber,
+						 SQLType a_columnType = SQLType::UNKNOWN_TYPE,
+						 uint32_t a_columnSize = 0,
+						 uint16_t a_columnScale = 0);
 
 		// 출력인자를 무시한다.
 		template <typename T>
-		void SetOutParam_NullInput(IN uint16_t a_paramNumber,
-								   IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
-								   IN uint32_t a_columnSize = 0,
-								   IN uint16_t a_columnScale = 0);
+		void SetOutParam_NullInput(uint16_t a_paramNumber,
+								   SQLType a_columnType = SQLType::UNKNOWN_TYPE,
+								   uint32_t a_columnSize = 0,
+								   uint16_t a_columnScale = 0);
 
 
 		// 출력인자 바인딩
 		// a_varptr에 nullptr 입력 시 출력인자를 무시하겠다는 의미로 적용된다.
 		template <typename T>
-		void BindOutParam(IN uint16_t a_paramNumber,
-						  REF T* a_varptr,
-						  IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
-						  IN uint32_t a_columnSize = 0,
-						  IN uint16_t a_columnScale = 0);
+		void BindOutParam(uint16_t a_paramNumber,
+						  T* a_varptr,
+						  SQLType a_columnType = SQLType::UNKNOWN_TYPE,
+						  uint32_t a_columnSize = 0,
+						  uint16_t a_columnScale = 0);
 
 
 
 		// 입출력인자 셋팅
 		template <typename T>
-		void SetInOutParam(IN uint16_t a_paramNumber,
-						   IN const T& a_value,
-						   IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
-						   IN uint32_t a_columnSize = 0,
-						   IN uint16_t a_columnScale = 0);
+		void SetInOutParam(uint16_t a_paramNumber,
+						   const T& a_value,
+						   SQLType a_columnType = SQLType::UNKNOWN_TYPE,
+						   uint32_t a_columnSize = 0,
+						   uint16_t a_columnScale = 0);
 
 		// null값을 입력한다.
 		template <typename T>
-		void SetInOutParam_NullInput(IN uint16_t a_paramNumber,
-									 IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
-									 IN uint32_t a_columnSize = 0,
-									 IN uint16_t a_columnScale = 0);
+		void SetInOutParam_NullInput(uint16_t a_paramNumber,
+									 SQLType a_columnType = SQLType::UNKNOWN_TYPE,
+									 uint32_t a_columnSize = 0,
+									 uint16_t a_columnScale = 0);
 
 
 		// 입출력인자 바인딩
 		//  - a_nullInput이 true이면 입력값으로 null값을 전달한다.
 		//  - a_nullInput이 false이면 a_ver에 담긴 값을 입력값으로 전달한다.
 		template <typename T>
-		void BindInOutParam(IN uint16_t a_paramNumber,
-							REF T& a_var,
-							IN bool a_nullInput,
-							IN SQLType a_columnType = SQLType::UNKNOWN_TYPE,
-							IN uint32_t a_columnSize = 0,
-							IN uint16_t a_columnScale = 0);
+		void BindInOutParam(uint16_t a_paramNumber,
+							T& a_var,
+							bool a_nullInput,
+							SQLType a_columnType = SQLType::UNKNOWN_TYPE,
+							uint32_t a_columnSize = 0,
+							uint16_t a_columnScale = 0);
 
 
 
 		// 매 Fetch마다 콜백되는 함수.
 		// a_resultNumber와 a_recordNumber는 1부터 시작한다.
-		typedef std::function<void(IN int a_resultNumber,
-								   IN int a_recordNumber)> FetchCallback;
+		typedef std::function<void(int a_resultNumber,
+								   int a_recordNumber)> FetchCallback;
 		
 		// Prepare된 쿼리를 실행하고 Fetch한다.
-		int64_t Execute(IN FetchCallback a_callback);
+		int64_t Execute(FetchCallback a_callback);
 
 		// a_query로 입력받은 쿼리를 바로 실행하고 Fetch한다.
-		int64_t Execute(IN const char* a_query,
-						IN FetchCallback a_callback);
+		int64_t Execute(const char* a_query,
+						FetchCallback a_callback);
 
 
 
@@ -265,41 +265,41 @@ namespace asd
 
 		// 결과 조회.
 		// FetchCallback 내에서, 혹은 Execute()리턴 후 사용한다.
-		MString GetColumnName(IN uint16_t a_columnIndex);
+		MString GetColumnName(uint16_t a_columnIndex);
 
 
 		uint16_t GetColumnCount() const;
 
 
 		template <typename T>
-		T* GetData(IN const char* a_columnName,
-				   OUT T& a_return);
+		T* GetData(const char* a_columnName,
+				   T& a_return /*Out*/);
 
 
 		template <typename T>
-		T* GetData(IN uint16_t a_columnIndex,
-				   OUT T& a_return);
+		T* GetData(uint16_t a_columnIndex,
+				   T& a_return /*Out*/);
 
 
 		template <typename T>
-		T* GetParam(IN uint16_t a_paramNumber,
-					OUT T& a_return);
+		T* GetParam(uint16_t a_paramNumber,
+					T& a_return /*Out*/);
 
 
 		template <typename T>
-		bool IsNullParam(IN uint16_t a_columnIndex);
+		bool IsNullParam(uint16_t a_columnIndex);
 
 
 		template <typename T>
-		bool IsNullParam(IN T* a_boundPtr);
+		bool IsNullParam(T* a_boundPtr);
 
 
-		Caster& GetData(IN uint16_t a_columnIndex);
+		Caster& GetData(uint16_t a_columnIndex);
 
 
-		Caster& GetData(IN const char* a_columnName);
+		Caster& GetData(const char* a_columnName);
 
 
-		Caster& GetParam(IN uint16_t a_paramNumber);
+		Caster& GetParam(uint16_t a_paramNumber);
 	};
 }

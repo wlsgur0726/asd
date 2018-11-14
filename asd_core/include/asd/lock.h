@@ -38,9 +38,9 @@ namespace asd
 	public:
 		Mutex();
 
-		Mutex(MOVE Mutex&& a_rval);
+		Mutex(Mutex&& a_rval);
 
-		Mutex& operator=(MOVE Mutex&& a_rval);
+		Mutex& operator=(Mutex&& a_rval);
 
 		~Mutex();
 
@@ -48,7 +48,7 @@ namespace asd
 
 	private:
 		std::unique_ptr<MutexData> m_data;
-		Mutex(IN const Mutex&) = delete;
+		Mutex(const Mutex&) = delete;
 	};
 
 
@@ -58,16 +58,16 @@ namespace asd
 	public:
 		SpinMutex();
 
-		SpinMutex(MOVE SpinMutex&& a_rval);
+		SpinMutex(SpinMutex&& a_rval);
 
-		SpinMutex& operator=(MOVE SpinMutex&& a_rval);
+		SpinMutex& operator=(SpinMutex&& a_rval);
 
 		asd_DeclareMutexInterface;
 
 	private:
 		std::atomic<uint32_t> m_lock;
 		int m_recursionCount = 0;
-		SpinMutex(IN const SpinMutex&) = delete;
+		SpinMutex(const SpinMutex&) = delete;
 	};
 
 
@@ -78,9 +78,9 @@ namespace asd
 	public:
 		SharedMutex();
 
-		SharedMutex(MOVE SharedMutex&& a_rval);
+		SharedMutex(SharedMutex&& a_rval);
 
-		SharedMutex& operator=(MOVE SharedMutex&& a_rval);
+		SharedMutex& operator=(SharedMutex&& a_rval);
 
 		~SharedMutex();
 
@@ -90,7 +90,7 @@ namespace asd
 
 	private:
 		std::unique_ptr<SharedMutexData> m_data;
-		SharedMutex(IN const SharedMutex&) = delete;
+		SharedMutex(const SharedMutex&) = delete;
 	};
 
 
@@ -100,7 +100,7 @@ namespace asd
 	{
 	public:
 		using Lock = std::shared_ptr<AsyncMutexData>;
-		using Callback = std::function<void(IN Lock)>;
+		using Callback = std::function<void(Lock)>;
 
 		AsyncMutex();
 
@@ -110,7 +110,7 @@ namespace asd
 
 	private:
 		std::shared_ptr<AsyncMutexData> m_data;
-		AsyncMutex(IN const AsyncMutex&) = delete;
+		AsyncMutex(const AsyncMutex&) = delete;
 	};
 
 
@@ -122,15 +122,15 @@ namespace asd
 		int m_recursionCount = 0;
 
 	public:
-		Lock(REF MUTEX_TYPE& a_mutex,
-			 IN bool a_getLock = true)
+		Lock(MUTEX_TYPE& a_mutex,
+			 bool a_getLock = true)
 			: m_mutex(&a_mutex)
 		{
 			if (a_getLock)
 				lock();
 		}
 
-		Lock(MOVE Lock<MUTEX_TYPE>&& a_move)
+		Lock(Lock<MUTEX_TYPE>&& a_move)
 		{
 			m_recursionCount = a_move.m_recursionCount;
 			m_mutex = a_move.m_mutex;
@@ -149,8 +149,8 @@ namespace asd
 
 		asd_DeclareMutexInterface;
 
-		Lock(IN const Lock<MUTEX_TYPE>&) = delete;
-		Lock& operator=(IN const Lock<MUTEX_TYPE>&) = delete;
+		Lock(const Lock<MUTEX_TYPE>&) = delete;
+		Lock& operator=(const Lock<MUTEX_TYPE>&) = delete;
 	};
 
 	template <typename MUTEX_TYPE>
@@ -185,8 +185,8 @@ namespace asd
 
 
 	template <typename MUTEX_TYPE>
-	inline Lock<MUTEX_TYPE> GetLock(REF MUTEX_TYPE& a_mutex,
-									IN bool a_getLock = true)
+	inline Lock<MUTEX_TYPE> GetLock(MUTEX_TYPE& a_mutex,
+									bool a_getLock = true)
 	{
 		return Lock<MUTEX_TYPE>(a_mutex, a_getLock);
 	}
@@ -200,15 +200,15 @@ namespace asd
 		int m_recursionCount = 0;
 
 	public:
-		SharedLock(REF MUTEX_TYPE& a_mutex,
-				   IN bool a_getLock = true)
+		SharedLock(MUTEX_TYPE& a_mutex,
+				   bool a_getLock = true)
 			: m_mutex(&a_mutex)
 		{
 			if (a_getLock)
 				lock_shared();
 		}
 
-		SharedLock(MOVE SharedLock<MUTEX_TYPE>&& a_move)
+		SharedLock(SharedLock<MUTEX_TYPE>&& a_move)
 		{
 			m_recursionCount = a_move.m_recursionCount;
 			m_mutex = a_move.m_mutex;
@@ -259,8 +259,8 @@ namespace asd
 
 
 	template <typename MUTEX_TYPE>
-	inline SharedLock<MUTEX_TYPE> GetSharedLock(REF MUTEX_TYPE& a_mutex,
-												IN bool a_getLock = true)
+	inline SharedLock<MUTEX_TYPE> GetSharedLock(MUTEX_TYPE& a_mutex,
+												bool a_getLock = true)
 	{
 		return SharedLock<MUTEX_TYPE>(a_mutex, a_getLock);
 	}

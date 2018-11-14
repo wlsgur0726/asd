@@ -41,15 +41,15 @@ namespace asd
 
 
 
-	IpAddress::IpAddress(IN AddressFamily a_addrFamily /*= IPv4*/)
+	IpAddress::IpAddress(AddressFamily a_addrFamily /*= IPv4*/)
 	{
 		m_addrFamily = a_addrFamily;
 	}
 
 
 
-	IpAddress::IpAddress(IN const char* a_ip,
-						 IN uint16_t a_port /*= 0*/)
+	IpAddress::IpAddress(const char* a_ip,
+						 uint16_t a_port /*= 0*/)
 	{
 		auto list = FindIP(a_ip);
 		if (list.empty())
@@ -60,35 +60,35 @@ namespace asd
 
 
 
-	IpAddress::IpAddress(IN const IpAddress& a_cp)
+	IpAddress::IpAddress(const IpAddress& a_cp)
 	{
 		*this = a_cp;
 	}
 
 
 
-	IpAddress::IpAddress(MOVE IpAddress&& a_rval)
+	IpAddress::IpAddress(IpAddress&& a_rval)
 	{
 		*this = std::move(a_rval);
 	}
 
 
 
-	IpAddress::IpAddress(IN const sockaddr_in& a_native)
+	IpAddress::IpAddress(const sockaddr_in& a_native)
 	{
 		*this = a_native;
 	}
 
 
 
-	IpAddress::IpAddress(IN const sockaddr_in6& a_native)
+	IpAddress::IpAddress(const sockaddr_in6& a_native)
 	{
 		*this = a_native;
 	}
 
 
 
-	IpAddress& IpAddress::operator=(IN const IpAddress& a_cp)
+	IpAddress& IpAddress::operator=(const IpAddress& a_cp)
 	{
 		this->~IpAddress();
 		m_addrFamily = a_cp.m_addrFamily;
@@ -102,7 +102,7 @@ namespace asd
 
 
 
-	IpAddress& IpAddress::operator=(MOVE IpAddress&& a_rval)
+	IpAddress& IpAddress::operator=(IpAddress&& a_rval)
 	{
 		std::swap(m_addr, a_rval.m_addr);
 		std::swap(m_addrlen, a_rval.m_addrlen);
@@ -112,7 +112,7 @@ namespace asd
 
 
 
-	IpAddress& IpAddress::operator=(IN const sockaddr_in& a_native)
+	IpAddress& IpAddress::operator=(const sockaddr_in& a_native)
 	{
 		this->~IpAddress();
 		m_addrlen = sizeof(sockaddr_in);
@@ -124,7 +124,7 @@ namespace asd
 
 
 
-	IpAddress& IpAddress::operator=(IN const sockaddr_in6& a_native)
+	IpAddress& IpAddress::operator=(const sockaddr_in6& a_native)
 	{
 		this->~IpAddress();
 		m_addrlen = sizeof(sockaddr_in6);
@@ -157,7 +157,7 @@ namespace asd
 
 
 
-	void* IpAddress::GetIp(OUT int* a_len /*= nullptr*/) const
+	void* IpAddress::GetIp(int* a_len /*= nullptr*/ /*Out*/) const
 	{
 		if (m_addr == nullptr)
 			return nullptr;
@@ -214,7 +214,7 @@ namespace asd
 
 
 
-	void IpAddress::SetPort(IN uint16_t a_port)
+	void IpAddress::SetPort(uint16_t a_port)
 	{
 		if (m_addr == nullptr)
 			return;
@@ -266,8 +266,8 @@ namespace asd
 
 
 
-	int IpAddress::Compare(IN const IpAddress& a_left,
-						   IN const IpAddress& a_right)
+	int IpAddress::Compare(const IpAddress& a_left,
+						   const IpAddress& a_right)
 	{
 		if (a_left.m_addr == a_right.m_addr) {
 			asd_DAssert(a_left.m_addrFamily == a_right.m_addrFamily);
@@ -314,7 +314,7 @@ namespace asd
 
 
 
-	size_t IpAddress::Hash::operator()(IN const IpAddress& a_addr) const
+	size_t IpAddress::Hash::operator()(const IpAddress& a_addr) const
 	{
 		if (a_addr.m_addr == nullptr)
 			return 0;
@@ -349,7 +349,7 @@ namespace asd
 
 
 
-	std::vector<IpAddress> FindIP(IN const char* a_domain)
+	std::vector<IpAddress> FindIP(const char* a_domain)
 	{
 		std::vector<IpAddress> ret;
 		addrinfo* result;

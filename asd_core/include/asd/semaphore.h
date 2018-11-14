@@ -14,19 +14,19 @@ namespace asd
 	public:
 		const static uint32_t Infinite = 0xFFFFFFFF;
 
-		Semaphore(IN uint32_t a_initCount = 0);
+		Semaphore(uint32_t a_initCount = 0);
 
-		Semaphore(MOVE Semaphore&& a_rval);
+		Semaphore(Semaphore&& a_rval);
 
-		Semaphore& operator = (MOVE Semaphore&& a_rval);
+		Semaphore& operator = (Semaphore&& a_rval);
 
 		~Semaphore();
 
 		uint32_t GetCount() const;
 
-		bool Wait(IN uint32_t a_timeoutMs = Infinite);
+		bool Wait(uint32_t a_timeoutMs = Infinite);
 
-		void Post(IN uint32_t a_count = 1);
+		void Post(uint32_t a_count = 1);
 
 	};
 }

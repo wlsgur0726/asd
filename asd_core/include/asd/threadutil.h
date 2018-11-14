@@ -13,6 +13,6 @@ namespace asd
 
 	size_t GetAliveThreadCount();
 
-	void KillThread(IN uint32_t a_threadSequence);
+	void KillThread(uint32_t a_threadSequence);
 
 }

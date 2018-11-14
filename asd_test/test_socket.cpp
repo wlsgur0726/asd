@@ -233,10 +233,10 @@ namespace asdtest_socket
 			if (sock != nullptr)
 				sock->Close();
 		}
-		virtual void OnAccept(IN asd::AsyncSocket_ptr& a_newSock) { FAIL(); }
-		virtual void OnConnect(IN asd::Socket::Error a_err) { FAIL(); }
-		virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) { FAIL(); }
-		virtual void OnClose(IN asd::Socket::Error a_err) { FAIL(); }
+		virtual void OnAccept(asd::AsyncSocket_ptr& a_newSock) { FAIL(); }
+		virtual void OnConnect(asd::Socket::Error a_err) { FAIL(); }
+		virtual void OnRecv(asd::Buffer_ptr&& a_data) { FAIL(); }
+		virtual void OnClose(asd::Socket::Error a_err) { FAIL(); }
 	};
 
 	struct PeerManager
@@ -302,7 +302,7 @@ namespace asdtest_socket
 					s_finish.Post();
 			}
 
-			virtual void OnConnect(IN asd::Socket::Error a_err) override
+			virtual void OnConnect(asd::Socket::Error a_err) override
 			{
 				bool b = false;
 				EXPECT_TRUE(m_onConnect.compare_exchange_strong(b, true));
@@ -331,7 +331,7 @@ namespace asdtest_socket
 				m_sendComplete = true;
 			}
 
-			virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) override
+			virtual void OnRecv(asd::Buffer_ptr&& a_data) override
 			{
 				m_owner->m_threadPool.PushSeq(m_sock, [this, data=std::move(a_data)]()
 				{
@@ -350,7 +350,7 @@ namespace asdtest_socket
 				});
 			}
 
-			virtual void OnClose(IN asd::Socket::Error a_err) override
+			virtual void OnClose(asd::Socket::Error a_err) override
 			{
 				bool b = false;
 				EXPECT_TRUE(m_onClose.compare_exchange_strong(b, true));
@@ -365,14 +365,14 @@ namespace asdtest_socket
 		{
 			struct Client : public Peer
 			{
-				virtual void OnRecv(MOVE asd::Buffer_ptr&& a_data) override
+				virtual void OnRecv(asd::Buffer_ptr&& a_data) override
 				{
 					auto sock = m_sock.GetObj();
 					ASSERT_NE(sock, nullptr);
 					sock->Send(std::move(a_data));
 				}
 
-				virtual void OnClose(IN asd::Socket::Error a_err) override
+				virtual void OnClose(asd::Socket::Error a_err) override
 				{
 					bool b = false;
 					EXPECT_TRUE(m_onClose.compare_exchange_strong(b, true));
@@ -381,7 +381,7 @@ namespace asdtest_socket
 				}
 			};
 
-			virtual void OnAccept(IN asd::AsyncSocket_ptr& a_newSock) override
+			virtual void OnAccept(asd::AsyncSocket_ptr& a_newSock) override
 			{
 				auto handle = asd::AsyncSocketHandle::GetHandle(a_newSock.get());
 				std::shared_ptr<Peer> peer(new Server::Client);
@@ -389,7 +389,7 @@ namespace asdtest_socket
 				m_owner->Add(peer);
 			}
 
-			virtual void OnClose(IN asd::Socket::Error a_err) override
+			virtual void OnClose(asd::Socket::Error a_err) override
 			{
 				bool b = false;
 				EXPECT_TRUE(m_onClose.compare_exchange_strong(b, true));
@@ -402,8 +402,8 @@ namespace asdtest_socket
 		{
 			PeerManager m_peerManager;
 
-			virtual void OnAccept(IN asd::AsyncSocket* a_listener,
-								  MOVE asd::AsyncSocket_ptr&& a_newSock) override
+			virtual void OnAccept(asd::AsyncSocket* a_listener,
+								  asd::AsyncSocket_ptr&& a_newSock) override
 			{
 				auto handle = asd::AsyncSocketHandle::GetHandle(a_listener);
 				auto listener = m_peerManager.Find(handle);
@@ -412,8 +412,8 @@ namespace asdtest_socket
 				ASSERT_TRUE(Register(a_newSock));
 			}
 
-			virtual void OnConnect(IN asd::AsyncSocket* a_sock,
-								   IN asd::Socket::Error a_err) override
+			virtual void OnConnect(asd::AsyncSocket* a_sock,
+								   asd::Socket::Error a_err) override
 			{
 				auto handle = asd::AsyncSocketHandle::GetHandle(a_sock);
 				auto peer = m_peerManager.Find(handle);
@@ -424,8 +424,8 @@ namespace asdtest_socket
 				});
 			}
 
-			virtual void OnRecv(IN asd::AsyncSocket* a_sock,
-								MOVE asd::Buffer_ptr&& a_data) override
+			virtual void OnRecv(asd::AsyncSocket* a_sock,
+								asd::Buffer_ptr&& a_data) override
 			{
 				auto handle = asd::AsyncSocketHandle::GetHandle(a_sock);
 				auto peer = m_peerManager.Find(handle);
@@ -436,8 +436,8 @@ namespace asdtest_socket
 				});
 			}
 
-			virtual void OnClose(IN asd::AsyncSocket* a_sock,
-								 IN asd::Socket::Error a_err) override
+			virtual void OnClose(asd::AsyncSocket* a_sock,
+								 asd::Socket::Error a_err) override
 			{
 				auto handle = asd::AsyncSocketHandle::GetHandle(a_sock);
 				auto peer = m_peerManager.Find(handle);

@@ -170,7 +170,7 @@ namespace asd
 
 		template <typename FUNC, typename... PARAMS>
 		inline Task_ptr PushSeq(Timer::TimePoint a_timepoint,
-								IN size_t a_hash,
+								size_t a_hash,
 								FUNC&& a_func,
 								PARAMS&&... a_params)
 		{
@@ -182,7 +182,7 @@ namespace asd
 
 		template <typename DURATION, typename FUNC, typename... PARAMS>
 		inline Task_ptr PushSeq(DURATION a_after,
-								IN size_t a_hash,
+								size_t a_hash,
 								FUNC&& a_func,
 								PARAMS&&... a_params)
 		{

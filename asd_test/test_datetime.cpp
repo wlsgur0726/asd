@@ -3,6 +3,7 @@
 #include <thread>
 #include <cstring>
 
+
 namespace asdtest_datetime
 {
 	TEST(DateTime, Compare)
@@ -33,6 +34,34 @@ namespace asdtest_datetime
 		EXPECT_EQ(asd::Date(1, 1, 1).GetDayOfTheWeek(), asd::DayOfTheWeek::Monday);
 	}
 
+	template <typename T>
+	bool Equal(const T& a, const T& b) { return a == b; }
+
+	template <>
+	bool Equal<tm>(const tm& a, const tm& b)
+	{
+		return a.tm_year == b.tm_year
+			&& a.tm_mon == b.tm_mon
+			&& a.tm_yday == b.tm_yday
+			&& a.tm_mday == b.tm_mday
+			&& a.tm_wday == b.tm_wday
+			&& a.tm_hour == b.tm_hour
+			&& a.tm_min == b.tm_min
+			&& a.tm_sec == b.tm_sec
+			&& a.tm_isdst == b.tm_isdst;
+	}
+
+	template <>
+	bool Equal<asd::SQL_TIMESTAMP_STRUCT>(const asd::SQL_TIMESTAMP_STRUCT& a, const asd::SQL_TIMESTAMP_STRUCT& b)
+	{
+		return a.year == b.year
+			&& a.month == b.month
+			&& a.day == b.day
+			&& a.hour == b.hour
+			&& a.minute == b.minute
+			&& a.second == b.second
+			&& a.fraction == b.fraction;
+	}
 
 	template <typename asdType, typename ConvType>
 	void ConvertTest()
@@ -42,8 +71,8 @@ namespace asdtest_datetime
 		asdType asdt2 = conv1;
 		ConvType conv2 = asdt2;
 
-		EXPECT_EQ(0, memcmp(&asdt1, &asdt2, sizeof(asdType)));
-		EXPECT_EQ(0, memcmp(&conv1, &conv2, sizeof(ConvType)));
+		EXPECT_TRUE(Equal(asdt1, asdt2));
+		EXPECT_TRUE(Equal(conv1, conv2));
 	}
 
 	TEST(DateTime, ConvertTest_time_t)

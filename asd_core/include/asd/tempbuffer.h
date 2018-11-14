@@ -14,7 +14,7 @@ namespace asd
 		typedef TempBuffer<T> ThisType;
 
 
-		TempBuffer(IN size_t a_count)
+		TempBuffer(size_t a_count)
 		{
 			asd_DAssert(a_count > 0);
 			auto buf = std::get_temporary_buffer<Object>((ptrdiff_t)a_count);
@@ -23,13 +23,13 @@ namespace asd
 		}
 
 
-		TempBuffer(MOVE ThisType&& a_rval)
+		TempBuffer(ThisType&& a_rval)
 		{
 			*this = std::move(a_rval);
 		}
 
 
-		inline TempBuffer& operator = (MOVE ThisType&& a_rval)
+		inline TempBuffer& operator = (ThisType&& a_rval)
 		{
 			this->~TempBuffer();
 			m_arr = a_rval.m_arr;
@@ -71,7 +71,7 @@ namespace asd
 		}
 
 
-		inline Object& At(IN size_t a_index) const 
+		inline Object& At(size_t a_index) const 
 		{
 			if (a_index < 0 || a_index >= GetCount()) {
 				asd_RaiseException("invalid argument (a_index : {})", a_index);
@@ -80,22 +80,22 @@ namespace asd
 		}
 
 
-		inline Object& operator [] (IN size_t a_index) const
+		inline Object& operator [] (size_t a_index) const
 		{
 			return At(a_index);
 		}
 
 
 		template<typename... ARGS>
-		inline void Constructor(IN size_t a_index,
-								IN ARGS&&... a_constructorArgs)
+		inline void Constructor(size_t a_index,
+								ARGS&&... a_constructorArgs)
 		{
 			Object& obj = At(a_index);
 			new(&obj) Object(a_constructorArgs...);
 		}
 
 
-		inline void Destrucotr(IN size_t a_index)
+		inline void Destrucotr(size_t a_index)
 		{
 			Object& obj = At(a_index);
 			obj.~Objcet();

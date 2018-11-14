@@ -8,116 +8,116 @@
 
 namespace asd
 {
-	int vsprintf(OUT char* a_targetbuf,
-				 IN int a_bufsize,
-				 IN const char* a_format,
-				 IN va_list& a_args);
+	int vsprintf(char* a_targetbuf /*Out*/,
+				 int a_bufsize,
+				 const char* a_format,
+				 va_list& a_args);
 
-	int vsprintf(OUT wchar_t* a_targetbuf,
-				 IN int a_bufsize,
-				 IN const wchar_t* a_format,
-				 IN va_list& a_args);
-
-
-	int vfprintf(IN FILE* a_fp,
-				 IN const char* a_format,
-				 IN va_list& a_args);
-
-	int vfprintf(IN FILE* a_fp,
-				 IN const wchar_t* a_format,
-				 IN va_list& a_args);
+	int vsprintf(wchar_t* a_targetbuf /*Out*/,
+				 int a_bufsize,
+				 const wchar_t* a_format,
+				 va_list& a_args);
 
 
-	int vprintf(IN const char* a_format,
-				IN va_list& a_args);
+	int vfprintf(FILE* a_fp,
+				 const char* a_format,
+				 va_list& a_args);
 
-	int vprintf(IN const wchar_t* a_format,
-				IN va_list& a_args);
-
-
-	int sprintf(OUT char* a_targetbuf,
-				IN int a_bufsize,
-				IN const char* a_format,
-				IN ...);
-
-	int sprintf(OUT wchar_t* a_targetbuf,
-				IN int a_bufsize,
-				IN const wchar_t* a_format,
-				IN ...);
+	int vfprintf(FILE* a_fp,
+				 const wchar_t* a_format,
+				 va_list& a_args);
 
 
-	int printf(IN const char* a_format,
-			   IN ...);
+	int vprintf(const char* a_format,
+				va_list& a_args);
 
-	int printf(IN const wchar_t* a_format,
-			   IN ...);
-
-
-	int vscprintf(IN const char* a_format,
-				  IN va_list& a_args);
-
-	int vscprintf(IN const wchar_t* a_format,
-				  IN va_list& a_args);
+	int vprintf(const wchar_t* a_format,
+				va_list& a_args);
 
 
-	int scprintf(IN const char* a_format,
-				 IN ...);
+	int sprintf(char* a_targetbuf /*Out*/,
+				int a_bufsize,
+				const char* a_format,
+				...);
 
-	int scprintf(IN const wchar_t* a_format,
-				 IN ...);
+	int sprintf(wchar_t* a_targetbuf /*Out*/,
+				int a_bufsize,
+				const wchar_t* a_format,
+				...);
 
 
-	int fputs(IN const char* a_str,
-			  IN FILE* a_fp);
+	int printf(const char* a_format,
+			   ...);
 
-	int fputs(IN const wchar_t* a_str,
-			  IN FILE* a_fp);
+	int printf(const wchar_t* a_format,
+			   ...);
+
+
+	int vscprintf(const char* a_format,
+				  va_list& a_args);
+
+	int vscprintf(const wchar_t* a_format,
+				  va_list& a_args);
+
+
+	int scprintf(const char* a_format,
+				 ...);
+
+	int scprintf(const wchar_t* a_format,
+				 ...);
+
+
+	int fputs(const char* a_str,
+			  FILE* a_fp);
+
+	int fputs(const wchar_t* a_str,
+			  FILE* a_fp);
 
 	
-	int puts(IN const char* a_str);
+	int puts(const char* a_str);
 
-	int puts(IN const wchar_t* a_str);
+	int puts(const wchar_t* a_str);
 
 
-	char* strcpy(OUT char* a_dst,
-				 IN const char* a_src,
-				 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max());
+	char* strcpy(char* a_dst /*Out*/,
+				 const char* a_src,
+				 size_t a_dstBufCount = std::numeric_limits<size_t>::max());
 
-	wchar_t* strcpy(OUT wchar_t* a_dst,
-					IN const wchar_t* a_sr,
-					IN size_t a_dstBufCount = std::numeric_limits<size_t>::max());
+	wchar_t* strcpy(wchar_t* a_dst /*Out*/,
+					const wchar_t* a_sr,
+					size_t a_dstBufCount = std::numeric_limits<size_t>::max());
 
-	char16_t* strcpy(OUT char16_t* a_dst,
-					 IN const char16_t* a_src,
-					 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max());
+	char16_t* strcpy(char16_t* a_dst /*Out*/,
+					 const char16_t* a_src,
+					 size_t a_dstBufCount = std::numeric_limits<size_t>::max());
 
-	char32_t* strcpy(OUT char32_t* a_dst,
-					 IN const char32_t* a_src,
-					 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max());
+	char32_t* strcpy(char32_t* a_dst /*Out*/,
+					 const char32_t* a_src,
+					 size_t a_dstBufCount = std::numeric_limits<size_t>::max());
 
 
 	// Ascii문자열만 사용 할 것.
-	char* strcpy(OUT char* a_dst,
-				 IN const wchar_t* a_src,
-				 IN size_t a_dstBufCount = std::numeric_limits<size_t>::max());
+	char* strcpy(char* a_dst /*Out*/,
+				 const wchar_t* a_src,
+				 size_t a_dstBufCount = std::numeric_limits<size_t>::max());
 
 	// Ascii문자열만 사용 할 것.
-	wchar_t* strcpy(OUT wchar_t* a_dst,
-					IN const char* a_src,
-					IN size_t a_dstBufCount = std::numeric_limits<size_t>::max());
+	wchar_t* strcpy(wchar_t* a_dst /*Out*/,
+					const char* a_src,
+					size_t a_dstBufCount = std::numeric_limits<size_t>::max());
 
 
-	size_t strlen(IN const char* a_str);
+	size_t strlen(const char* a_str);
 
-	size_t strlen(IN const wchar_t* a_str);
+	size_t strlen(const wchar_t* a_str);
 
-	size_t strlen(IN const char16_t* a_str);
+	size_t strlen(const char16_t* a_str);
 
-	size_t strlen(IN const char32_t* a_str);
+	size_t strlen(const char32_t* a_str);
 
 	// SizeOfChar값 단위로 문자열 길이를 구한다.
 	template<int SizeOfChar>
-	inline size_t strlen(IN const void* a_str)
+	inline size_t strlen(const void* a_str)
 	{
 		static_assert(SizeOfChar==1 || SizeOfChar==2 || SizeOfChar==4,
 					  "invalid SizeOfChar");
@@ -136,12 +136,12 @@ namespace asd
 	}
 
 	// 위 템플릿함수의 런타임 버전
-	size_t strlen(IN const void* a_str,
-				  IN int a_sizeOfChar);
+	size_t strlen(const void* a_str,
+				  int a_sizeOfChar);
 
 
 	template<typename CHARTYPE>
-	inline CHARTYPE toupper(IN CHARTYPE a_char)
+	inline CHARTYPE toupper(CHARTYPE a_char)
 	{
 		if (a_char < 'a' || 'z' < a_char)
 			return a_char;
@@ -149,7 +149,7 @@ namespace asd
 	}
 
 	template<typename CHARTYPE>
-	inline CHARTYPE tolower(IN CHARTYPE a_char)
+	inline CHARTYPE tolower(CHARTYPE a_char)
 	{
 		if (a_char < 'A' || 'Z' < a_char)
 			return a_char;
@@ -159,9 +159,9 @@ namespace asd
 
 
 	template<typename CharType>
-	inline int strcmp(IN const CharType* a_str1,
-					  IN const CharType* a_str2,
-					  IN bool a_caseSensitive = true)
+	inline int strcmp(const CharType* a_str1,
+					  const CharType* a_str2,
+					  bool a_caseSensitive = true)
 	{
 		if (a_str1 == a_str2)
 			return 0;
@@ -205,7 +205,7 @@ namespace asd
 	template<typename CharType, bool CaseSensitive = true>
 	struct hash_String
 	{
-		inline size_t operator() (IN const CharType* a_src) const
+		inline size_t operator() (const CharType* a_src) const
 		{
 			const size_t cnt = sizeof(size_t) / sizeof(CharType);
 			static_assert(sizeof(size_t) >= sizeof(CharType),
@@ -248,8 +248,8 @@ namespace asd
 	template<typename CharType, bool CaseSensitive = true>
 	struct equal_to_String
 	{
-		inline bool operator()(IN const CharType* a_left,
-							   IN const CharType* a_right) const
+		inline bool operator()(const CharType* a_left,
+							   const CharType* a_right) const
 		{
 			return asd::strcmp(a_left, a_right, CaseSensitive) == 0;
 		}
@@ -287,14 +287,14 @@ namespace asd
 
 
 
-		inline BasicString(IN const ThisType& a_data)
+		inline BasicString(const ThisType& a_data)
 		{
 			BaseType::operator=(a_data);
 		}
 
 
 
-		inline BasicString(MOVE ThisType&& a_data)
+		inline BasicString(ThisType&& a_data)
 		{
 			BaseType::operator=(std::forward<BaseType>(a_data));
 		}
@@ -302,14 +302,14 @@ namespace asd
 
 
 		template<typename T>
-		inline BasicString(IN const T& a_data)
+		inline BasicString(const T& a_data)
 		{
 			this->operator=(a_data);
 		}
 
 
 
-		inline BasicString(IN const CharType* a_str)
+		inline BasicString(const CharType* a_str)
 		{
 			auto p = BaseType::GetArrayPtr(false);
 			*p = a_str;
@@ -318,8 +318,8 @@ namespace asd
 
 
 		template<typename... ARGS>
-		inline static ThisType Format(IN const CharType* a_format,
-									  IN const ARGS&... a_args)
+		inline static ThisType Format(const CharType* a_format,
+									  const ARGS&... a_args)
 		{
 			ThisType ret;
 			if (a_format == nullptr)
@@ -395,31 +395,31 @@ namespace asd
 			return BaseType::GetArrayPtr()->c_str();
 		}
 
-		inline ThisType& append(IN const CharType* a_str,
-								IN size_type a_len)
+		inline ThisType& append(const CharType* a_str,
+								size_type a_len)
 		{
 			BaseType::GetArrayPtr()->append(a_str, a_len);
 			return *this;
 		}
 
-		inline ThisType& append(IN const ThisType& a_str)
+		inline ThisType& append(const ThisType& a_str)
 		{
 			return append(a_str, a_str.size());
 		}
 
-		inline ThisType& append(IN const CharType* a_str)
+		inline ThisType& append(const CharType* a_str)
 		{
 			return append(a_str, asd::strlen(a_str));
 		}
 
-		inline ThisType substr(IN size_type a_pos = 0,
-							   IN size_type a_count = StdStrType::npos) const
+		inline ThisType substr(size_type a_pos = 0,
+							   size_type a_count = StdStrType::npos) const
 		{
 			return BaseType::GetArrayPtr()->substr(a_pos, a_count);
 		}
 
 		template<typename... ARGS>
-		inline size_type find(IN ARGS... args) const
+		inline size_type find(ARGS... args) const
 		{
 			return BaseType::GetArrayPtr()->find(args...);
 		}
@@ -428,9 +428,9 @@ namespace asd
 
 		// 비교
 		template<typename T>
-		inline static int Compare(IN const CharType* a_left,
-								  IN const T& a_right,
-								  IN bool a_caseSensitive = CaseSensitive_Default)
+		inline static int Compare(const CharType* a_left,
+								  const T& a_right,
+								  bool a_caseSensitive = CaseSensitive_Default)
 		{
 			return asd::strcmp(a_left,
 							   ThisType(a_right).data(),
@@ -438,8 +438,8 @@ namespace asd
 		}
 
 		template<typename T>
-		inline int Compare(IN const T& a_data,
-						   IN bool a_caseSensitive = CaseSensitive_Default) const
+		inline int Compare(const T& a_data,
+						   bool a_caseSensitive = CaseSensitive_Default) const
 		{
 			return Compare(BaseType::data(),
 						   a_data,
@@ -447,37 +447,37 @@ namespace asd
 		}
 
 		template<typename T>
-		inline bool operator==(IN const T& a_data) const
+		inline bool operator==(const T& a_data) const
 		{
 			return Compare(a_data) == 0;
 		}
 
 		template<typename T>
-		inline bool operator!=(IN const T& a_data) const
+		inline bool operator!=(const T& a_data) const
 		{
 			return Compare(a_data) != 0;
 		}
 
 		template<typename T>
-		inline bool operator<(IN const T& a_data) const
+		inline bool operator<(const T& a_data) const
 		{
 			return Compare(a_data) < 0;
 		}
 
 		template<typename T>
-		inline bool operator<=(IN const T& a_data) const
+		inline bool operator<=(const T& a_data) const
 		{
 			return Compare(a_data) <= 0;
 		}
 
 		template<typename T>
-		inline bool operator>(IN const T& a_data) const
+		inline bool operator>(const T& a_data) const
 		{
 			return Compare(a_data) > 0;
 		}
 
 		template<typename T>
-		inline bool operator>=(IN const T& a_data) const
+		inline bool operator>=(const T& a_data) const
 		{
 			return Compare(a_data) >= 0;
 		}
@@ -486,7 +486,7 @@ namespace asd
 
 		// 대입
 		template<typename T>
-		inline ThisType& operator+=(IN const T& a_data)
+		inline ThisType& operator+=(const T& a_data)
 		{
 			const CharType format[] = {'{', '}', 0};
 			if (length() == 0)
@@ -496,20 +496,20 @@ namespace asd
 		}
 
 		template<typename T>
-		inline ThisType& operator<<(IN const T& a_data)
+		inline ThisType& operator<<(const T& a_data)
 		{
 			return this->operator+=(a_data);
 		}
 
 		template<typename T>
-		inline ThisType operator+(IN const T& a_data) const
+		inline ThisType operator+(const T& a_data) const
 		{
 			ThisType ret;
 			return ret << *this << a_data;
 		}
 
 		template<typename T>
-		inline ThisType& operator=(IN const T& a_data)
+		inline ThisType& operator=(const T& a_data)
 		{
 			BaseType::resize(0);
 			return this->operator+=(a_data);
@@ -518,19 +518,19 @@ namespace asd
 
 
 		// 특정 타입들 예외처리
-		inline ThisType& operator=(IN const ThisType& a_data)
+		inline ThisType& operator=(const ThisType& a_data)
 		{
 			BaseType::operator=(a_data);
 			return *this;
 		}
 
-		inline ThisType& operator=(MOVE ThisType&& a_data)
+		inline ThisType& operator=(ThisType&& a_data)
 		{
 			BaseType::operator=(std::forward<BaseType>(a_data));
 			return *this;
 		}
 
-		inline ThisType& operator+=(IN const ThisType& a_data)
+		inline ThisType& operator+=(const ThisType& a_data)
 		{
 			if (length() == 0) {
 				BaseType::operator=(a_data);
@@ -539,23 +539,23 @@ namespace asd
 			return append(a_data.data(), a_data.length());
 		}
 
-		inline ThisType& operator+=(IN const CharType* a_data)
+		inline ThisType& operator+=(const CharType* a_data)
 		{
 			return append(a_data);
 		}
 
-		inline ThisType& operator+=(IN CharType* a_data)
+		inline ThisType& operator+=(CharType* a_data)
 		{
 			return append(a_data);
 		}
 
-		inline ThisType& operator+=(IN const std::nullptr_t&)
+		inline ThisType& operator+=(const std::nullptr_t&)
 		{
 			return *this;
 		}
 
 #if asd_Compiler_MSVC
-		inline ThisType& operator+=(IN const Caster& a_data)
+		inline ThisType& operator+=(const Caster& a_data)
 		{
 			return this->operator+=(a_data.operator ThisType());
 		}
@@ -575,15 +575,15 @@ namespace std
 	};
 
 	template <typename CharType, typename Traits>
-	inline basic_ostream<CharType, Traits>& operator<<(REF basic_ostream<CharType, Traits>& a_left,
-													   IN const asd::BasicString<CharType>& a_right)
+	inline basic_ostream<CharType, Traits>& operator<<(basic_ostream<CharType, Traits>& a_left,
+													   const asd::BasicString<CharType>& a_right)
 	{
 		return a_left << a_right.data();
 	}
 
 	template <typename CharType, typename Traits>
-	inline basic_istream<CharType, Traits>& operator>>(REF basic_istream<CharType, Traits>& a_left,
-													   OUT asd::BasicString<CharType>& a_right)
+	inline basic_istream<CharType, Traits>& operator>>(basic_istream<CharType, Traits>& a_left,
+													   asd::BasicString<CharType>& a_right /*Out*/)
 	{
 		basic_string<CharType> temp;
 		a_left >> temp;

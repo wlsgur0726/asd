@@ -35,18 +35,18 @@ namespace asd
 	const char32_t NullChar = '\0';
 
 
-	inline bool SamePtr(IN const void* a_p1,
-						IN const void* a_p2)
+	inline bool SamePtr(const void* a_p1,
+						const void* a_p2)
 	{
 		return a_p1 == a_p2;
 	}
 
 
 
-	int vsprintf(OUT char* a_targetbuf,
-				 IN int a_bufsize,
-				 IN const char* a_format,
-				 IN va_list& a_args)
+	int vsprintf(char* a_targetbuf /*Out*/,
+				 int a_bufsize,
+				 const char* a_format,
+				 va_list& a_args)
 	{
 		return asd_vsprintf_a(a_targetbuf,
 							  a_bufsize,
@@ -55,10 +55,10 @@ namespace asd
 	}
 
 
-	int vsprintf(OUT wchar_t* a_targetbuf,
-				 IN int a_bufsize,
-				 IN const wchar_t* a_format,
-				 IN va_list& a_args)
+	int vsprintf(wchar_t* a_targetbuf /*Out*/,
+				 int a_bufsize,
+				 const wchar_t* a_format,
+				 va_list& a_args)
 	{
 		return asd_vsprintf_w(a_targetbuf,
 							  a_bufsize,
@@ -68,41 +68,41 @@ namespace asd
 
 
 
-	int vfprintf(IN FILE* a_fp,
-				 IN const char* a_format,
-				 IN va_list& a_args)
+	int vfprintf(FILE* a_fp,
+				 const char* a_format,
+				 va_list& a_args)
 	{
 		return asd_vfprintf_a(a_fp, a_format, a_args);
 	}
 
-	int vfprintf(IN FILE* a_fp,
-				 IN const wchar_t* a_format,
-				 IN va_list& a_args)
+	int vfprintf(FILE* a_fp,
+				 const wchar_t* a_format,
+				 va_list& a_args)
 	{
 		return asd_vfprintf_w(a_fp, a_format, a_args);
 	}
 
 
 
-	int vprintf(IN const char* a_format,
-				IN va_list& a_args)
+	int vprintf(const char* a_format,
+				va_list& a_args)
 	{
 		return asd_vprintf_a(a_format, a_args);
 	}
 
 
-	int vprintf(IN const wchar_t* a_format,
-				IN va_list& a_args)
+	int vprintf(const wchar_t* a_format,
+				va_list& a_args)
 	{
 		return asd_vprintf_w(a_format, a_args);
 	}
 
 
 
-	int sprintf(OUT char* a_targetbuf,
-				IN int a_bufsize,
-				IN const char* a_format,
-				IN ...)
+	int sprintf(char* a_targetbuf /*Out*/,
+				int a_bufsize,
+				const char* a_format,
+				...)
 	{
 		va_list args;
 		va_start(args, a_format);
@@ -115,10 +115,10 @@ namespace asd
 	}
 
 
-	int sprintf(OUT wchar_t* a_targetbuf,
-				IN int a_bufsize,
-				IN const wchar_t* a_format,
-				IN ...)
+	int sprintf(wchar_t* a_targetbuf /*Out*/,
+				int a_bufsize,
+				const wchar_t* a_format,
+				...)
 	{
 		va_list args;
 		va_start(args, a_format);
@@ -132,8 +132,8 @@ namespace asd
 
 
 
-	int printf(IN const char* a_format,
-			   IN ...)
+	int printf(const char* a_format,
+			   ...)
 	{
 		va_list args;
 		va_start(args, a_format);
@@ -143,8 +143,8 @@ namespace asd
 	}
 
 
-	int printf(IN const wchar_t* a_format,
-			   IN ...)
+	int printf(const wchar_t* a_format,
+			   ...)
 	{
 		va_list args;
 		va_start(args, a_format);
@@ -155,28 +155,28 @@ namespace asd
 
 
 
-	int fputs(IN const char* a_str,
-			  IN FILE* a_fp)
+	int fputs(const char* a_str,
+			  FILE* a_fp)
 	{
 		return ::fputs(a_str, a_fp);
 	}
 
 
-	int fputs(IN const wchar_t* a_str,
-			  IN FILE* a_fp)
+	int fputs(const wchar_t* a_str,
+			  FILE* a_fp)
 	{
 		return ::fputws(a_str, a_fp);
 	}
 
 
 
-	int puts(IN const char* a_str)
+	int puts(const char* a_str)
 	{
 		return ::puts(a_str);
 	}
 
 
-	int puts(IN const wchar_t* a_str)
+	int puts(const wchar_t* a_str)
 	{
 		return ::fputws(a_str, stdout);
 	}
@@ -196,8 +196,8 @@ namespace asd
 	size *= 2;								\
 
 	template<typename CharType>
-	inline int vsctprintf(IN const CharType* a_format,
-						  IN va_list a_args)
+	inline int vsctprintf(const CharType* a_format,
+						  va_list a_args)
 	{
 		const int LimitBytes = 1024 * 1024 * 16;
 		const int StartBytes = 1024 * 512;
@@ -231,8 +231,8 @@ namespace asd
 
 
 
-	int vscprintf(IN const char* a_format,
-				  IN va_list& a_args)
+	int vscprintf(const char* a_format,
+				  va_list& a_args)
 	{
 #if defined(asd_Platform_Windows)
 		return ::_vscprintf(a_format, a_args);
@@ -242,8 +242,8 @@ namespace asd
 	}
 
 
-	int vscprintf(IN const wchar_t* a_format,
-				  IN va_list& a_args)
+	int vscprintf(const wchar_t* a_format,
+				  va_list& a_args)
 	{
 #if defined(asd_Platform_Windows)
 		return ::_vscwprintf(a_format, a_args);
@@ -254,8 +254,8 @@ namespace asd
 
 
 
-	int scprintf(IN const char* a_format,
-				 IN ...)
+	int scprintf(const char* a_format,
+				 ...)
 	{
 		va_list args;
 		va_start(args, a_format);
@@ -265,8 +265,8 @@ namespace asd
 	}
 
 
-	int scprintf(IN const wchar_t* a_format,
-				 IN ...)
+	int scprintf(const wchar_t* a_format,
+				 ...)
 	{
 		va_list args;
 		va_start(args, a_format);
@@ -277,7 +277,7 @@ namespace asd
 
 
 
-	size_t strlen(IN const char* a_str)
+	size_t strlen(const char* a_str)
 	{
 		if (a_str == nullptr)
 			return 0;
@@ -285,7 +285,7 @@ namespace asd
 	}
 
 
-	size_t strlen(IN const wchar_t* a_str)
+	size_t strlen(const wchar_t* a_str)
 	{
 		if (a_str == nullptr)
 			return 0;
@@ -293,20 +293,20 @@ namespace asd
 	}
 
 
-	size_t strlen(IN const char16_t* a_str)
+	size_t strlen(const char16_t* a_str)
 	{
 		return asd::strlen<sizeof(char16_t)>(a_str);
 	}
 
 
-	size_t strlen(IN const char32_t* a_str)
+	size_t strlen(const char32_t* a_str)
 	{
 		return asd::strlen<sizeof(char32_t)>(a_str);
 	}
 
 
-	size_t strlen(IN const void* a_str,
-				  IN int a_sizeOfChar)
+	size_t strlen(const void* a_str,
+				  int a_sizeOfChar)
 	{
 		asd_DAssert(a_sizeOfChar==1 || a_sizeOfChar==2 || a_sizeOfChar==4);
 		switch (a_sizeOfChar) {
@@ -323,9 +323,9 @@ namespace asd
 
 
 	template<typename ReturnType, typename ProxyType, bool AsciiOnly=false>
-	inline void strcpy_internal(OUT ReturnType* a_dst,
-								IN const ProxyType* a_src,
-								IN size_t a_dstBufCount)
+	inline void strcpy_internal(ReturnType* a_dst /*Out*/,
+								const ProxyType* a_src,
+								size_t a_dstBufCount)
 	{
 		if (SamePtr(a_dst, a_src))
 			return;
@@ -353,36 +353,36 @@ namespace asd
 	}
 
 
-	char* strcpy(OUT char* a_dst,
-				 IN const char* a_src,
-				 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
+	char* strcpy(char* a_dst /*Out*/,
+				 const char* a_src,
+				 size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
 	{
 		strcpy_internal(a_dst, a_src, a_dstBufCount);
 		return a_dst;
 	}
 
 
-	wchar_t* strcpy(OUT wchar_t* a_dst,
-					IN const wchar_t* a_src,
-					IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
+	wchar_t* strcpy(wchar_t* a_dst /*Out*/,
+					const wchar_t* a_src,
+					size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
 	{
 		strcpy_internal(a_dst, a_src, a_dstBufCount);
 		return a_dst;
 	}
 
 
-	char16_t* strcpy(OUT char16_t* a_dst,
-					 IN const char16_t* a_src,
-					 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
+	char16_t* strcpy(char16_t* a_dst /*Out*/,
+					 const char16_t* a_src,
+					 size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
 	{
 		strcpy_internal(a_dst, a_src, a_dstBufCount);
 		return a_dst;
 	}
 
 
-	char32_t* strcpy(OUT char32_t* a_dst,
-					 IN const char32_t* a_src,
-					 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
+	char32_t* strcpy(char32_t* a_dst /*Out*/,
+					 const char32_t* a_src,
+					 size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
 	{
 		strcpy_internal(a_dst, a_src, a_dstBufCount);
 		return a_dst;
@@ -390,9 +390,9 @@ namespace asd
 
 
 	// Ascii문자열만 사용 할 것.
-	char* strcpy(OUT char* a_dst,
-				 IN const wchar_t* a_src,
-				 IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
+	char* strcpy(char* a_dst /*Out*/,
+				 const wchar_t* a_src,
+				 size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
 	{
 		strcpy_internal<char, wchar_t, true>(a_dst, a_src, a_dstBufCount);
 		return a_dst;
@@ -400,9 +400,9 @@ namespace asd
 
 
 	// Ascii문자열만 사용 할 것.
-	wchar_t* strcpy(OUT wchar_t* a_dst,
-					IN const char* a_src,
-					IN size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
+	wchar_t* strcpy(wchar_t* a_dst /*Out*/,
+					const char* a_src,
+					size_t a_dstBufCount /*= std::numeric_limits<size_t>::max()*/)
 	{
 		strcpy_internal<wchar_t, char, true>(a_dst, a_src, a_dstBufCount);
 		return a_dst;

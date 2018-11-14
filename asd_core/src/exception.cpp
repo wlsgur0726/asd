@@ -73,8 +73,8 @@ namespace asd
 
 #endif
 
-	void DefaultExceptionHandler::operator()(IN ExceptionPtrInterface* a_exception,
-											 IN const DebugInfo& a_catchPosInfo) const
+	void DefaultExceptionHandler::operator()(ExceptionPtrInterface* a_exception,
+											 const DebugInfo& a_catchPosInfo) const
 	{
 		static const char* MsgFormat =
 			"on exception({}), {}\n"
@@ -102,7 +102,7 @@ namespace asd
 	std::shared_ptr<AssertHandler> g_currentAssertHandler = nullptr;
 
 
-	void AssertHandler::OnError(IN const DebugInfo& a_info)
+	void AssertHandler::OnError(const DebugInfo& a_info)
 	{
 		MString msg;
 		msg << "assert fail, " << a_info.Comment;
@@ -126,7 +126,7 @@ namespace asd
 		return g_defaultAssertHandler;
 	}
 
-	void SetAssertHandler(IN std::shared_ptr<AssertHandler> a_handler)
+	void SetAssertHandler(std::shared_ptr<AssertHandler> a_handler)
 	{
 		std::atomic_exchange(&g_currentAssertHandler, a_handler);
 	}

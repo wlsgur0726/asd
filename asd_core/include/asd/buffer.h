@@ -19,8 +19,8 @@ namespace asd
 		size_t Row = 0;	// 버퍼의 인덱스
 		size_t Col = 0;	// 버퍼 내에서의 오프셋
 
-		inline static int Compare(IN const Offset& a_left,
-								  IN const Offset& a_right)
+		inline static int Compare(const Offset& a_left,
+								  const Offset& a_right)
 		{
 			if (a_left.Row < a_right.Row)
 				return -1;
@@ -84,7 +84,7 @@ namespace asd
 		virtual uint8_t* GetBuffer() const = 0;
 		virtual size_t Capacity() const = 0;
 		virtual size_t GetSize() const = 0;
-		virtual bool SetSize(IN size_t a_bytes) = 0;
+		virtual bool SetSize(size_t a_bytes) = 0;
 
 		inline size_t GetReserve() const
 		{
@@ -131,7 +131,7 @@ namespace asd
 			return m_size;
 		}
 
-		virtual bool SetSize(IN size_t a_bytes) override
+		virtual bool SetSize(size_t a_bytes) override
 		{
 			if (a_bytes > Bytes)
 				return false;
@@ -173,7 +173,7 @@ namespace asd
 			return this->size() * sizeof(T);
 		}
 
-		virtual bool SetSize(IN size_t a_bytes) override
+		virtual bool SetSize(size_t a_bytes) override
 		{
 			return false; // not use
 		}
@@ -188,12 +188,12 @@ namespace asd
 		flatbuffers::unique_ptr_t m_data;
 		flatbuffers::uoffset_t m_bytes = 0;
 
-		inline FlatBuffersData(MOVE flatbuffers::FlatBufferBuilder& a_builder)
+		inline FlatBuffersData(flatbuffers::FlatBufferBuilder& a_builder)
 		{
 			Set(a_builder);
 		}
 
-		void Set(MOVE flatbuffers::FlatBufferBuilder& a_builder)
+		void Set(flatbuffers::FlatBufferBuilder& a_builder)
 		{
 			m_bytes = a_builder.GetSize();
 			m_data = std::move(a_builder.ReleaseBufferPointer());
@@ -217,7 +217,7 @@ namespace asd
 			return m_bytes;
 		}
 
-		virtual bool SetSize(IN size_t a_bytes) override
+		virtual bool SetSize(size_t a_bytes) override
 		{
 			asd_OnErr("banned call (send only)");
 			return false; // not use
@@ -246,7 +246,7 @@ namespace asd
 		using Pool = Global<PoolType>;
 
 		auto newBuf = Pool::Instance().Alloc();
-		return Buffer_ptr(newBuf, [](IN BufferInterface* a_ptr)
+		return Buffer_ptr(newBuf, [](BufferInterface* a_ptr)
 		{
 			auto cast = reinterpret_cast<Buffer*>(a_ptr);
 			Pool::Instance().Free(cast);
@@ -294,31 +294,31 @@ namespace asd
 
 		size_t GetTotalSize() const;
 
-		void ReserveBuffer(IN size_t a_bytes = asd_BufferList_DefaultWriteBufferSize);
+		void ReserveBuffer(size_t a_bytes = asd_BufferList_DefaultWriteBufferSize);
 
-		void ReserveBuffer(MOVE Buffer_ptr&& a_buffer);
+		void ReserveBuffer(Buffer_ptr&& a_buffer);
 
-		void PushBack(MOVE Buffer_ptr&& a_buffer);
+		void PushBack(Buffer_ptr&& a_buffer);
 
-		void PushBack(MOVE BufferList&& a_bufferList);
+		void PushBack(BufferList&& a_bufferList);
 
-		void PushBack(MOVE BaseType&& a_bufferList);
+		void PushBack(BaseType&& a_bufferList);
 
-		void PushFront(MOVE Buffer_ptr&& a_buffer);
+		void PushFront(Buffer_ptr&& a_buffer);
 
-		void PushFront(MOVE BufferList&& a_bufferList);
+		void PushFront(BufferList&& a_bufferList);
 
-		void PushFront(MOVE BaseType&& a_bufferList);
+		void PushFront(BaseType&& a_bufferList);
 
 		void Flush();
 
-		bool Readable(IN size_t a_bytes) const;
+		bool Readable(size_t a_bytes) const;
 
-		size_t Write(IN const void* a_data,
-					 IN const size_t a_bytes);
+		size_t Write(const void* a_data,
+					 const size_t a_bytes);
 
-		size_t Read(OUT void* a_data,
-					IN const size_t a_bytes);
+		size_t Read(void* a_data /*Out*/,
+					const size_t a_bytes);
 
 		using BaseType::begin;
 		using BaseType::end;
@@ -341,11 +341,11 @@ namespace asd
 		size_t			m_result = 0;
 
 	public:
-		Transactional(REF BufferList& a_bufferList);
+		Transactional(BufferList& a_bufferList);
 
 		void Rollback();
 
-		inline size_t SetResult(IN const size_t a_result)
+		inline size_t SetResult(const size_t a_result)
 		{
 			m_result = a_result;
 			return a_result;

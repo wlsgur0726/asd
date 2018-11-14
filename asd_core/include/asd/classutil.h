@@ -101,7 +101,7 @@ namespace asd
 
 
 	template <typename T, typename... Args>
-	inline void Reset(REF T& a_target,
+	inline void Reset(T& a_target,
 					  Args&&... a_constructorArgs)
 	{
 		a_target.~T();
@@ -113,15 +113,15 @@ namespace asd
 	template<typename T>
 	struct DeleteFunction_ptr
 	{
-		typedef void(*Function)(IN T*);
+		typedef void(*Function)(T*);
 		Function m_deleteFunction;
 
-		inline DeleteFunction_ptr(IN Function a_deleteFunction = nullptr)
+		inline DeleteFunction_ptr(Function a_deleteFunction = nullptr)
 			: m_deleteFunction(a_deleteFunction)
 		{
 		}
 
-		inline void operator()(IN T* a_ptr) const
+		inline void operator()(T* a_ptr) const
 		{
 			if (m_deleteFunction != nullptr)
 				m_deleteFunction(a_ptr);
@@ -142,8 +142,8 @@ namespace asd
 		typedef std::unique_ptr<T, DeleteFunction_ptr<T>>	Base;
 		typedef typename Base::deleter_type::Function		DeleteFunction;
 
-		inline UniquePtr(REF T* a_ptr = nullptr,
-						 IN DeleteFunction a_deleter = nullptr)
+		inline UniquePtr(T* a_ptr = nullptr,
+						 DeleteFunction a_deleter = nullptr)
 			: Base(a_ptr, typename Base::deleter_type(a_deleter))
 		{
 		}

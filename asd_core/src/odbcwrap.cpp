@@ -46,9 +46,9 @@ namespace asd
 
 
 
-	DBException::DBException(IN const DBDiagInfoList& a_diagInfoList,
-							 IN const char* a_lastFileName,
-							 IN int a_lastFileLine)
+	DBException::DBException(const DBDiagInfoList& a_diagInfoList,
+							 const char* a_lastFileName,
+							 int a_lastFileLine)
 	{
 		m_what.Format("DBException({}:{})", a_lastFileName, a_lastFileLine);
 		int index = 1;
@@ -95,12 +95,12 @@ namespace asd
 			asd_InitTypeTable(UNKNOWN_TYPE);
 		}
 
-		inline SQLSMALLINT operator[] (IN SQLType a_enum) const
+		inline SQLSMALLINT operator[] (SQLType a_enum) const
 		{
 			return m_enumToCode[(short)a_enum];
 		}
 
-		inline SQLType operator[] (IN SQLSMALLINT a_code) const
+		inline SQLType operator[] (SQLSMALLINT a_code) const
 		{
 			auto it = m_codeToEnum.find(a_code);
 			if (it == m_codeToEnum.end())
@@ -126,13 +126,13 @@ namespace asd
 		}
 
 
-		OdbcHandle(MOVE OdbcHandle&& a_rval)
+		OdbcHandle(OdbcHandle&& a_rval)
 		{
 			*this = std::move(a_rval);
 		}
 
 
-		virtual OdbcHandle& operator=(MOVE OdbcHandle&& a_rval)
+		virtual OdbcHandle& operator=(OdbcHandle&& a_rval)
 		{
 			m_handle = a_rval.m_handle;
 			m_handleType = a_rval.m_handleType;
@@ -142,8 +142,8 @@ namespace asd
 		}
 
 
-		void Init(IN SQLSMALLINT a_handleType,
-				  IN OdbcHandle* a_inputHandle)
+		void Init(SQLSMALLINT a_handleType,
+				  OdbcHandle* a_inputHandle)
 		{
 			Close();
 
@@ -186,11 +186,11 @@ namespace asd
 
 
 		// 에러처리 루틴. 리턴값 : true=처리완료, false=미처리
-		typedef std::function<bool(IN SQLRETURN,
-								   IN const DBDiagInfo&)> ErrProc;
+		typedef std::function<bool(SQLRETURN,
+								   const DBDiagInfo&)> ErrProc;
 
-		static bool IgnoreWarning(IN SQLRETURN a_retval,
-								  IN const DBDiagInfo&)
+		static bool IgnoreWarning(SQLRETURN a_retval,
+								  const DBDiagInfo&)
 		{
 			if (a_retval == SQL_SUCCESS_WITH_INFO)
 				return true;
@@ -198,10 +198,10 @@ namespace asd
 		};
 
 		// 에러 여부를 검사 및 처리하고 미처리된 에러가 남은 경우 exception을 발생시킨다.
-		void CheckError(IN const char* a_lastFileName,
-						IN int a_lastFileLine,
-						IN SQLRETURN a_retval,
-						IN ErrProc a_errproc = IgnoreWarning)
+		void CheckError(const char* a_lastFileName,
+						int a_lastFileLine,
+						SQLRETURN a_retval,
+						ErrProc a_errproc = IgnoreWarning)
 		{
 			if (a_retval != SQL_SUCCESS) {
 				SetLastErrorList();
@@ -275,8 +275,8 @@ namespace asd
 
 
 	private:
-		OdbcHandle(IN const OdbcHandle&) = delete;
-		OdbcHandle& operator=(IN const OdbcHandle&) = delete;
+		OdbcHandle(const OdbcHandle&) = delete;
+		OdbcHandle& operator=(const OdbcHandle&) = delete;
 
 	};
 
@@ -299,7 +299,7 @@ namespace asd
 		}
 
 
-		void Open(IN const char* a_constr)
+		void Open(const char* a_constr)
 		{
 			Init();
 			SQLSMALLINT t;
@@ -316,7 +316,7 @@ namespace asd
 		}
 
 
-		void SetAutoCommit(IN bool a_auto)
+		void SetAutoCommit(bool a_auto)
 		{
 #pragma warning(disable:4312)
 			SQLRETURN r = ::SQLSetConnectAttr(m_handle,
@@ -329,7 +329,7 @@ namespace asd
 		}
 
 
-		void EndTran(IN bool a_commit)
+		void EndTran(bool a_commit)
 		{
 			asd_CheckError(::SQLEndTran(m_handleType,
 										m_handle,
@@ -362,7 +362,7 @@ namespace asd
 
 
 
-	void DBConnection::Open(IN const char* a_constr)
+	void DBConnection::Open(const char* a_constr)
 	{
 		m_handle.reset(new DBConnectionHandle);
 		m_handle->Open(a_constr);
@@ -411,20 +411,20 @@ namespace asd
 	{
 		struct Parameter
 		{
-			virtual void GetBindInfo(IN DBStatementHandle& a_requester,
-									 IN SQLUSMALLINT a_paramNumber,
-									 OUT SQLSMALLINT& a_direction,
-									 OUT SQLSMALLINT& a_appType,
-									 OUT SQLSMALLINT& a_dbType,
-									 OUT SQLULEN& a_bufferSize,
-									 OUT SQLSMALLINT& a_columnScale,
-									 OUT void*& a_buffer,
-									 OUT SQLLEN*& a_indicator) = 0;
+			virtual void GetBindInfo(DBStatementHandle& a_requester,
+									 SQLUSMALLINT a_paramNumber,
+									 SQLSMALLINT& a_direction /*Out*/,
+									 SQLSMALLINT& a_appType /*Out*/,
+									 SQLSMALLINT& a_dbType /*Out*/,
+									 SQLULEN& a_bufferSize /*Out*/,
+									 SQLSMALLINT& a_columnScale /*Out*/,
+									 void*& a_buffer /*Out*/,
+									 SQLLEN*& a_indicator /*Out*/) = 0;
 
 			virtual void AfterFetch() {}
 
-			virtual void GetBoundObj(OUT void*& a_objPtr,
-									 OUT SQLLEN& a_indicator) const = 0;
+			virtual void GetBoundObj(void*& a_objPtr /*Out*/,
+									 SQLLEN& a_indicator /*Out*/) const = 0;
 
 			virtual ~Parameter() {}
 
@@ -447,7 +447,7 @@ namespace asd
 		std::unordered_map<void*, Parameter_ptr> m_paramMap_byBoundPtr;
 
 
-		void Init(REF DBConnectionHandle_ptr a_conHandle)
+		void Init(DBConnectionHandle_ptr a_conHandle)
 		{
 			CloseStatement();
 
@@ -457,7 +457,7 @@ namespace asd
 		}
 
 
-		void Prepare(IN const char* a_query)
+		void Prepare(const char* a_query)
 		{
 			m_paramMap_byParamNum.clear();
 			m_paramMap_byBoundPtr.clear();
@@ -467,11 +467,11 @@ namespace asd
 		}
 
 
-		void GetParamInfo(IN SQLUSMALLINT a_paramNumber,
-						  OUT SQLSMALLINT* a_columnType,
-						  OUT SQLULEN* a_columnSize,
-						  OUT SQLSMALLINT* a_scale,
-						  OUT SQLSMALLINT* a_nullable)
+		void GetParamInfo(SQLUSMALLINT a_paramNumber,
+						  SQLSMALLINT* a_columnType /*Out*/,
+						  SQLULEN* a_columnSize /*Out*/,
+						  SQLSMALLINT* a_scale /*Out*/,
+						  SQLSMALLINT* a_nullable /*Out*/)
 		{
 			asd_CheckError(::SQLDescribeParam(m_handle,
 											  a_paramNumber,
@@ -488,9 +488,9 @@ namespace asd
 		}
 
 
-		void PrepareParameter(IN SQLUSMALLINT a_paramNumber,
-							  IN void* a_bindKey,
-							  IN Parameter_ptr& a_param)
+		void PrepareParameter(SQLUSMALLINT a_paramNumber,
+							  void* a_bindKey,
+							  Parameter_ptr& a_param)
 		{
 			m_paramMap_byParamNum[a_paramNumber] = a_param;
 			if (a_bindKey != nullptr)
@@ -533,8 +533,8 @@ namespace asd
 		}
 
 
-		SQLLEN Execute(IN const char* a_query,
-					   IN DBStatement::FetchCallback a_callback)
+		SQLLEN Execute(const char* a_query,
+					   DBStatement::FetchCallback a_callback)
 		{
 			// 1. BindParameter, Execute
 			if (a_query == nullptr) {
@@ -583,8 +583,8 @@ namespace asd
 						break; // 현재 Result에서 모든 Record를 Fetch했음.
 
 					bool invalid = false;
-					asd_CheckError(r, [&invalid](IN SQLRETURN a_ret,
-												 IN const DBDiagInfo& a_err)
+					asd_CheckError(r, [&invalid](SQLRETURN a_ret,
+												 const DBDiagInfo& a_err)
 					{
 						if (OdbcHandle::IgnoreWarning(a_ret, a_err))
 							return true;
@@ -627,7 +627,7 @@ namespace asd
 		}
 
 
-		MString GetColumnName(IN SQLUSMALLINT a_colIndex)
+		MString GetColumnName(SQLUSMALLINT a_colIndex)
 		{
 			if (a_colIndex > m_columnNameList.size())
 				asd_RaiseException("column[{}] does not exist", a_colIndex);
@@ -649,7 +649,7 @@ namespace asd
 		}
 
 
-		SQLUSMALLINT GetColumnIndex(IN const char* a_colName) const
+		SQLUSMALLINT GetColumnIndex(const char* a_colName) const
 		{
 			const auto it = m_columnIndexMap.find(a_colName);
 			if (it == m_columnIndexMap.end())
@@ -658,10 +658,10 @@ namespace asd
 		}
 
 
-		SQLLEN GetData(IN SQLUSMALLINT a_colIndex,
-					   IN SQLSMALLINT a_returnType,
-					   OUT void* a_buf,
-					   IN SQLLEN a_bufLen)
+		SQLLEN GetData(SQLUSMALLINT a_colIndex,
+					   SQLSMALLINT a_returnType,
+					   void* a_buf /*Out*/,
+					   SQLLEN a_bufLen)
 		{
 			SQLLEN indicator = 0;
 			asd_CheckError(::SQLGetData(m_handle,
@@ -674,9 +674,9 @@ namespace asd
 		}
 
 
-		void GetParam(IN SQLUSMALLINT a_paramNumber,
-					  OUT void*& a_bufPtr,
-					  OUT SQLLEN& a_indicator)
+		void GetParam(SQLUSMALLINT a_paramNumber,
+					  void*& a_bufPtr /*Out*/,
+					  SQLLEN& a_indicator /*Out*/)
 		{
 			auto it = m_paramMap_byParamNum.find(a_paramNumber);
 			if (it == m_paramMap_byParamNum.end()) {
@@ -686,9 +686,9 @@ namespace asd
 		}
 
 
-		void GetParam(IN void* a_key,
-					  OUT void*& a_bufPtr,
-					  OUT SQLLEN& a_indicator)
+		void GetParam(void* a_key,
+					  void*& a_bufPtr /*Out*/,
+					  SQLLEN& a_indicator /*Out*/)
 		{
 			auto it = m_paramMap_byBoundPtr.find(a_key);
 			if (it == m_paramMap_byBoundPtr.end()) {
@@ -715,8 +715,8 @@ namespace asd
 
 			if (m_conHandle != nullptr) {
 				asd_CheckError(::SQLCloseCursor(m_handle),
-							   [](IN SQLRETURN a_ret,
-								  IN const DBDiagInfo& a_err)
+							   [](SQLRETURN a_ret,
+								  const DBDiagInfo& a_err)
 				{
 					if (OdbcHandle::IgnoreWarning(a_ret, a_err))
 						return true;
@@ -747,35 +747,35 @@ namespace asd
 	}
 
 
-	DBStatement::DBStatement(REF DBConnection& a_conHandle)
+	DBStatement::DBStatement(DBConnection& a_conHandle)
 	{
 		Init(a_conHandle);
 	}
 
 
-	void DBStatement::Init(REF DBConnection& a_conHandle)
+	void DBStatement::Init(DBConnection& a_conHandle)
 	{
 		m_handle.reset(new DBStatementHandle);
 		m_handle->Init(a_conHandle.m_handle);
 	}
 
 
-	void DBStatement::Prepare(IN const char* a_query)
+	void DBStatement::Prepare(const char* a_query)
 	{
 		asd_DAssert(m_handle != nullptr);
 		m_handle->Prepare(a_query);
 	}
 
 
-	int64_t DBStatement::Execute(IN FetchCallback a_callback)
+	int64_t DBStatement::Execute(FetchCallback a_callback)
 	{
 		asd_DAssert(m_handle != nullptr);
 		return m_handle->Execute(nullptr, a_callback);
 	}
 
 
-	int64_t DBStatement::Execute(IN const char* a_query,
-								 IN FetchCallback a_callback)
+	int64_t DBStatement::Execute(const char* a_query,
+								 FetchCallback a_callback)
 	{
 		asd_DAssert(m_handle != nullptr);
 		return m_handle->Execute(a_query, a_callback);
@@ -789,7 +789,7 @@ namespace asd
 	}
 
 
-	MString DBStatement::GetColumnName(IN uint16_t a_columnIndex)
+	MString DBStatement::GetColumnName(uint16_t a_columnIndex)
 	{
 		asd_DAssert(m_handle != nullptr);
 		return m_handle->GetColumnName(a_columnIndex);
@@ -829,7 +829,7 @@ namespace asd
 		asd_Caster_Declare_CastOperatorList;
 	};
 
-	Caster& DBStatement::GetData(IN uint16_t a_columnIndex)
+	Caster& DBStatement::GetData(uint16_t a_columnIndex)
 	{
 		thread_local Caster_GetData t_caster;
 		t_caster.m_handle = m_handle.get();
@@ -838,7 +838,7 @@ namespace asd
 		return t_caster;
 	}
 
-	Caster& DBStatement::GetData(IN const char* a_columnName)
+	Caster& DBStatement::GetData(const char* a_columnName)
 	{
 		return GetData(m_handle->GetColumnIndex(a_columnName));
 	}
@@ -852,7 +852,7 @@ namespace asd
 		asd_Caster_Declare_CastOperatorList;
 	};
 
-	Caster& DBStatement::GetParam(IN uint16_t a_paramNumber)
+	Caster& DBStatement::GetParam(uint16_t a_paramNumber)
 	{
 		thread_local Caster_GetParam t_caster;
 		t_caster.m_handle = m_handle.get();
@@ -868,11 +868,11 @@ namespace asd
 	// Convert Direction
 	const bool Left_To_Right = true;
 	const bool Right_To_Left = false;
-	inline constexpr bool Is_Left_To_Right(IN bool a_direction)
+	inline constexpr bool Is_Left_To_Right(bool a_direction)
 	{
 		return a_direction == Left_To_Right;
 	}
-	inline constexpr bool Is_Right_To_Left(IN bool a_direction)
+	inline constexpr bool Is_Right_To_Left(bool a_direction)
 	{
 		return a_direction == Right_To_Left;
 	}
@@ -881,23 +881,23 @@ namespace asd
 	// Type별로 Specialize를 한번만 하기 위해
 	// a_direction를 런타임 인자로 둔다.
 	template <typename Type>
-	inline void ConvertStream(IN bool a_direction,
-							  REF Type& a_data,
-							  REF void*& a_buf,
-							  REF SQLLEN& a_len);
+	inline void ConvertStream(bool a_direction,
+							  Type& a_data,
+							  void*& a_buf,
+							  SQLLEN& a_len);
 
 	template <typename Left, typename Right>
-	inline void ConvertData(IN bool a_direction,
-							REF Left& a_left,
-							REF Right& a_right);
+	inline void ConvertData(bool a_direction,
+							Left& a_left,
+							Right& a_right);
 
 
 	// 아래 두가지 용도로 랩핑해준다.
 	// - const body에서 사용
 	// - GCC에서 발생하는 'specialization of ... after instantiation' 에러를 회피
 	template <typename Src, typename Dst>
-	inline void Call_ConvertData(IN const Src& a_src,
-								 OUT Dst& a_dst)
+	inline void Call_ConvertData(const Src& a_src,
+								 Dst& a_dst /*Out*/)
 	{
 		ConvertData<Src, Dst>(Left_To_Right, (Src&)a_src, a_dst);
 	}
@@ -912,9 +912,9 @@ namespace asd
 	}
 
 	template <typename ReturnType>
-	inline ReturnType* GetData_Internal(IN DBStatementHandle* a_handle,
-										IN SQLUSMALLINT a_index,
-										REF ReturnType& a_return)
+	inline ReturnType* GetData_Internal(DBStatementHandle* a_handle,
+										SQLUSMALLINT a_index,
+										ReturnType& a_return)
 	{
 		const SQLLEN BufSize = 1024;
 		uint8_t buf[BufSize];
@@ -997,8 +997,8 @@ namespace asd
 	asd_Define_Caster_GetData(ReturnType);													\
 																							\
 	template <>																				\
-	ReturnType* DBStatement::GetData<ReturnType>(IN const char* a_columnName,				\
-												 OUT ReturnType& a_return)					\
+	ReturnType* DBStatement::GetData<ReturnType>(const char* a_columnName,					\
+												 ReturnType& a_return /*Out*/)				\
 	{																						\
 		auto index = m_handle->GetColumnIndex(a_columnName);								\
 		return GetData_Internal<ReturnType>(m_handle.get(),									\
@@ -1008,8 +1008,8 @@ namespace asd
 																							\
 																							\
 	template <>																				\
-	ReturnType* DBStatement::GetData<ReturnType>(IN uint16_t a_enum,						\
-												 OUT ReturnType& a_return)					\
+	ReturnType* DBStatement::GetData<ReturnType>(uint16_t a_enum,							\
+												 ReturnType& a_return /*Out*/)				\
 	{																						\
 		return GetData_Internal<ReturnType>(m_handle.get(),									\
 											a_enum,											\
@@ -1029,9 +1029,9 @@ namespace asd
 
 	// GetParam() template
 	template <typename ReturnType>
-	inline ReturnType* GetParam_Internal(IN DBStatementHandle* a_handle,
-										 IN SQLUSMALLINT a_paramNumber,
-										 REF ReturnType& a_return)
+	inline ReturnType* GetParam_Internal(DBStatementHandle* a_handle,
+										 SQLUSMALLINT a_paramNumber,
+										 ReturnType& a_return)
 	{
 		void* buf;
 		SQLLEN ind;
@@ -1072,14 +1072,14 @@ namespace asd
 	asd_Define_Caster_GetParam_Ptr(Type, std::unique_ptr);									\
 																							\
 	template<>																				\
-	Type* DBStatement::GetParam<Type>(IN uint16_t a_paramNumber,							\
-									  OUT Type& a_return)									\
+	Type* DBStatement::GetParam<Type>(uint16_t a_paramNumber,								\
+									  Type& a_return /*Out*/)								\
 	{																						\
 		return GetParam_Internal<Type>(m_handle.get(), a_paramNumber, a_return);			\
 	}																						\
 																							\
 	template <>																				\
-	bool DBStatement::IsNullParam<Type>(IN uint16_t a_columnIndex)							\
+	bool DBStatement::IsNullParam<Type>(uint16_t a_columnIndex)								\
 	{																						\
 		void* buf;																			\
 		SQLLEN ind;																			\
@@ -1090,7 +1090,7 @@ namespace asd
 	}																						\
 																							\
 	template <>																				\
-	bool DBStatement::IsNullParam<Type>(IN Type* a_boundPtr)								\
+	bool DBStatement::IsNullParam<Type>(Type* a_boundPtr)									\
 	{																						\
 		void* buf;																			\
 		SQLLEN ind;																			\
@@ -1108,10 +1108,10 @@ namespace asd
 	asd_Define_GetParam(Type);																					\
 																												\
 	template <>																									\
-	inline void ConvertStream<Type>(IN bool DirParamName,														\
-									REF Type& DataParamName,													\
-									REF void*& BufParamName,													\
-									REF SQLLEN& LenParamName)													\
+	inline void ConvertStream<Type>(bool DirParamName,															\
+									Type& DataParamName,														\
+									void*& BufParamName,														\
+									SQLLEN& LenParamName)														\
 
 #define asd_Define_ConvertStream_TypicalCase(Type, SQL_C_Type)													\
 	asd_Define_ConvertStream(Type, SQL_C_Type, a_direction, a_data, a_bufPtr, a_dataLen)						\
@@ -1155,14 +1155,14 @@ namespace asd
 	}																											\
 
 #define asd_Define_ConvertData_ProxyCase(SrcType, SrcParamName, ProxyType, ProxyParamName, DirParamName)		\
-	inline void ConvertData_Internal(IN bool DirParamName,														\
-									 REF SrcType& SrcParamName,													\
-									 REF ProxyType& ProxyParamName);											\
+	inline void ConvertData_Internal(bool DirParamName,														\
+									 SrcType& SrcParamName,													\
+									 ProxyType& ProxyParamName);											\
 																												\
 	template <>																									\
-	inline SrcType* GetData_Internal<SrcType>(IN DBStatementHandle* a_handle,									\
-											  IN SQLUSMALLINT a_enum,											\
-											  REF SrcType& a_return)											\
+	inline SrcType* GetData_Internal<SrcType>(DBStatementHandle* a_handle,									\
+											  SQLUSMALLINT a_enum,											\
+											  SrcType& a_return)											\
 	{																											\
 		ProxyType t;																							\
 		if (GetData_Internal<ProxyType>(a_handle, a_enum, t) == nullptr)										\
@@ -1176,34 +1176,34 @@ namespace asd
 	asd_Define_GetParam(SrcType);																				\
 																												\
 	template<>																									\
-	inline void ConvertData<ProxyType, SrcType>(IN bool a_direction,											\
-												REF ProxyType& a_proxy,											\
-												REF SrcType& a_result)											\
+	inline void ConvertData<ProxyType, SrcType>(bool a_direction,											\
+												ProxyType& a_proxy,											\
+												SrcType& a_result)											\
 	{																											\
 		ConvertData_Internal(!a_direction, a_result, a_proxy);													\
 	}																											\
 																												\
 	template<>																									\
-	inline void ConvertData<SrcType, ProxyType>(IN bool DirParamName,											\
-												REF SrcType& a_result,											\
-												REF ProxyType& a_proxy)											\
+	inline void ConvertData<SrcType, ProxyType>(bool DirParamName,											\
+												SrcType& a_result,											\
+												ProxyType& a_proxy)											\
 	{																											\
 		ConvertData_Internal(a_direction, a_result, a_proxy);													\
 	}																											\
 																												\
-	inline void ConvertData_Internal(IN bool DirParamName,														\
-									 REF SrcType& SrcParamName,													\
-									 REF ProxyType& ProxyParamName)												\
+	inline void ConvertData_Internal(bool DirParamName,														\
+									 SrcType& SrcParamName,													\
+									 ProxyType& ProxyParamName)												\
 
 
 
 	//  SetParameter & BindParameter
 	template <typename Type, SQLSMALLINT Param_Direction, bool Bind>
-	inline DBStatementHandle::Parameter_ptr CreateParameter(REF Type* a_bindingTarget,
-															IN bool a_nullInput,
-															IN SQLSMALLINT a_dbType,
-															IN SQLULEN a_bufferSize,
-															IN SQLSMALLINT a_columnScale);
+	inline DBStatementHandle::Parameter_ptr CreateParameter(Type* a_bindingTarget,
+															bool a_nullInput,
+															SQLSMALLINT a_dbType,
+															SQLULEN a_bufferSize,
+															SQLSMALLINT a_columnScale);
 
 	//  a_bindingTarget이 null인 경우와 null이 아닌 경우에 대한 처리
 	//  +--------+---------------------------------------+-----------------------------------------+
@@ -1247,11 +1247,11 @@ namespace asd
 		Type m_temp;
 
 
-		Parameter_Template(REF Type* a_bindingTarget,
-						   IN bool a_nullInput,
-						   IN SQLSMALLINT a_dbType,
-						   IN SQLULEN a_bufferSize,
-						   IN SQLSMALLINT a_columnScale)
+		Parameter_Template(Type* a_bindingTarget,
+						   bool a_nullInput,
+						   SQLSMALLINT a_dbType,
+						   SQLULEN a_bufferSize,
+						   SQLSMALLINT a_columnScale)
 		{
 			m_dbType = a_dbType;
 			m_bufferSize = a_bufferSize;
@@ -1298,8 +1298,8 @@ namespace asd
 		}
 
 
-		void RequestParamInfo(IN DBStatementHandle& a_stmtHandle,
-							  IN SQLUSMALLINT a_paramNumber)
+		void RequestParamInfo(DBStatementHandle& a_stmtHandle,
+							  SQLUSMALLINT a_paramNumber)
 		{
 			const auto& MaramMap = a_stmtHandle.m_paramMap_byParamNum;
 			asd_DAssert(MaramMap.find(a_paramNumber) != MaramMap.end());
@@ -1314,15 +1314,15 @@ namespace asd
 		}
 
 
-		virtual void GetBindInfo(IN DBStatementHandle& a_requester,
-								 IN SQLUSMALLINT a_paramNumber,
-								 OUT SQLSMALLINT& a_direction,
-								 OUT SQLSMALLINT& a_appType,
-								 OUT SQLSMALLINT& a_dbType,
-								 OUT SQLULEN& a_bufferSize,
-								 OUT SQLSMALLINT& a_columnScale,
-								 OUT void*& a_buffer,
-								 OUT SQLLEN*& a_indicator) override
+		virtual void GetBindInfo(DBStatementHandle& a_requester,
+								 SQLUSMALLINT a_paramNumber,
+								 SQLSMALLINT& a_direction /*Out*/,
+								 SQLSMALLINT& a_appType /*Out*/,
+								 SQLSMALLINT& a_dbType /*Out*/,
+								 SQLULEN& a_bufferSize /*Out*/,
+								 SQLSMALLINT& a_columnScale /*Out*/,
+								 void*& a_buffer /*Out*/,
+								 SQLLEN*& a_indicator /*Out*/) override
 		{
 			RequestParamInfo(a_requester, a_paramNumber);
 
@@ -1382,8 +1382,8 @@ namespace asd
 		}
 
 
-		virtual void GetBoundObj(OUT void*& a_objPtr,
-								 OUT SQLLEN& a_indicator) const override
+		virtual void GetBoundObj(void*& a_objPtr /*Out*/,
+								 SQLLEN& a_indicator /*Out*/) const override
 		{
 			a_objPtr = m_bindingTarget;
 			a_indicator = m_indicator;
@@ -1425,7 +1425,7 @@ namespace asd
 		using BaseType::m_indicator;
 		using BaseType::m_bindingTarget;
 
-		inline static size_t ToCharCount(IN const size_t a_byte)
+		inline static size_t ToCharCount(const size_t a_byte)
 		{
 			asd_DAssert(a_byte % sizeof(ValType) == 0);
 			if (IsStringType)
@@ -1435,15 +1435,15 @@ namespace asd
 		}
 
 
-		virtual void GetBindInfo(IN DBStatementHandle& a_requester,
-								 IN SQLUSMALLINT a_paramNumber,
-								 OUT SQLSMALLINT& a_direction,
-								 OUT SQLSMALLINT& a_appType,
-								 OUT SQLSMALLINT& a_dbType,
-								 OUT SQLULEN& a_bufferSize,
-								 OUT SQLSMALLINT& a_columnScale,
-								 OUT void*& a_buffer,
-								 OUT SQLLEN*& a_indicator) override
+		virtual void GetBindInfo(DBStatementHandle& a_requester,
+								 SQLUSMALLINT a_paramNumber,
+								 SQLSMALLINT& a_direction /*Out*/,
+								 SQLSMALLINT& a_appType /*Out*/,
+								 SQLSMALLINT& a_dbType /*Out*/,
+								 SQLULEN& a_bufferSize /*Out*/,
+								 SQLSMALLINT& a_columnScale /*Out*/,
+								 void*& a_buffer /*Out*/,
+								 SQLLEN*& a_indicator /*Out*/) override
 		{
 			// Output이 유효한 경우 버퍼를 충분히 준비한다.
 			SQLLEN inputSize = SQL_NULL_DATA;
@@ -1530,11 +1530,11 @@ namespace asd
 		DBStatementHandle::Parameter_ptr m_proxyParam;
 
 
-		Parameter_Proxy(REF T* a_bindingTarget,
-						IN bool a_nullInput,
-						IN SQLSMALLINT a_dbType,
-						IN SQLULEN a_bufferSize,
-						IN SQLSMALLINT a_columnScale)
+		Parameter_Proxy(T* a_bindingTarget,
+						bool a_nullInput,
+						SQLSMALLINT a_dbType,
+						SQLULEN a_bufferSize,
+						SQLSMALLINT a_columnScale)
 		{
 			m_nullInput = a_nullInput;
 			if (Bind)
@@ -1560,15 +1560,15 @@ namespace asd
 		}
 
 
-		virtual void GetBindInfo(IN DBStatementHandle& a_requester,
-								 IN SQLUSMALLINT a_paramNumber,
-								 OUT SQLSMALLINT& a_direction,
-								 OUT SQLSMALLINT& a_appType,
-								 OUT SQLSMALLINT& a_dbType,
-								 OUT SQLULEN& a_bufferSize,
-								 OUT SQLSMALLINT& a_columnScale,
-								 OUT void*& a_buffer,
-								 OUT SQLLEN*& a_indicator) override
+		virtual void GetBindInfo(DBStatementHandle& a_requester,
+								 SQLUSMALLINT a_paramNumber,
+								 SQLSMALLINT& a_direction /*Out*/,
+								 SQLSMALLINT& a_appType /*Out*/,
+								 SQLSMALLINT& a_dbType /*Out*/,
+								 SQLULEN& a_bufferSize /*Out*/,
+								 SQLSMALLINT& a_columnScale /*Out*/,
+								 void*& a_buffer /*Out*/,
+								 SQLLEN*& a_indicator /*Out*/) override
 		{
 			asd_DAssert(m_proxyParam != nullptr);
 
@@ -1612,8 +1612,8 @@ namespace asd
 		}
 
 
-		virtual void GetBoundObj(OUT void*& a_objPtr,
-								 OUT SQLLEN& a_indicator) const override
+		virtual void GetBoundObj(void*& a_objPtr /*Out*/,
+								 SQLLEN& a_indicator /*Out*/) const override
 		{
 			asd_DAssert(m_proxyParam != nullptr);
 
@@ -1641,11 +1641,11 @@ namespace asd
 #define asd_Specialize_CreateParameter(Type, ParamClass, Param_Direction, Bind, ...)			\
 	template<>																					\
 	inline DBStatementHandle::Parameter_ptr														\
-		CreateParameter<Type, Param_Direction, Bind>(REF Type* a_bindingTarget,					\
-													 IN bool a_nullInput,						\
-													 IN SQLSMALLINT a_dbType,					\
-													 IN SQLULEN a_bufferSize,					\
-													 IN SQLSMALLINT a_columnScale)				\
+		CreateParameter<Type, Param_Direction, Bind>(Type* a_bindingTarget,					\
+													 bool a_nullInput,						\
+													 SQLSMALLINT a_dbType,					\
+													 SQLULEN a_bufferSize,					\
+													 SQLSMALLINT a_columnScale)				\
 	{																							\
 		typedef																					\
 			ParamClass<Type, GetTypecode<Type>(), Param_Direction, Bind, __VA_ARGS__>			\
@@ -1661,11 +1661,11 @@ namespace asd
 	asd_Specialize_CreateParameter(Type, ParamClass, SQL_PARAM_INPUT, false, __VA_ARGS__);				\
 																										\
 	template <>																							\
-	void DBStatement::SetInParam<Type>(IN uint16_t a_paramNumber,										\
-									   IN const Type& a_value,											\
-									   IN SQLType a_columnType,											\
-									   IN uint32_t a_columnSize,										\
-									   IN uint16_t a_columnScale)										\
+	void DBStatement::SetInParam<Type>(uint16_t a_paramNumber,										\
+									   const Type& a_value,											\
+									   SQLType a_columnType,											\
+									   uint32_t a_columnSize,										\
+									   uint16_t a_columnScale)										\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_INPUT, false>((Type*)&a_value,							\
 															   false,									\
@@ -1676,10 +1676,10 @@ namespace asd
 	}																									\
 																										\
 	template <>																							\
-	void DBStatement::SetInParam_NullInput<Type>(IN uint16_t a_paramNumber,								\
-												 IN SQLType a_columnType,								\
-												 IN uint32_t a_columnSize,								\
-												 IN uint16_t a_columnScale)								\
+	void DBStatement::SetInParam_NullInput<Type>(uint16_t a_paramNumber,								\
+												 SQLType a_columnType,								\
+												 uint32_t a_columnSize,								\
+												 uint16_t a_columnScale)								\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_INPUT, false>(nullptr,									\
 															   true,									\
@@ -1694,11 +1694,11 @@ namespace asd
 	asd_Specialize_CreateParameter(Type, ParamClass, SQL_PARAM_INPUT, true, __VA_ARGS__);				\
 																										\
 	template <>																							\
-	void DBStatement::BindInParam<Type>(IN uint16_t a_paramNumber,										\
-										REF Type* a_value,												\
-										IN SQLType a_columnType,										\
-										IN uint32_t a_columnSize,										\
-										IN uint16_t a_columnScale)										\
+	void DBStatement::BindInParam<Type>(uint16_t a_paramNumber,										\
+										Type* a_value,												\
+										SQLType a_columnType,										\
+										uint32_t a_columnSize,										\
+										uint16_t a_columnScale)										\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_INPUT, true>(a_value,									\
 															  a_value == nullptr,						\
@@ -1714,10 +1714,10 @@ namespace asd
 	asd_Specialize_CreateParameter(Type, ParamClass, SQL_PARAM_OUTPUT, false, __VA_ARGS__);				\
 																										\
 	template <>																							\
-	void DBStatement::SetOutParam<Type>(IN uint16_t a_paramNumber,										\
-										IN SQLType a_columnType,										\
-										IN uint32_t a_columnSize,										\
-										IN uint16_t a_columnScale)										\
+	void DBStatement::SetOutParam<Type>(uint16_t a_paramNumber,										\
+										SQLType a_columnType,										\
+										uint32_t a_columnSize,										\
+										uint16_t a_columnScale)										\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_OUTPUT, false>(nullptr,								\
 																false,									\
@@ -1728,10 +1728,10 @@ namespace asd
 	}																									\
 																										\
 	template <>																							\
-	void DBStatement::SetOutParam_NullInput<Type>(IN uint16_t a_paramNumber,							\
-												  IN SQLType a_columnType,								\
-												  IN uint32_t a_columnSize,								\
-												  IN uint16_t a_columnScale)							\
+	void DBStatement::SetOutParam_NullInput<Type>(uint16_t a_paramNumber,							\
+												  SQLType a_columnType,								\
+												  uint32_t a_columnSize,								\
+												  uint16_t a_columnScale)							\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_OUTPUT, false>(nullptr,								\
 																true,									\
@@ -1746,11 +1746,11 @@ namespace asd
 	asd_Specialize_CreateParameter(Type, ParamClass, SQL_PARAM_OUTPUT, true, __VA_ARGS__);				\
 																										\
 	template <>																							\
-	void DBStatement::BindOutParam<Type>(IN uint16_t a_paramNumber,										\
-										 REF Type* a_varptr,											\
-										 IN SQLType a_columnType,										\
-										 IN uint32_t a_columnSize,										\
-										 IN uint16_t a_columnScale)										\
+	void DBStatement::BindOutParam<Type>(uint16_t a_paramNumber,										\
+										 Type* a_varptr,											\
+										 SQLType a_columnType,										\
+										 uint32_t a_columnSize,										\
+										 uint16_t a_columnScale)										\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_OUTPUT, true>(a_varptr,								\
 															   a_varptr == nullptr,						\
@@ -1766,11 +1766,11 @@ namespace asd
 	asd_Specialize_CreateParameter(Type, ParamClass, SQL_PARAM_INPUT_OUTPUT, false, __VA_ARGS__);		\
 																										\
 	template <>																							\
-	void DBStatement::SetInOutParam<Type>(IN uint16_t a_paramNumber,									\
-										  IN const Type& a_value,										\
-										  IN SQLType a_columnType,										\
-										  IN uint32_t a_columnSize,										\
-										  IN uint16_t a_columnScale)									\
+	void DBStatement::SetInOutParam<Type>(uint16_t a_paramNumber,									\
+										  const Type& a_value,										\
+										  SQLType a_columnType,										\
+										  uint32_t a_columnSize,										\
+										  uint16_t a_columnScale)									\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_INPUT_OUTPUT, false>((Type*)&a_value,					\
 																	  false,							\
@@ -1781,10 +1781,10 @@ namespace asd
 	}																									\
 																										\
 	template <>																							\
-	void DBStatement::SetInOutParam_NullInput<Type>(IN uint16_t a_paramNumber,							\
-													IN SQLType a_columnType,							\
-													IN uint32_t a_columnSize,							\
-													IN uint16_t a_columnScale)							\
+	void DBStatement::SetInOutParam_NullInput<Type>(uint16_t a_paramNumber,							\
+													SQLType a_columnType,							\
+													uint32_t a_columnSize,							\
+													uint16_t a_columnScale)							\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_INPUT_OUTPUT, false>(nullptr,							\
 																	  true,								\
@@ -1799,12 +1799,12 @@ namespace asd
 	asd_Specialize_CreateParameter(Type, ParamClass, SQL_PARAM_INPUT_OUTPUT, true, __VA_ARGS__);		\
 																										\
 	template <>																							\
-	void DBStatement::BindInOutParam<Type>(IN uint16_t a_paramNumber,									\
-										   REF Type& a_var,												\
-										   IN bool a_nullInput,											\
-										   IN SQLType a_columnType,										\
-										   IN uint32_t a_columnSize,									\
-										   IN uint16_t a_columnScale)									\
+	void DBStatement::BindInOutParam<Type>(uint16_t a_paramNumber,									\
+										   Type& a_var,												\
+										   bool a_nullInput,											\
+										   SQLType a_columnType,										\
+										   uint32_t a_columnSize,									\
+										   uint16_t a_columnScale)									\
 	{																									\
 		auto p = CreateParameter<Type, SQL_PARAM_INPUT_OUTPUT, true>(&a_var,							\
 																	 a_nullInput,						\

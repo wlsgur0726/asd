@@ -66,9 +66,9 @@ namespace asd
 	public:
 		using Socket::Socket;
 
-		bool Send(MOVE std::deque<Buffer_ptr>&& a_data);
+		bool Send(std::deque<Buffer_ptr>&& a_data);
 
-		inline bool Send(MOVE BufferList&& a_data)
+		inline bool Send(BufferList&& a_data)
 		{
 			std::deque<Buffer_ptr>& cast = a_data;
 			if (Send(std::move(cast))) {
@@ -78,7 +78,7 @@ namespace asd
 			return false;
 		}
 
-		inline bool Send(MOVE Buffer_ptr&& a_data)
+		inline bool Send(Buffer_ptr&& a_data)
 		{
 			std::deque<Buffer_ptr> list;
 			list.emplace_back(std::move(a_data));
@@ -104,71 +104,71 @@ namespace asd
 	public:
 		virtual ~IOEvent();
 
-		void Start(IN uint32_t a_threadCount = Get_HW_Concurrency());
+		void Start(uint32_t a_threadCount = Get_HW_Concurrency());
 
 		void Stop();
 
 
-		bool RegisterListener(IN AsyncSocket_ptr& a_sock,
-							  IN const IpAddress& a_bind,
-							  IN int a_backlog = Socket::DefaultBacklog);
+		bool RegisterListener(AsyncSocket_ptr& a_sock,
+							  const IpAddress& a_bind,
+							  int a_backlog = Socket::DefaultBacklog);
 
-		inline bool RegisterListener(IN AsyncSocketHandle a_sockHandle,
-									 IN const IpAddress& a_bind,
-									 IN int a_backlog = Socket::DefaultBacklog)
+		inline bool RegisterListener(AsyncSocketHandle a_sockHandle,
+									 const IpAddress& a_bind,
+									 int a_backlog = Socket::DefaultBacklog)
 		{
 			auto sock = a_sockHandle.GetObj();
 			return RegisterListener(sock, a_bind, a_backlog);
 		}
 
 
-		bool RegisterConnector(IN AsyncSocket_ptr& a_sock,
-							   IN const IpAddress& a_dst);
+		bool RegisterConnector(AsyncSocket_ptr& a_sock,
+							   const IpAddress& a_dst);
 
-		inline bool RegisterConnector(IN AsyncSocketHandle a_sockHandle,
-									  IN const IpAddress& a_dst)
+		inline bool RegisterConnector(AsyncSocketHandle a_sockHandle,
+									  const IpAddress& a_dst)
 		{
 			auto sock = a_sockHandle.GetObj();
 			return RegisterConnector(sock, a_dst);
 		}
 
 
-		bool Register(IN AsyncSocket_ptr& a_sock);
+		bool Register(AsyncSocket_ptr& a_sock);
 
-		inline bool Register(IN AsyncSocketHandle a_sockHandle)
+		inline bool Register(AsyncSocketHandle a_sockHandle)
 		{
 			auto sock = a_sockHandle.GetObj();
 			return Register(sock);
 		}
 
 
-		void Poll(IN uint32_t a_timeoutSec);
+		void Poll(uint32_t a_timeoutSec);
 
 
-		virtual void OnAccept(IN AsyncSocket* a_listener,
-							  MOVE AsyncSocket_ptr&& a_newSock)
+		virtual void OnAccept(AsyncSocket* a_listener,
+							  AsyncSocket_ptr&& a_newSock)
 		{
 			auto handle = AsyncSocketHandle::GetHandle(a_listener);
 			asd_DAssert(handle.IsValid());
 			asd_RAssert(Register(a_newSock), "fail Register");
 		}
 
-		virtual void OnConnect(IN AsyncSocket* a_sock,
-							   IN Socket::Error a_err)
+		virtual void OnConnect(AsyncSocket* a_sock,
+							   Socket::Error a_err)
 		{
 			auto handle = AsyncSocketHandle::GetHandle(a_sock);
 			asd_DAssert(handle.IsValid());
 		}
 
-		virtual void OnRecv(IN AsyncSocket* a_sock,
-							MOVE Buffer_ptr&& a_data)
+		virtual void OnRecv(AsyncSocket* a_sock,
+							Buffer_ptr&& a_data)
 		{
 			auto handle = AsyncSocketHandle::GetHandle(a_sock);
 			asd_DAssert(handle.IsValid());
 		}
 
-		virtual void OnClose(IN AsyncSocket* a_sock, 
-							 IN Socket::Error a_err)
+		virtual void OnClose(AsyncSocket* a_sock, 
+							 Socket::Error a_err)
 		{
 			auto handle = AsyncSocketHandle::GetHandle(a_sock);
 			asd_DAssert(handle.IsValid());

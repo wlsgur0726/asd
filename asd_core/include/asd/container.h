@@ -19,7 +19,7 @@ namespace asd
 			using BaseContainer = CONTAINER;
 			using BaseContainer::BaseContainer;
 
-			inline Lock<Mutex> GetLock(IN bool a_getLock = true) const
+			inline Lock<Mutex> GetLock(bool a_getLock = true) const
 			{
 				return asd::GetLock(m_lock, a_getLock);
 			}
@@ -42,7 +42,7 @@ namespace asd
 		};
 
 
-		inline ShardSet(IN size_t a_shardCount = 2*Get_HW_Concurrency())
+		inline ShardSet(size_t a_shardCount = 2*Get_HW_Concurrency())
 		{
 			m_shardCount = max(a_shardCount, 1u);
 			m_memory.resize(sizeof(Container) * m_shardCount);
@@ -52,13 +52,13 @@ namespace asd
 		}
 
 
-		inline Container* GetShard(IN const ShardKey& a_shardKey)
+		inline Container* GetShard(const ShardKey& a_shardKey)
 		{
 			return &m_shards[a_shardKey % m_shardCount];
 		}
 
 
-		inline const Container* GetShard(IN const ShardKey& a_shardKey) const
+		inline const Container* GetShard(const ShardKey& a_shardKey) const
 		{
 			return &m_shards[a_shardKey % m_shardCount];
 		}
@@ -104,8 +104,8 @@ namespace asd
 		using BaseType::BaseType;
 
 
-		bool Insert(IN const key_type& a_key,
-					IN const mapped_type& a_val)
+		bool Insert(const key_type& a_key,
+					const mapped_type& a_val)
 		{
 			auto shard = this->GetShard(a_key);
 			auto lock = shard->GetLock();
@@ -113,7 +113,7 @@ namespace asd
 		}
 
 
-		mapped_type Find(IN const key_type& a_key)
+		mapped_type Find(const key_type& a_key)
 		{
 			auto shard = this->GetShard(a_key);
 			auto lock = shard->GetLock();
@@ -124,7 +124,7 @@ namespace asd
 		}
 
 
-		const mapped_type Find(IN const key_type& a_key) const
+		const mapped_type Find(const key_type& a_key) const
 		{
 			auto shard = this->GetShard(a_key);
 			auto lock = shard->GetLock();
@@ -135,7 +135,7 @@ namespace asd
 		}
 
 
-		mapped_type Erase(IN const key_type& a_key)
+		mapped_type Erase(const key_type& a_key)
 		{
 			auto shard = this->GetShard(a_key);
 			auto lock = shard->GetLock();

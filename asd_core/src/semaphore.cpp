@@ -15,7 +15,7 @@ namespace asd
 		std::atomic<uint32_t> m_postCount;
 		std::atomic<uint32_t> m_waitCount;
 
-		SemaphoreData(IN uint32_t a_initCount)
+		SemaphoreData(uint32_t a_initCount)
 		{
 			m_handle = ::CreateSemaphore(NULL,
 										 a_initCount,
@@ -44,7 +44,7 @@ namespace asd
 		sem_t m_handle;
 		std::atomic<uint32_t> m_waitCount;
 
-		SemaphoreData(IN uint32_t a_initCount)
+		SemaphoreData(uint32_t a_initCount)
 		{
 			if (0 != ::sem_init(&m_handle, 0, a_initCount)) {
 				auto e = errno;
@@ -66,21 +66,21 @@ namespace asd
 
 
 
-	Semaphore::Semaphore(IN uint32_t a_initCount /*= 0*/)
+	Semaphore::Semaphore(uint32_t a_initCount /*= 0*/)
 	{
 		m_data.reset(new SemaphoreData(a_initCount));
 	}
 
 
 
-	Semaphore::Semaphore(MOVE Semaphore&& a_rval)
+	Semaphore::Semaphore(Semaphore&& a_rval)
 	{
 		operator=(std::move(a_rval));
 	}
 
 
 
-	Semaphore& Semaphore::operator=(MOVE Semaphore&& a_rval)
+	Semaphore& Semaphore::operator=(Semaphore&& a_rval)
 	{
 		m_data = std::move(a_rval.m_data);
 		return *this;
@@ -114,7 +114,7 @@ namespace asd
 
 
 
-	bool Semaphore::Wait(IN uint32_t a_timeoutMs /*= Infinite*/)
+	bool Semaphore::Wait(uint32_t a_timeoutMs /*= Infinite*/)
 	{
 		asd_DAssert(m_data != nullptr);
 
@@ -182,7 +182,7 @@ namespace asd
 
 
 
-	void Semaphore::Post(IN uint32_t a_count /*= 1*/)
+	void Semaphore::Post(uint32_t a_count /*= 1*/)
 	{
 		asd_DAssert(m_data != nullptr);
 		if (a_count == 0)

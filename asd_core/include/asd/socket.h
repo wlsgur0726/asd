@@ -32,15 +32,15 @@ namespace asd
 			TCP,
 			UDP,
 		};
-		static int ToNativeCode(IN Type a_type);
-		static Type FromNativeCode(IN int a_type);
+		static int ToNativeCode(Type a_type);
+		static Type FromNativeCode(int a_type);
 
 		struct IoResult
 		{
 			int		m_bytes;
 			Error	m_error;
-			inline IoResult(IN int a_bytes = 0,
-							IN Error a_error = 0)
+			inline IoResult(int a_bytes = 0,
+							Error a_error = 0)
 				// init
 				: m_bytes(a_bytes)
 				, m_error(a_error)
@@ -49,18 +49,18 @@ namespace asd
 		};
 
 
-		Socket(IN Socket::Type a_socketType = Type::TCP,
-			   IN AddressFamily a_addressFamily = AddressFamily::IPv4);
+		Socket(Socket::Type a_socketType = Type::TCP,
+			   AddressFamily a_addressFamily = AddressFamily::IPv4);
 
-		Socket(MOVE Socket&& a_rval);
+		Socket(Socket&& a_rval);
 
-		Socket(IN Handle a_nativeHandle);
+		Socket(Handle a_nativeHandle);
 
-		Socket(IN Handle a_nativeHandle,
-			   IN Socket::Type a_socketType,
-			   IN AddressFamily a_addressFamily);
+		Socket(Handle a_nativeHandle,
+			   Socket::Type a_socketType,
+			   AddressFamily a_addressFamily);
 
-		Socket& operator=(MOVE Socket&& a_rval);
+		Socket& operator=(Socket&& a_rval);
 
 
 		virtual ~Socket();
@@ -75,11 +75,11 @@ namespace asd
 		// 실제 소켓을 생성하는 함수.
 		// a_force가 true이면 무조건 기존에 열려있던 소켓을 닫고 새로 연다.
 		// a_force가 false이면 소켓이 열려있지 않거나 a_addressFamily와 a_socketType가 기존과 다른 경우에만 새로 연다.
-		Error Init(IN bool a_force = false);
+		Error Init(bool a_force = false);
 
-		Error Init(IN Socket::Type a_socketType,
-				   IN AddressFamily a_addressFamily,
-				   IN bool a_force = false);
+		Error Init(Socket::Type a_socketType,
+				   AddressFamily a_addressFamily,
+				   bool a_force = false);
 
 
 		AddressFamily GetAddressFamily() const;
@@ -88,30 +88,30 @@ namespace asd
 
 
 		// a_addr의 AddressFamily를 적용하여 초기화한다.
-		Error Bind(IN const IpAddress& a_addr);
+		Error Bind(const IpAddress& a_addr);
 
 
 		// backlog 기본값 참고 : https://kldp.org/node/113987
 		static constexpr int DefaultBacklog = 1024;
-		Error Listen(IN int a_backlog = DefaultBacklog);
+		Error Listen(int a_backlog = DefaultBacklog);
 
 
-		Error Accept(OUT Socket& a_newbe,
-					 OUT IpAddress& a_address);
+		Error Accept(Socket& a_newbe /*Out*/,
+					 IpAddress& a_address /*Out*/);
 
 
 		// a_dest의 AddressFamily를 적용하여 초기화한다.
-		Error Connect(IN const IpAddress& a_dest);
+		Error Connect(const IpAddress& a_dest);
 
 
-		IoResult Send(IN const void* a_buffer,
-					  IN int a_bufferSize,
-					  IN int a_flags = 0);
+		IoResult Send(const void* a_buffer,
+					  int a_bufferSize,
+					  int a_flags = 0);
 
 		template <typename SizeType>
-		inline IoResult Send(IN const void* a_buffer,
-							 IN SizeType a_bufferSize,
-							 IN int a_flags = 0)
+		inline IoResult Send(const void* a_buffer,
+							 SizeType a_bufferSize,
+							 int a_flags = 0)
 		{
 			if (a_bufferSize > std::numeric_limits<int>::max()) {
 				asd_OnErr("size overflow, a_bufferSize:{}", a_bufferSize);
@@ -123,16 +123,16 @@ namespace asd
 		}
 
 
-		IoResult SendTo(IN const void* a_buffer,
-						IN int a_bufferSize,
-						IN const IpAddress& a_dest,
-						IN int a_flags = 0);
+		IoResult SendTo(const void* a_buffer,
+						int a_bufferSize,
+						const IpAddress& a_dest,
+						int a_flags = 0);
 
 		template <typename SizeType>
-		inline IoResult SendTo(IN const void* a_buffer,
-							   IN SizeType a_bufferSize,
-							   IN const IpAddress& a_dest,
-							   IN int a_flags = 0)
+		inline IoResult SendTo(const void* a_buffer,
+							   SizeType a_bufferSize,
+							   const IpAddress& a_dest,
+							   int a_flags = 0)
 		{
 			if (a_bufferSize > std::numeric_limits<int>::max()) {
 				asd_OnErr("size overflow, a_bufferSize:{}", a_bufferSize);
@@ -145,14 +145,14 @@ namespace asd
 		}
 
 
-		IoResult Recv(OUT void* a_buffer,
-					  IN int a_bufferSize,
-					  IN int a_flags = 0);
+		IoResult Recv(void* a_buffer /*Out*/,
+					  int a_bufferSize,
+					  int a_flags = 0);
 
 		template <typename SizeType>
-		inline IoResult Recv(OUT void* a_buffer,
-							 IN SizeType a_bufferSize,
-							 IN int a_flags = 0)
+		inline IoResult Recv(void* a_buffer /*Out*/,
+							 SizeType a_bufferSize,
+							 int a_flags = 0)
 		{
 			if (a_bufferSize > std::numeric_limits<int>::max()) {
 				asd_OnErr("size overflow, a_bufferSize:{}", a_bufferSize);
@@ -164,16 +164,16 @@ namespace asd
 		}
 
 
-		IoResult RecvFrom(OUT void* a_buffer,
-						  IN int a_bufferSize,
-						  OUT IpAddress& a_src,
-						  IN int a_flags = 0);
+		IoResult RecvFrom(void* a_buffer /*Out*/,
+						  int a_bufferSize,
+						  IpAddress& a_src /*Out*/,
+						  int a_flags = 0);
 
 		template <typename SizeType>
-		inline IoResult RecvFrom(OUT void* a_buffer,
-								 IN SizeType a_bufferSize,
-								 OUT IpAddress& a_src,
-								 IN int a_flags = 0)
+		inline IoResult RecvFrom(void* a_buffer /*Out*/,
+								 SizeType a_bufferSize,
+								 IpAddress& a_src /*Out*/,
+								 int a_flags = 0)
 		{
 			if (a_bufferSize > std::numeric_limits<int>::max()) {
 				asd_OnErr("size overflow, a_bufferSize:{}", a_bufferSize);
@@ -186,40 +186,40 @@ namespace asd
 		}
 
 
-		Error SetSockOpt(IN int a_level,
-						 IN int a_optname,
-						 IN const void* a_optval,
-						 IN uint32_t a_optlen);
-		Error GetSockOpt(IN int a_level,
-						 IN int a_optname,
-						 OUT void* a_optval,
-						 INOUT uint32_t& a_optlen) const;
+		Error SetSockOpt(int a_level,
+						 int a_optname,
+						 const void* a_optval,
+						 uint32_t a_optlen);
+		Error GetSockOpt(int a_level,
+						 int a_optname,
+						 void* a_optval /*Out*/,
+						 uint32_t& a_optlen /*InOut*/) const;
 
-		Error SetSockOpt_ReuseAddr(IN bool a_set);
-		Error GetSockOpt_ReuseAddr(OUT bool& a_result) const;
+		Error SetSockOpt_ReuseAddr(bool a_set);
+		Error GetSockOpt_ReuseAddr(bool& a_result /*Out*/) const;
 
-		Error SetSockOpt_UseNagle(IN bool a_set);
-		Error GetSockOpt_UseNagle(OUT bool& a_result) const;
+		Error SetSockOpt_UseNagle(bool a_set);
+		Error GetSockOpt_UseNagle(bool& a_result /*Out*/) const;
 
-		Error SetSockOpt_Linger(IN bool a_use,
-								IN uint16_t a_sec);
-		Error GetSockOpt_Linger(OUT bool& a_use,
-								OUT uint16_t& a_sec) const;
+		Error SetSockOpt_Linger(bool a_use,
+								uint16_t a_sec);
+		Error GetSockOpt_Linger(bool& a_use /*Out*/,
+								uint16_t& a_sec /*Out*/) const;
 
 
-		Error SetSockOpt_RecvBufSize(IN int a_byte);
-		Error GetSockOpt_RecvBufSize(OUT int& a_byte) const;
+		Error SetSockOpt_RecvBufSize(int a_byte);
+		Error GetSockOpt_RecvBufSize(int& a_byte /*Out*/) const;
 
-		Error SetSockOpt_SendBufSize(IN int a_byte);
-		Error GetSockOpt_SendBufSize(OUT int& a_byte) const;
+		Error SetSockOpt_SendBufSize(int a_byte);
+		Error GetSockOpt_SendBufSize(int& a_byte /*Out*/) const;
 
-		Error GetSockOpt_Error(OUT int& a_error) const;
+		Error GetSockOpt_Error(int& a_error /*Out*/) const;
 
-		Error SetNonblock(IN bool a_nonblock);
-		Error CheckNonblock(OUT bool& a_result) const;
+		Error SetNonblock(bool a_nonblock);
+		Error CheckNonblock(bool& a_result /*Out*/) const;
 
-		Error GetSockName(OUT IpAddress& a_addr) const;
-		Error GetPeerName(OUT IpAddress& a_addr) const;
+		Error GetSockName(IpAddress& a_addr /*Out*/) const;
+		Error GetPeerName(IpAddress& a_addr /*Out*/) const;
 
 
 	private:
@@ -237,9 +237,9 @@ namespace asd
 		bool m_nonblock;
 #endif
 
-		Socket(IN const Socket&) = delete;
+		Socket(const Socket&) = delete;
 
-		Socket& operator=(IN const Socket&) = delete;
+		Socket& operator=(const Socket&) = delete;
 
 	};
 	typedef std::shared_ptr<Socket> Socket_ptr;
@@ -258,32 +258,32 @@ namespace asd
 		uint8_t m_recvBuffer[BufferSize];
 		uint8_t m_sendBuffer[BufferSize];
 
-		EasySocket(IN Socket::Type a_socketType = Socket::Type::TCP,
-				   IN AddressFamily a_addressFamily = AddressFamily::IPv4);
+		EasySocket(Socket::Type a_socketType = Socket::Type::TCP,
+				   AddressFamily a_addressFamily = AddressFamily::IPv4);
 
-		void Bind(IN const IpAddress& a_addr);
+		void Bind(const IpAddress& a_addr);
 
-		void Listen(IN int a_backlog = 1024);
+		void Listen(int a_backlog = 1024);
 
-		void Accept(OUT Socket& a_newbe,
-					OUT IpAddress& a_address);
+		void Accept(Socket& a_newbe /*Out*/,
+					IpAddress& a_address /*Out*/);
 
-		void Connect(IN const IpAddress& a_dest);
+		void Connect(const IpAddress& a_dest);
 
-		void Send(IN const Buffer& a_buffer,
-				  IN int a_flags = 0);
+		void Send(const Buffer& a_buffer,
+				  int a_flags = 0);
 
-		void SendTo(IN const Buffer& a_buffer,
-					IN const IpAddress& a_dest,
-					IN int a_flags = 0);
+		void SendTo(const Buffer& a_buffer,
+					const IpAddress& a_dest,
+					int a_flags = 0);
 
-		void Recv(OUT Buffer& a_buffer,
-				  IN int a_flags = 0,
-				  IN int a_recvComplete = -1);
+		void Recv(Buffer& a_buffer /*Out*/,
+				  int a_flags = 0,
+				  int a_recvComplete = -1);
 
-		void RecvFrom(OUT Buffer& a_buffer,
-					  OUT IpAddress& a_src,
-					  IN int a_flags = 0);
+		void RecvFrom(Buffer& a_buffer /*Out*/,
+					  IpAddress& a_src /*Out*/,
+					  int a_flags = 0);
 
 		void Close();
 	};

@@ -23,7 +23,7 @@ namespace asd
 			Timer::Millisec RetryTerm = Timer::Millisec(1000);
 		};
 
-		ConnectionPoolBase(REF const Config& a_config)
+		ConnectionPoolBase(const Config& a_config)
 			: m_config(a_config)
 		{
 		}
@@ -50,12 +50,12 @@ namespace asd
 		Connection_ptr Get()
 		{
 			return Connection_ptr(ConnectionPoolBase::Alloc(),
-								  [this, pool=shared_from_this()](IN Connection* a_conn) { pool->Free(a_conn); });
+								  [this, pool=shared_from_this()](Connection* a_conn) { pool->Free(a_conn); });
 		}
 
 
 		virtual Connection* New() const { return new Connection; };
-		virtual bool Connect(IN Connection* a_conn) = 0;
+		virtual bool Connect(Connection* a_conn) = 0;
 
 
 	private:
@@ -97,7 +97,7 @@ namespace asd
 			return nullptr;
 		}
 
-		void Free(IN Connection* a_conn)
+		void Free(Connection* a_conn)
 		{
 			if (a_conn == nullptr) {
 				asd_OnErr("invalid a_conn");
@@ -145,7 +145,7 @@ namespace asd
 			});
 		}
 
-		static void Delete(IN Connection* a_conn)
+		static void Delete(Connection* a_conn)
 		{
 			a_conn->Disconnect();
 			delete a_conn;

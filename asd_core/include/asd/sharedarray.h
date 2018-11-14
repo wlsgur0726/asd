@@ -23,7 +23,7 @@ namespace asd
 		}
 
 
-		inline ArrayType* GetArrayPtr(IN bool a_preservation = true)
+		inline ArrayType* GetArrayPtr(bool a_preservation = true)
 		{
 			ArrayType* orgptr = BaseType::get();
 			if (orgptr == nullptr) {
@@ -89,23 +89,23 @@ namespace asd
 			return (value_type*)GetArrayPtr()->data();
 		}
 
-		inline reference at(IN size_type a_index)
+		inline reference at(size_type a_index)
 		{
 			return GetArrayPtr()->at(a_index);
 		}
 
-		inline const_reference at(IN size_type a_index) const
+		inline const_reference at(size_type a_index) const
 		{
 			return GetArrayPtr()->at(a_index);
 		}
 
-		inline void resize(IN size_type a_count)
+		inline void resize(size_type a_count)
 		{
 			return GetArrayPtr()->resize(a_count);
 		}
 
-		inline void resize(IN size_type a_count,
-						   IN value_type a_fill)
+		inline void resize(size_type a_count,
+						   value_type a_fill)
 		{
 			return GetArrayPtr()->resize(a_count, a_fill);
 		}
@@ -150,12 +150,12 @@ namespace asd
 			return GetArrayPtr()->rend();
 		}
 
-		inline reference operator[](IN size_type a_index)
+		inline reference operator[](size_type a_index)
 		{
 			return GetArrayPtr()->at(a_index);
 		}
 
-		inline const_reference operator[](IN size_type a_index) const
+		inline const_reference operator[](size_type a_index) const
 		{
 			return GetArrayPtr()->at(a_index);
 		}

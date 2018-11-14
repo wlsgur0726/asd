@@ -7,5 +7,5 @@ namespace asd
 	// 1.0 = 100%
 	double CpuUsage();
 	Timer::Millisec GetCpuUsageCheckInterval();
-	Timer::Millisec SetCpuUsageCheckInterval(IN Timer::Millisec a_cycle);
+	Timer::Millisec SetCpuUsageCheckInterval(Timer::Millisec a_cycle);
 }

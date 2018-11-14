@@ -70,7 +70,7 @@ namespace asd
 			});
 		}
 
-		void AddSample(IN double a_usage)
+		void AddSample(double a_usage)
 		{
 			asd_DAssert(0 <= a_usage && a_usage <= 1);
 			auto lock = GetLock(m_lock);
@@ -91,7 +91,7 @@ namespace asd
 			m_recentAvg = sum / m_sampleCount;
 		}
 
-		Timer::Millisec SetInterval(IN Timer::Millisec a_interval)
+		Timer::Millisec SetInterval(Timer::Millisec a_interval)
 		{
 			auto lock = GetLock(m_lock);
 			auto org = m_interval;
@@ -320,7 +320,7 @@ namespace asd
 
 		Stat m_lastStat;
 
-		static bool GetStat(OUT Stat& a_stat)
+		static bool GetStat(Stat& a_stat /*Out*/)
 		{
 			FILE* file = ::fopen("/proc/stat", "r");
 			if (file == nullptr)
@@ -376,7 +376,7 @@ namespace asd
 		return CPU::Instance().GetInterval();
 	}
 
-	Timer::Millisec SetCpuUsageCheckInterval(IN Timer::Millisec a_cycle)
+	Timer::Millisec SetCpuUsageCheckInterval(Timer::Millisec a_cycle)
 	{
 		return CPU::Instance().SetInterval(a_cycle);
 	}

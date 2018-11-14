@@ -25,15 +25,15 @@ namespace asd
 		const FChar g_dump_pre[] = _F("");
 		const FChar g_dump_ext[] = _F(".dmp");
 
-		void CopyToBuf_Internal(IN const wchar_t* a_str,
-								OUT FChar* a_dst,
-								IN size_t a_dstBufCnt)
+		void CopyToBuf_Internal(const wchar_t* a_str,
+								FChar* a_dst /*Out*/,
+								size_t a_dstBufCnt)
 		{
 			asd::strcpy(a_dst, a_str, a_dstBufCnt);
 		}
 
-		void GetProcessName_Internal(OUT FChar* a_dst,
-									 IN DWORD a_dstBufCnt)
+		void GetProcessName_Internal(FChar* a_dst /*Out*/,
+									 DWORD a_dstBufCnt)
 		{
 			auto len = ::GetModuleFileNameW(NULL, a_dst, a_dstBufCnt);
 			for (auto i=len; i>0;) {
@@ -49,17 +49,17 @@ namespace asd
 		const FChar g_dump_pre[] = _F("core.");
 		const FChar g_dump_ext[] = _F("");
 
-		void CopyToBuf_Internal(IN const wchar_t* a_str,
-								OUT FChar* a_dst,
-								IN size_t a_dstBufCnt)
+		void CopyToBuf_Internal(const wchar_t* a_str,
+								FChar* a_dst /*Out*/,
+								size_t a_dstBufCnt)
 		{
 			asd_DAssert(Encoding::UTF8 == GetDefaultEncoding<char>());
 			MString conv = ConvToM(a_str);
 			asd::strcpy(a_dst, conv.c_str(), a_dstBufCnt);
 		}
 
-		void GetProcessName_Internal(OUT FChar* a_dst,
-									 IN size_t a_dstBufCnt)
+		void GetProcessName_Internal(FChar* a_dst /*Out*/,
+									 size_t a_dstBufCnt)
 		{
 			const char* name = getenv("_");
 			asd::strcpy(a_dst, name, a_dstBufCnt);
@@ -90,21 +90,21 @@ namespace asd
 		FChar g_name_temp[LEN_NAME] = {0};
 
 
-		void SetOutPath(IN const wchar_t* a_path)
+		void SetOutPath(const wchar_t* a_path)
 		{
 			auto lock = GetLock(g_lock);
 			asd_CopyToBuf(a_path, g_path);
 		}
 
 
-		void SetDefaultName(IN const wchar_t* a_name)
+		void SetDefaultName(const wchar_t* a_name)
 		{
 			auto lock = GetLock(g_lock);
 			asd_CopyToBuf(a_name, g_name);
 		}
 
 
-		void Ready(IN const wchar_t* a_name)
+		void Ready(const wchar_t* a_name)
 		{
 			asd_mkdir(g_path);
 
@@ -140,7 +140,7 @@ namespace asd
 #if asd_Platform_Windows
 		thread_local const wchar_t* t_Create_Arg = nullptr;
 
-		void Create(IN const wchar_t* a_name /*= nullptr*/)
+		void Create(const wchar_t* a_name /*= nullptr*/)
 		{
 			t_Create_Arg = a_name;
 			__try {
@@ -151,7 +151,7 @@ namespace asd
 			}
 		}
 
-		long CreateMiniDump(IN void* a_PEXCEPTION_POINTERS)
+		long CreateMiniDump(void* a_PEXCEPTION_POINTERS)
 		{
 			auto lock = GetLock(g_lock);
 			Ready(t_Create_Arg);
@@ -191,7 +191,7 @@ namespace asd
 		}
 
 #else
-		void Create(IN const wchar_t* a_name /*= nullptr*/)
+		void Create(const wchar_t* a_name /*= nullptr*/)
 		{
 			auto lock = GetLock(g_lock);
 			Ready(a_name);

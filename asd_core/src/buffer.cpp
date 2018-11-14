@@ -11,7 +11,7 @@ namespace asd
 		auto newList = g_bufferListPool.Alloc();
 		newList->Clear();
 
-		return BufferList_ptr(newList, [](IN BufferList* a_ptr)
+		return BufferList_ptr(newList, [](BufferList* a_ptr)
 		{
 			a_ptr->Clear();
 			g_bufferListPool.Free(a_ptr);
@@ -54,7 +54,7 @@ namespace asd
 	}
 
 
-	void BufferList::ReserveBuffer(IN size_t a_bytes /*= asd_BufferList_DefaultWriteBufferSize*/)
+	void BufferList::ReserveBuffer(size_t a_bytes /*= asd_BufferList_DefaultWriteBufferSize*/)
 	{
 		asd_DAssert(m_total_capacity >= m_total_write);
 		asd_DAssert(size() >= m_writeOffset);
@@ -66,7 +66,7 @@ namespace asd
 	}
 
 
-	void BufferList::ReserveBuffer(MOVE Buffer_ptr&& a_buffer)
+	void BufferList::ReserveBuffer(Buffer_ptr&& a_buffer)
 	{
 		asd_DAssert(m_total_capacity >= m_total_write);
 		asd_DAssert(size() >= m_writeOffset);
@@ -86,7 +86,7 @@ namespace asd
 	}
 
 
-	void BufferList::PushBack(MOVE Buffer_ptr&& a_buffer)
+	void BufferList::PushBack(Buffer_ptr&& a_buffer)
 	{
 		asd_DAssert(size() >= m_writeOffset);
 		if (a_buffer == nullptr)
@@ -134,7 +134,7 @@ namespace asd
 	}
 
 
-	void BufferList::PushBack(MOVE BufferList&& a_bufferList)
+	void BufferList::PushBack(BufferList&& a_bufferList)
 	{
 		for (auto& e : a_bufferList)
 			PushBack(std::move(e));
@@ -142,7 +142,7 @@ namespace asd
 	}
 
 
-	void BufferList::PushBack(MOVE BaseType&& a_bufferList)
+	void BufferList::PushBack(BaseType&& a_bufferList)
 	{
 		for (auto& e : a_bufferList)
 			PushBack(std::move(e));
@@ -150,7 +150,7 @@ namespace asd
 	}
 
 
-	void BufferList::PushFront(MOVE Buffer_ptr&& a_buffer)
+	void BufferList::PushFront(Buffer_ptr&& a_buffer)
 	{
 		asd_DAssert(m_readOffset == Offset());
 		asd_DAssert(size() >= m_writeOffset);
@@ -189,7 +189,7 @@ namespace asd
 	}
 
 
-	void BufferList::PushFront(MOVE BufferList&& a_bufferList)
+	void BufferList::PushFront(BufferList&& a_bufferList)
 	{
 		for (auto it=a_bufferList.rbegin(); it!=a_bufferList.rend(); ++it)
 			PushFront(std::move(*it));
@@ -197,7 +197,7 @@ namespace asd
 	}
 
 
-	void BufferList::PushFront(MOVE BaseType&& a_bufferList)
+	void BufferList::PushFront(BaseType&& a_bufferList)
 	{
 		for (auto it=a_bufferList.rbegin(); it!=a_bufferList.rend(); ++it)
 			PushFront(std::move(*it));
@@ -219,7 +219,7 @@ namespace asd
 	}
 
 
-	bool BufferList::Readable(IN size_t a_bytes) const
+	bool BufferList::Readable(size_t a_bytes) const
 	{
 		asd_DAssert(size() >= m_readOffset.Row);
 		asd_DAssert(m_total_capacity >= m_total_write);
@@ -244,8 +244,8 @@ namespace asd
 	}
 
 
-	size_t BufferList::Write(IN const void* a_data,
-							 IN const size_t a_bytes)
+	size_t BufferList::Write(const void* a_data,
+							 const size_t a_bytes)
 	{
 		ReserveBuffer(a_bytes);
 
@@ -282,8 +282,8 @@ namespace asd
 	}
 
 
-	size_t BufferList::Read(OUT void* a_data,
-							IN const size_t a_bytes)
+	size_t BufferList::Read(void* a_data /*Out*/,
+							const size_t a_bytes)
 	{
 		if (Readable(a_bytes) == false)
 			return 0;
@@ -319,7 +319,7 @@ namespace asd
 
 
 	template<>
-	Transactional<BufOp::Write>::Transactional(REF BufferList& a_bufferList)
+	Transactional<BufOp::Write>::Transactional(BufferList& a_bufferList)
 		: m_bufferList(a_bufferList)
 	{
 		auto& rb = const_cast<Offset&>(m_rollbackPoint);
@@ -331,7 +331,7 @@ namespace asd
 	}
 
 	template<>
-	Transactional<BufOp::Read>::Transactional(REF BufferList& a_bufferList)
+	Transactional<BufOp::Read>::Transactional(BufferList& a_bufferList)
 		: m_bufferList(a_bufferList)
 		, m_rollbackPoint(a_bufferList.m_readOffset)
 	{

@@ -20,7 +20,7 @@ namespace asd
 		{
 			Semaphore	m_event;
 			int			m_errno = 0;
-			inline int Wait(IN uint32_t a_timeoutMs = 1000)
+			inline int Wait(uint32_t a_timeoutMs = 1000)
 			{
 				if (m_event.Wait(a_timeoutMs)==false && m_errno==0)
 					m_errno = ETIMEDOUT;
@@ -36,12 +36,12 @@ namespace asd
 		const char*				m_file = nullptr;
 		int						m_line = 0;
 
-		inline void SetMsg(IN const MString& a_msg)
+		inline void SetMsg(const MString& a_msg)
 		{
 			m_msgM = a_msg;
 		}
 
-		inline void SetMsg(IN const WString& a_msg)
+		inline void SetMsg(const WString& a_msg)
 		{
 			m_msgW = a_msg;
 		}
@@ -50,17 +50,17 @@ namespace asd
 
 
 #if defined(asd_Platform_Windows)
-	inline FString ConvToF(IN const char* a_str)
+	inline FString ConvToF(const char* a_str)
 	{
 		return ConvToW(a_str);
 	}
 
-	inline FString ConvToF(IN const wchar_t* a_str)
+	inline FString ConvToF(const wchar_t* a_str)
 	{
 		return a_str;
 	}
 
-	inline FString ConvToF(IN const Log& a_log)
+	inline FString ConvToF(const Log& a_log)
 	{
 		if (a_log.m_msgW.size() > 0)
 			return a_log.m_msgW;
@@ -68,17 +68,17 @@ namespace asd
 	}
 
 #else
-	inline FString ConvToF(IN const char* a_str)
+	inline FString ConvToF(const char* a_str)
 	{
 		return a_str;
 	}
 
-	inline FString ConvToF(IN const wchar_t* a_str)
+	inline FString ConvToF(const wchar_t* a_str)
 	{
 		return ConvToM(a_str);
 	}
 
-	inline FString ConvToF(IN const Log& a_log)
+	inline FString ConvToF(const Log& a_log)
 	{
 		if (a_log.m_msgM.size() > 0)
 			return a_log.m_msgM;
@@ -88,7 +88,7 @@ namespace asd
 #endif
 
 
-	inline FString AddDelimiter(IN FString&& a_path)
+	inline FString AddDelimiter(FString&& a_path)
 	{
 		FString path = std::move(a_path);
 		if (path.empty())
@@ -110,7 +110,7 @@ namespace asd
 		: public Global<Logger>
 	{
 	public:
-		using GenText = std::function<FString(IN uint64_t a_logNumber, IN DateTime a_now)>;
+		using GenText = std::function<FString(uint64_t a_logNumber, DateTime a_now)>;
 
 
 	private:
@@ -127,9 +127,9 @@ namespace asd
 		std::shared_ptr<GenText> m_genHead;
 		std::shared_ptr<GenText> m_genTail;
 
-		std::shared_ptr<FILE> RefreshLogFile(IN const Date& a_today);
-		void PushLog(MOVE Log&& a_log);
-		void Print(IN Log* a_log);
+		std::shared_ptr<FILE> RefreshLogFile(const Date& a_today);
+		void PushLog(Log&& a_log);
+		void Print(Log* a_log);
 
 
 	public:
@@ -149,20 +149,20 @@ namespace asd
 		}
 
 
-		void SetGenHeadDelegate(MOVE GenText&& a_delegate);
-		void SetGenTailDelegate(MOVE GenText&& a_delegate);
+		void SetGenHeadDelegate(GenText&& a_delegate);
+		void SetGenTailDelegate(GenText&& a_delegate);
 
 
 		template <typename CharType, typename... Args>
-		inline void Log(IN const BasicString<CharType>& a_format,
-						IN const Args&... a_args)
+		inline void Log(const BasicString<CharType>& a_format,
+						const Args&... a_args)
 		{
 			Log(a_format.c_str(), a_args...);
 		}
 
 		template <typename CharType, typename... Args>
-		inline void Log(IN const CharType* a_format,
-						IN const Args&... a_args)
+		inline void Log(const CharType* a_format,
+						const Args&... a_args)
 		{
 			asd::Log log;
 			log.SetMsg(BasicString<CharType>::Format(a_format, a_args...));
@@ -171,15 +171,15 @@ namespace asd
 
 
 		template <typename CharType, typename... Args>
-		inline int LogSync(IN const BasicString<CharType>& a_format,
-						   IN const Args&... a_args)
+		inline int LogSync(const BasicString<CharType>& a_format,
+						   const Args&... a_args)
 		{
 			return LogSync(a_format.c_str(), a_args...);
 		}
 
 		template <typename CharType, typename... Args>
-		inline int LogSync(IN const CharType* a_format,
-						   IN const Args&... a_args)
+		inline int LogSync(const CharType* a_format,
+						   const Args&... a_args)
 		{
 			auto sync = std::make_shared<asd::Log::Sync>();
 			asd::Log log;
@@ -191,15 +191,15 @@ namespace asd
 
 
 		template <typename CharType, typename... Args>
-		inline int LogFlush(IN const BasicString<CharType> a_format,
-							IN const Args&... a_args)
+		inline int LogFlush(const BasicString<CharType> a_format,
+							const Args&... a_args)
 		{
 			return LogFlush(a_format.c_str(), a_args...);
 		}
 
 		template <typename CharType, typename... Args>
-		inline int LogFlush(IN const CharType* a_format,
-							IN const Args&... a_args)
+		inline int LogFlush(const CharType* a_format,
+							const Args&... a_args)
 		{
 			auto sync = std::make_shared<asd::Log::Sync>();
 			asd::Log log;
@@ -212,19 +212,19 @@ namespace asd
 
 
 		template <typename CharType, typename... Args>
-		inline int _ErrorLog(IN const char* a_filename,
-							 IN int a_line,
-							 IN const BasicString<CharType>& a_format,
-							 IN const Args&... a_args)
+		inline int _ErrorLog(const char* a_filename,
+							 int a_line,
+							 const BasicString<CharType>& a_format,
+							 const Args&... a_args)
 		{
 			return _ErrorLog(a_filename, a_line, a_format.c_str(), a_args...);
 		}
 
 		template <typename CharType, typename... Args>
-		inline int _ErrorLog(IN const char* a_filename,
-							 IN int a_line,
-							 IN const CharType* a_format,
-							 IN const Args&... a_args)
+		inline int _ErrorLog(const char* a_filename,
+							 int a_line,
+							 const CharType* a_format,
+							 const Args&... a_args)
 		{
 			auto sync = std::make_shared<asd::Log::Sync>();
 			asd::Log log;

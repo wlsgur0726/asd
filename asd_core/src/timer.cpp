@@ -33,8 +33,8 @@ namespace asd
 	}
 
 
-	Timer::Millisec Timer::Diff(IN TimePoint a_before,
-								IN TimePoint a_after)
+	Timer::Millisec Timer::Diff(TimePoint a_before,
+								TimePoint a_after)
 	{
 		return std::chrono::duration_cast<Millisec>(a_after - a_before);
 	}
@@ -96,8 +96,8 @@ namespace asd
 	}
 
 
-	void Timer::PushTask(IN TimePoint a_timepoint,
-						 IN const Task_ptr& a_task)
+	void Timer::PushTask(TimePoint a_timepoint,
+						 const Task_ptr& a_task)
 	{
 		if (a_task == nullptr)
 			return;

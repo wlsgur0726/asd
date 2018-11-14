@@ -13,7 +13,7 @@ namespace asd
 		Cancel(false);
 	}
 
-	bool Task::Cancel(IN bool a_call /*= false*/)
+	bool Task::Cancel(bool a_call /*= false*/)
 	{
 		bool exp = false;
 		if (m_cancel.compare_exchange_strong(exp, true)) {

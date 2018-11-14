@@ -14,29 +14,7 @@
 #include <limits>
 
 
-#define asd_Version 2015010100
-
-
-// Parameter Type
-#ifndef IN
-#define IN
-#endif
-
-#ifndef OUT
-#define OUT
-#endif
-
-#ifndef INOUT
-#define INOUT
-#endif
-
-#ifndef REF
-#define REF
-#endif
-
-#ifndef MOVE
-#define MOVE
-#endif
+#define asd_Version 2018010100
 
 
 
@@ -112,36 +90,36 @@
 
 
 // CompareFunction를 사용해서 비교연산자들을 정의하는 매크로
-#define asd_Define_CompareOperator(CompareFunction, Type)					\
-	inline bool operator == (IN const Type& a_rval) const					\
-	{																		\
-		return CompareFunction(*this, a_rval) == 0;							\
-	}																		\
-																			\
-	inline bool operator != (IN const Type& a_rval) const					\
-	{																		\
-		return CompareFunction(*this, a_rval) != 0;							\
-	}																		\
-																			\
-	inline bool operator < (IN const Type& a_rval) const					\
-	{																		\
-		return CompareFunction(*this, a_rval) < 0;							\
-	}																		\
-																			\
-	inline bool operator <= (IN const Type& a_rval) const					\
-	{																		\
-		return CompareFunction(*this, a_rval) <= 0;							\
-	}																		\
-																			\
-	inline bool operator > (IN const Type& a_rval) const					\
-	{																		\
-		return CompareFunction(*this, a_rval) > 0;							\
-	}																		\
-																			\
-	inline bool operator >= (IN const Type& a_rval) const					\
-	{																		\
-		return CompareFunction(*this, a_rval) >= 0;							\
-	}																		\
+#define asd_Define_CompareOperator(CompareFunction, Type)				\
+	inline bool operator == (const Type& a_rval) const					\
+	{																	\
+		return CompareFunction(*this, a_rval) == 0;						\
+	}																	\
+																		\
+	inline bool operator != (const Type& a_rval) const					\
+	{																	\
+		return CompareFunction(*this, a_rval) != 0;						\
+	}																	\
+																		\
+	inline bool operator < (const Type& a_rval) const					\
+	{																	\
+		return CompareFunction(*this, a_rval) < 0;						\
+	}																	\
+																		\
+	inline bool operator <= (const Type& a_rval) const					\
+	{																	\
+		return CompareFunction(*this, a_rval) <= 0;						\
+	}																	\
+																		\
+	inline bool operator > (const Type& a_rval) const					\
+	{																	\
+		return CompareFunction(*this, a_rval) > 0;						\
+	}																	\
+																		\
+	inline bool operator >= (const Type& a_rval) const					\
+	{																	\
+		return CompareFunction(*this, a_rval) >= 0;						\
+	}																	\
 
 
 #if asd_Platform_Windows

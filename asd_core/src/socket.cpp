@@ -109,7 +109,7 @@ namespace asd
 
 
 
-	int Socket::ToNativeCode(IN Type a_type)
+	int Socket::ToNativeCode(Type a_type)
 	{
 		switch (a_type) {
 			case Socket::Type::TCP:
@@ -123,7 +123,7 @@ namespace asd
 
 
 
-	Socket::Type Socket::FromNativeCode(IN int a_type)
+	Socket::Type Socket::FromNativeCode(int a_type)
 	{
 		switch (a_type) {
 			case SOCK_STREAM:
@@ -137,8 +137,8 @@ namespace asd
 
 
 
-	Socket::Socket(IN Socket::Type a_socketType /*=Type::TCP*/,
-				   IN AddressFamily a_addressFamily /*= AddressFamily::IPv4*/)
+	Socket::Socket(Socket::Type a_socketType /*=Type::TCP*/,
+				   AddressFamily a_addressFamily /*= AddressFamily::IPv4*/)
 	{
 		m_socketType = a_socketType;
 		m_addressFamily = a_addressFamily;
@@ -147,13 +147,13 @@ namespace asd
 
 
 
-	Socket::Socket(MOVE Socket&& a_rval)
+	Socket::Socket(Socket&& a_rval)
 	{
 		*this = std::move(a_rval);
 	}
 
 
-	Socket::Socket(IN Handle a_nativeHandle)
+	Socket::Socket(Handle a_nativeHandle)
 	{
 		m_handle = a_nativeHandle;
 		if (m_handle == InvalidHandle)
@@ -172,9 +172,9 @@ namespace asd
 	}
 
 
-	Socket::Socket(IN Handle a_nativeHandle,
-				   IN Socket::Type a_socketType,
-				   IN AddressFamily a_addressFamily)
+	Socket::Socket(Handle a_nativeHandle,
+				   Socket::Type a_socketType,
+				   AddressFamily a_addressFamily)
 		: Socket(a_socketType, a_addressFamily)
 	{
 		m_handle = a_nativeHandle;
@@ -182,7 +182,7 @@ namespace asd
 
 
 
-	Socket& Socket::operator=(MOVE Socket&& a_rval)
+	Socket& Socket::operator=(Socket&& a_rval)
 	{
 		Close();
 		std::swap(m_handle, a_rval.m_handle);
@@ -217,15 +217,15 @@ namespace asd
 	}
 
 
-	Socket::Error Socket::Init(IN bool a_force /*= false*/)
+	Socket::Error Socket::Init(bool a_force /*= false*/)
 	{
 		return Init(m_socketType, m_addressFamily, a_force);
 	}
 
 
-	Socket::Error Socket::Init(IN Socket::Type a_socketType,
-							   IN AddressFamily a_addressFamily,
-							   IN bool a_force /*= false*/)
+	Socket::Error Socket::Init(Socket::Type a_socketType,
+							   AddressFamily a_addressFamily,
+							   bool a_force /*= false*/)
 	{
 		bool need_init =   m_handle == InvalidHandle
 						|| m_socketType != a_socketType
@@ -265,7 +265,7 @@ namespace asd
 
 
 
-	Socket::Error Socket::Bind(IN const IpAddress& a_addr) 
+	Socket::Error Socket::Bind(const IpAddress& a_addr) 
 	{
 		Error ret = 0;
 		ret = Init(m_socketType, a_addr.GetAddressFamily(), false);
@@ -280,7 +280,7 @@ namespace asd
 
 
 
-	Socket::Error Socket::Listen(IN int a_backlog /*=1024*/)
+	Socket::Error Socket::Listen(int a_backlog /*=1024*/)
 	{
 		asd_DAssert(m_handle != InvalidHandle);
 
@@ -294,11 +294,11 @@ namespace asd
 
 
 	template <typename SockAddrType>
-	inline Socket::Error Accept_Internal(IN Socket::Handle a_sock,
-										 IN AddressFamily a_addrFam,
-										 OUT Socket& a_newbe,
-										 OUT Socket::Handle& a_newSocket,
-										 OUT IpAddress& a_address)
+	inline Socket::Error Accept_Internal(Socket::Handle a_sock,
+										 AddressFamily a_addrFam,
+										 Socket& a_newbe /*Out*/,
+										 Socket::Handle& a_newSocket /*Out*/,
+										 IpAddress& a_address /*Out*/)
 	{
 		Socket::Error ret = 0;
 		SockAddrType addr;
@@ -320,8 +320,8 @@ namespace asd
 
 
 
-	Socket::Error Socket::Accept(OUT Socket& a_newbe,
-								 OUT IpAddress& a_address)
+	Socket::Error Socket::Accept(Socket& a_newbe /*Out*/,
+								 IpAddress& a_address /*Out*/)
 	{
 		asd_DAssert(m_handle != InvalidHandle);
 
@@ -353,7 +353,7 @@ namespace asd
 
 
 
-	Socket::Error Socket::Connect(IN const IpAddress& a_dest)
+	Socket::Error Socket::Connect(const IpAddress& a_dest)
 	{
 		Error ret = 0;
 		ret = Init(m_socketType, a_dest.GetAddressFamily(), false);
@@ -368,9 +368,9 @@ namespace asd
 
 
 
-	Socket::IoResult Socket::Send(IN const void* a_buffer,
-								  IN int a_bufferSize,
-								  IN int a_flags /*= 0*/)
+	Socket::IoResult Socket::Send(const void* a_buffer,
+								  int a_bufferSize,
+								  int a_flags /*= 0*/)
 	{
 		asd_DAssert(m_handle != InvalidHandle);
 
@@ -387,10 +387,10 @@ namespace asd
 
 
 
-	Socket::IoResult Socket::SendTo(IN const void* a_buffer,
-									IN int a_bufferSize,
-									IN const IpAddress& a_dest,
-									IN int a_flags /*= 0*/)
+	Socket::IoResult Socket::SendTo(const void* a_buffer,
+									int a_bufferSize,
+									const IpAddress& a_dest,
+									int a_flags /*= 0*/)
 	{
 		IoResult ret;
 		ret.m_error = Init(m_socketType, a_dest.GetAddressFamily(), false);
@@ -411,9 +411,9 @@ namespace asd
 
 
 
-	Socket::IoResult Socket::Recv(OUT void* a_buffer,
-								  IN int a_bufferSize,
-								  IN int a_flags /*= 0*/)
+	Socket::IoResult Socket::Recv(void* a_buffer /*Out*/,
+								  int a_bufferSize,
+								  int a_flags /*= 0*/)
 	{
 		asd_DAssert(m_handle != InvalidHandle);
 
@@ -431,12 +431,12 @@ namespace asd
 
 
 	template <typename SockAddrType>
-	inline void RecvFrom_Internal(OUT Socket::IoResult& a_result,
-								  IN Socket::Handle a_sock,
-								  OUT void* a_buffer,
-								  IN int a_bufferSize,
-								  OUT IpAddress& a_src,
-								  IN int a_flags)
+	inline void RecvFrom_Internal(Socket::IoResult& a_result /*Out*/,
+								  Socket::Handle a_sock,
+								  void* a_buffer /*Out*/,
+								  int a_bufferSize,
+								  IpAddress& a_src /*Out*/,
+								  int a_flags)
 	{
 		SockAddrType addr;
 		socklen_t addrLen = sizeof(addr);
@@ -454,10 +454,10 @@ namespace asd
 
 
 
-	Socket::IoResult Socket::RecvFrom(OUT void* a_buffer,
-									  IN int a_bufferSize,
-									  OUT IpAddress& a_src,
-									  IN int a_flags /*= 0*/)
+	Socket::IoResult Socket::RecvFrom(void* a_buffer /*Out*/,
+									  int a_bufferSize,
+									  IpAddress& a_src /*Out*/,
+									  int a_flags /*= 0*/)
 	{
 		IoResult ret;
 		ret.m_error = Init(m_socketType, m_addressFamily, false);
@@ -493,10 +493,10 @@ namespace asd
 
 
 
-	Socket::Error Socket::SetSockOpt(IN int a_level,
-									 IN int a_optname,
-									 IN const void* a_optval,
-									 IN uint32_t a_optlen)
+	Socket::Error Socket::SetSockOpt(int a_level,
+									 int a_optname,
+									 const void* a_optval,
+									 uint32_t a_optlen)
 	{
 		asd_DAssert(m_handle != InvalidHandle);
 		auto r = ::setsockopt(m_handle,
@@ -509,10 +509,10 @@ namespace asd
 		return 0;
 	}
 
-	Socket::Error Socket::GetSockOpt(IN int a_level,
-									 IN int a_optname,
-									 OUT void* a_optval,
-									 INOUT uint32_t& a_optlen) const
+	Socket::Error Socket::GetSockOpt(int a_level,
+									 int a_optname,
+									 void* a_optval /*Out*/,
+									 uint32_t& a_optlen /*InOut*/) const
 	{
 		asd_DAssert(m_handle != InvalidHandle);
 		auto r = ::getsockopt(m_handle,
@@ -527,7 +527,7 @@ namespace asd
 
 
 
-	Socket::Error Socket::SetSockOpt_ReuseAddr(IN bool a_set)
+	Socket::Error Socket::SetSockOpt_ReuseAddr(bool a_set)
 	{
 		int set = a_set;
 		return SetSockOpt(SOL_SOCKET,
@@ -536,7 +536,7 @@ namespace asd
 						  sizeof(set));
 	}
 
-	Socket::Error Socket::GetSockOpt_ReuseAddr(OUT bool& a_result) const
+	Socket::Error Socket::GetSockOpt_ReuseAddr(bool& a_result /*Out*/) const
 	{
 		int result;
 		uint32_t size = sizeof(result);
@@ -552,7 +552,7 @@ namespace asd
 
 
 
-	Socket::Error Socket::SetSockOpt_UseNagle(IN bool a_set)
+	Socket::Error Socket::SetSockOpt_UseNagle(bool a_set)
 	{
 		asd_DAssert(m_socketType == Type::TCP);
 
@@ -563,7 +563,7 @@ namespace asd
 						  sizeof(set));
 	}
 
-	Socket::Error Socket::GetSockOpt_UseNagle(OUT bool& a_result) const
+	Socket::Error Socket::GetSockOpt_UseNagle(bool& a_result /*Out*/) const
 	{
 		asd_DAssert(m_socketType == Type::TCP);
 
@@ -581,8 +581,8 @@ namespace asd
 
 
 
-	Socket::Error Socket::SetSockOpt_Linger(IN bool a_use,
-											IN uint16_t a_sec)
+	Socket::Error Socket::SetSockOpt_Linger(bool a_use,
+											uint16_t a_sec)
 	{
 		linger val;
 		val.l_onoff = a_use;
@@ -593,8 +593,8 @@ namespace asd
 						  sizeof(val));
 	}
 
-	Socket::Error Socket::GetSockOpt_Linger(OUT bool& a_use,
-											OUT uint16_t& a_sec) const
+	Socket::Error Socket::GetSockOpt_Linger(bool& a_use /*Out*/,
+											uint16_t& a_sec /*Out*/) const
 	{
 		linger val;
 		uint32_t size = sizeof(val);
@@ -611,7 +611,7 @@ namespace asd
 
 
 
-	Socket::Error Socket::SetSockOpt_RecvBufSize(IN int a_byte)
+	Socket::Error Socket::SetSockOpt_RecvBufSize(int a_byte)
 	{
 		return SetSockOpt(SOL_SOCKET,
 						  SO_RCVBUF,
@@ -619,7 +619,7 @@ namespace asd
 						  sizeof(a_byte));
 	}
 
-	Socket::Error Socket::GetSockOpt_RecvBufSize(OUT int& a_byte) const
+	Socket::Error Socket::GetSockOpt_RecvBufSize(int& a_byte /*Out*/) const
 	{
 		int result;
 		uint32_t size = sizeof(result);
@@ -635,7 +635,7 @@ namespace asd
 
 
 
-	Socket::Error Socket::SetSockOpt_SendBufSize(IN int a_byte)
+	Socket::Error Socket::SetSockOpt_SendBufSize(int a_byte)
 	{
 		return SetSockOpt(SOL_SOCKET,
 						  SO_SNDBUF,
@@ -643,7 +643,7 @@ namespace asd
 						  sizeof(a_byte));
 	}
 
-	Socket::Error Socket::GetSockOpt_SendBufSize(OUT int& a_byte) const
+	Socket::Error Socket::GetSockOpt_SendBufSize(int& a_byte /*Out*/) const
 	{
 		int result;
 		uint32_t size = sizeof(result);
@@ -659,7 +659,7 @@ namespace asd
 
 
 
-	Socket::Error Socket::GetSockOpt_Error(OUT int& a_error) const
+	Socket::Error Socket::GetSockOpt_Error(int& a_error /*Out*/) const
 	{
 		int result;
 		uint32_t size = sizeof(result);
@@ -675,7 +675,7 @@ namespace asd
 
 
 
-	Socket::Error Socket::SetNonblock(IN bool a_nonblock)
+	Socket::Error Socket::SetNonblock(bool a_nonblock)
 	{
 		asd_DAssert(m_handle != InvalidHandle);
 
@@ -705,7 +705,7 @@ namespace asd
 #endif
 	}
 
-	Socket::Error Socket::CheckNonblock(OUT bool& a_result) const
+	Socket::Error Socket::CheckNonblock(bool& a_result /*Out*/) const
 	{
 		asd_DAssert(m_handle != InvalidHandle);
 
@@ -724,9 +724,9 @@ namespace asd
 
 
 	template <typename Func>
-	Socket::Error GetIpAddress(IN Func a_getxxxxname,
-							   IN Socket::Handle a_sock,
-							   OUT IpAddress& a_addr)
+	Socket::Error GetIpAddress(Func a_getxxxxname,
+							   Socket::Handle a_sock,
+							   IpAddress& a_addr /*Out*/)
 	{
 		asd_DAssert(a_sock != Socket::InvalidHandle);
 
@@ -754,20 +754,20 @@ namespace asd
 		return 0;
 	}
 
-	Socket::Error Socket::GetSockName(OUT IpAddress& a_addr) const
+	Socket::Error Socket::GetSockName(IpAddress& a_addr /*Out*/) const
 	{
 		return GetIpAddress(::getsockname, m_handle, a_addr);
 	}
 
-	Socket::Error Socket::GetPeerName(OUT IpAddress& a_addr) const
+	Socket::Error Socket::GetPeerName(IpAddress& a_addr /*Out*/) const
 	{
 		return GetIpAddress(::getpeername, m_handle, a_addr);
 	}
 
 
 
-	EasySocket::EasySocket(IN Socket::Type a_socketType /*= Socket::Type::TCP*/,
-						   IN AddressFamily a_addressFamily /*= AddressFamily::IPv4*/)
+	EasySocket::EasySocket(Socket::Type a_socketType /*= Socket::Type::TCP*/,
+						   AddressFamily a_addressFamily /*= AddressFamily::IPv4*/)
 	{
 		m_socketType = a_socketType;
 		m_socket = Socket_ptr(new Socket(m_socketType, a_addressFamily));
@@ -777,7 +777,7 @@ namespace asd
 
 
 
-	void EasySocket::Bind(IN const IpAddress& a_addr)
+	void EasySocket::Bind(const IpAddress& a_addr)
 	{
 		asd_DAssert(m_socket != nullptr);
 
@@ -789,7 +789,7 @@ namespace asd
 
 
 
-	void EasySocket::Listen(IN int a_backlog /*= 1024*/)
+	void EasySocket::Listen(int a_backlog /*= 1024*/)
 	{
 		asd_DAssert(m_socket != nullptr);
 
@@ -801,8 +801,8 @@ namespace asd
 
 
 
-	void EasySocket::Accept(OUT Socket& a_newbe,
-							OUT IpAddress& a_address)
+	void EasySocket::Accept(Socket& a_newbe /*Out*/,
+							IpAddress& a_address /*Out*/)
 	{
 		asd_DAssert(m_socket != nullptr);
 
@@ -814,7 +814,7 @@ namespace asd
 
 
 
-	void EasySocket::Connect(IN const IpAddress& a_dest)
+	void EasySocket::Connect(const IpAddress& a_dest)
 	{
 		asd_DAssert(m_socket != nullptr);
 
@@ -826,8 +826,8 @@ namespace asd
 
 
 
-	void EasySocket::Send(IN const Buffer& a_buffer,
-						  IN int a_flags /*= 0*/)
+	void EasySocket::Send(const Buffer& a_buffer,
+						  int a_flags /*= 0*/)
 	{
 		asd_DAssert(m_socket != nullptr);
 
@@ -841,9 +841,9 @@ namespace asd
 
 
 
-	void EasySocket::SendTo(IN const Buffer& a_buffer,
-							IN const IpAddress& a_dest,
-							IN int a_flags /*= 0*/)
+	void EasySocket::SendTo(const Buffer& a_buffer,
+							const IpAddress& a_dest,
+							int a_flags /*= 0*/)
 	{
 		asd_DAssert(m_socket != nullptr);
 
@@ -859,9 +859,9 @@ namespace asd
 
 
 
-	void EasySocket::Recv(OUT Buffer& a_buffer,
-						  IN int a_flags /*= 0*/,
-						  IN int a_recvComplete /*= -1*/)
+	void EasySocket::Recv(Buffer& a_buffer /*Out*/,
+						  int a_flags /*= 0*/,
+						  int a_recvComplete /*= -1*/)
 	{
 		asd_DAssert(m_socket != nullptr);
 
@@ -885,9 +885,9 @@ namespace asd
 
 
 
-	void EasySocket::RecvFrom(OUT Buffer& a_buffer,
-							  OUT IpAddress& a_src,
-							  IN int a_flags /*= 0*/)
+	void EasySocket::RecvFrom(Buffer& a_buffer /*Out*/,
+							  IpAddress& a_src /*Out*/,
+							  int a_flags /*= 0*/)
 	{
 		asd_DAssert(m_socket != nullptr);
 

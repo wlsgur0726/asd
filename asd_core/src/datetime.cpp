@@ -4,30 +4,46 @@
 
 namespace asd
 {
-	tm* localtime(IN const time_t* a_time)
+	tm* localtime(const time_t* a_time /*= nullptr*/)
 	{
 		thread_local tm t_tm;
+
+		if (a_time == nullptr) {
+			thread_local time_t t_time;
+			t_time = ::time(nullptr);
+			a_time = &t_time;
+		}
+
 #if asd_Platform_Windows
-		if (localtime_s(&t_tm, a_time) == 0)
-			return &t_tm;
-		else
-			return nullptr;
+		if (::localtime_s(&t_tm, a_time) != 0) {
+			auto e = errno;
+			asd_OnErr("localtime_s error, {}", e);
+		}
+		return &t_tm;
 #else
-		return localtime_r(a_time, &t_tm);
+		return ::localtime_r(a_time, &t_tm);
 #endif
 	}
 
 
-	tm* gmtime(IN const time_t* a_time)
+	tm* gmtime(const time_t* a_time /*= nullptr*/)
 	{
 		thread_local tm t_tm;
+
+		if (a_time == nullptr) {
+			thread_local time_t t_time;
+			t_time = ::time(nullptr);
+			a_time = &t_time;
+		}
+
 #if asd_Platform_Windows
-		if (gmtime_s(&t_tm, a_time) == 0)
-			return &t_tm;
-		else
-			return nullptr;
+		if (::gmtime_s(&t_tm, a_time) != 0) {
+			auto e = errno;
+			asd_OnErr("gmtime_s error, {}", e);
+		}
+		return &t_tm;
 #else
-		return gmtime_r(a_time, &t_tm);
+		return ::gmtime_r(a_time, &t_tm);
 #endif
 	}
 
@@ -67,7 +83,7 @@ namespace asd
 
 
 	// 1년 1월 1일로부터 a_year년 1월 1일 사이의 윤일 개수를 구한다.
-	inline int GetLeapDayCount(IN int a_year)
+	inline int GetLeapDayCount(int a_year)
 	{
 		asd_DAssert(a_year != 0);
 
@@ -85,8 +101,8 @@ namespace asd
 
 
 	// a_year1년 1월 1일과 a_year2년 1월 1일 사이의 윤일 개수를 구한다.
-	inline int GetLeapDayCount(IN int a_year1,
-							   IN int a_year2)
+	inline int GetLeapDayCount(int a_year1,
+							   int a_year2)
 	{
 		if (a_year1 == a_year2)
 			return 0;
@@ -100,7 +116,7 @@ namespace asd
 
 
 	// 윤년인지 여부
-	inline bool IsLeapYear(IN int a_year)
+	inline bool IsLeapYear(int a_year)
 	{
 		asd_DAssert(a_year != 0);
 		if (a_year < 0)
@@ -117,8 +133,8 @@ namespace asd
 
 
 	// a_month월의 마지막 일을 구한다.
-	inline int GetLastDay(IN int a_month,
-						  IN bool a_isLeapYear)
+	inline int GetLastDay(int a_month,
+						  bool a_isLeapYear)
 	{
 		asd_DAssert(a_month>=1 && a_month<=12);
 		int r = Days[a_month];
@@ -131,9 +147,9 @@ namespace asd
 
 
 	// 1월 1일부터 a_month월 a_day일 까지 지난 일 수를 구한다.
-	inline int GetDayOffset(IN int a_month,
-							IN int a_day,
-							IN bool a_isLeapYear)
+	inline int GetDayOffset(int a_month,
+							int a_day,
+							bool a_isLeapYear)
 	{
 		asd_DAssert(a_month>=1 && a_month<=12);
 		asd_DAssert(a_day>=1 && a_day<=GetLastDay(a_month, a_isLeapYear));
@@ -149,9 +165,9 @@ namespace asd
 
 
 	// 1년 1월 1일로부터 a_year년 a_month월 a_day일 까지 경과한 일 수를 구한다.
-	inline int GetDayOffset(IN int a_year,
-							IN int a_month,
-							IN int a_day)
+	inline int GetDayOffset(int a_year,
+							int a_month,
+							int a_day)
 	{
 		asd_DAssert(a_year != 0);
 		asd_DAssert(a_month>=1 && a_month<=12);
@@ -174,7 +190,7 @@ namespace asd
 
 
 	// 1년 1월 1일(월요일)로부터 a_days일 만큼 지난 날짜의 요일을 구한다.
-	inline DayOfTheWeek GetDayOfTheWeek(IN int a_days)
+	inline DayOfTheWeek GetDayOfTheWeek(int a_days)
 	{
 		if (a_days >= 0)
 			return (DayOfTheWeek)(((a_days % 7) + 1) % 7);
@@ -183,16 +199,16 @@ namespace asd
 
 
 	// 입력받은 날짜의 요일을 구한다.
-	inline DayOfTheWeek GetDayOfTheWeek(IN int a_year,
-										IN int a_month,
-										IN int a_day)
+	inline DayOfTheWeek GetDayOfTheWeek(int a_year,
+										int a_month,
+										int a_day)
 	{
 		return GetDayOfTheWeek(GetDayOffset(a_year, a_month, a_day));
 	}
 
 
-	inline MString ToString(IN const char* a_format,
-							IN const tm& a_tm)
+	inline MString ToString(const char* a_format,
+							const tm& a_tm)
 	{
 		asd_DAssert(a_format != nullptr);
 		MString ret;
@@ -218,7 +234,7 @@ namespace asd
 
 
 
-	inline void CheckParam_Year(IN int a_year)
+	inline void CheckParam_Year(int a_year)
 	{
 		const int LimitMax = (1 << 23) - 1;
 		const int LimitMin = ~LimitMax;
@@ -234,42 +250,42 @@ namespace asd
 	}
 
 
-	inline void CheckParam_Month(IN int a_month)
+	inline void CheckParam_Month(int a_month)
 	{
 		if (a_month < 1 || a_month > 12)
 			asd_RaiseException("invalid parameter : {}", a_month);
 	}
 
 
-	inline void CheckParam_Day(IN int a_day)
+	inline void CheckParam_Day(int a_day)
 	{
 		if (a_day < 1 || a_day > 31)
 			asd_RaiseException("invalid parameter : {}", a_day);
 	}
 
 
-	inline void CheckParam_Hour(IN int a_hour)
+	inline void CheckParam_Hour(int a_hour)
 	{
 		if (a_hour < 0 || a_hour >= 24)
 			asd_RaiseException("invalid parameter : {}", a_hour);
 	}
 
 
-	inline void CheckParam_Minute(IN int a_minute)
+	inline void CheckParam_Minute(int a_minute)
 	{
 		if (a_minute < 0 || a_minute >= 60)
 			asd_RaiseException("invalid parameter : {}", a_minute);
 	}
 
 
-	inline void CheckParam_Second(IN int a_second)
+	inline void CheckParam_Second(int a_second)
 	{
 		if (a_second < 0 || a_second > 60)
 			asd_RaiseException("invalid parameter : {}", a_second);
 	}
 
 
-	inline void CheckParam_Millisecond(IN int a_millisecond)
+	inline void CheckParam_Millisecond(int a_millisecond)
 	{
 		if (a_millisecond < 0 || a_millisecond >= 1000)
 			asd_RaiseException("invalid parameter : {}", a_millisecond);
@@ -278,42 +294,42 @@ namespace asd
 
 
 #define asd_Define_ConvertFunction_From(Class, Type, ParamName)		\
-	Class::Class(IN const Type& a_src)								\
+	Class::Class(const Type& a_src)									\
 	{																\
 		From(a_src);												\
 	}																\
 																	\
-	Class& Class::operator = (IN const Type& a_src)					\
+	Class& Class::operator = (const Type& a_src)					\
 	{																\
 		return From(a_src);											\
 	}																\
 																	\
-	Class& Class::From(IN const Type& ParamName)					\
+	Class& Class::From(const Type& ParamName)						\
 
 
 #define asd_Define_ConvertFunction_To(Class, Type, ParamName)		\
-	Class::operator Type() const						\
+	Class::operator Type() const									\
 	{																\
 		Type r;														\
 		memset(&r, 0, sizeof(r));									\
 		return To(r);												\
 	}																\
 																	\
-	Type& Class::To(OUT Type& a_dst) const				\
+	Type& Class::To(Type& a_dst /*Out*/) const						\
 
 
 
-	Date::Date(IN int a_year /*= 1*/,
-			   IN int a_month /*= 1*/,
-			   IN int a_day /*= 1*/)
+	Date::Date(int a_year /*= 1*/,
+			   int a_month /*= 1*/,
+			   int a_day /*= 1*/)
 	{
 		Init(a_year, a_month, a_day);
 	}
 
 
-	Date& Date::Init(IN int a_year /*= 1*/,
-					 IN int a_month /*= 1*/,
-					 IN int a_day /*= 1*/)
+	Date& Date::Init(int a_year /*= 1*/,
+					 int a_month /*= 1*/,
+					 int a_day /*= 1*/)
 	{
 		Year(a_year);
 		Month(a_month);
@@ -328,7 +344,7 @@ namespace asd
 	}
 
 
-	Date& Date::Year(IN int a_year)
+	Date& Date::Year(int a_year)
 	{
 		CheckParam_Year(a_year);
 		m_year = a_year;
@@ -343,7 +359,7 @@ namespace asd
 	}
 
 
-	Date& Date::Month(IN int a_month)
+	Date& Date::Month(int a_month)
 	{
 		CheckParam_Month(a_month);
 		m_month = a_month;
@@ -358,7 +374,7 @@ namespace asd
 	}
 
 
-	Date& Date::Day(IN int a_day)
+	Date& Date::Day(int a_day)
 	{
 		CheckParam_Day(a_day);
 		m_day = a_day;
@@ -381,8 +397,8 @@ namespace asd
 	}
 
 
-	int Date::Compare(IN const Date& a_left,
-					  IN const Date& a_right)
+	int Date::Compare(const Date& a_left,
+					  const Date& a_right)
 	{
 		int cmp1;
 		int cmp2;
@@ -412,8 +428,8 @@ namespace asd
 	}
 
 
-	inline void Date_to_tm(IN const Date& a_src,
-						   OUT tm& a_dst)
+	inline void Date_to_tm(const Date& a_src,
+						   tm& a_dst /*Out*/)
 	{
 		const int y = a_src.Year();
 		const int m = a_src.Month();
@@ -507,19 +523,19 @@ namespace asd
 
 
 
-	Time::Time(IN int a_hour /*= 0*/,
-			   IN int a_minute /*= 0*/,
-			   IN int a_second /*= 0*/,
-			   IN int a_millisecond /*= 0*/)
+	Time::Time(int a_hour /*= 0*/,
+			   int a_minute /*= 0*/,
+			   int a_second /*= 0*/,
+			   int a_millisecond /*= 0*/)
 	{
 		Init(a_hour, a_minute, a_second, a_millisecond);
 	}
 
 
-	Time& Time::Init(IN int a_hour /*= 0*/,
-					 IN int a_minute /*= 0*/,
-					 IN int a_second /*= 0*/,
-					 IN int a_millisecond /*= 0*/)
+	Time& Time::Init(int a_hour /*= 0*/,
+					 int a_minute /*= 0*/,
+					 int a_second /*= 0*/,
+					 int a_millisecond /*= 0*/)
 	{
 		Hour(a_hour);
 		Minute(a_minute);
@@ -535,7 +551,7 @@ namespace asd
 	}
 
 
-	Time& Time::Hour(IN int a_hour)
+	Time& Time::Hour(int a_hour)
 	{
 		CheckParam_Hour(a_hour);
 		m_hour = a_hour;
@@ -550,7 +566,7 @@ namespace asd
 	}
 
 
-	Time& Time::Minute(IN int a_minute)
+	Time& Time::Minute(int a_minute)
 	{
 		CheckParam_Minute(a_minute);
 		m_minute = a_minute;
@@ -565,7 +581,7 @@ namespace asd
 	}
 
 
-	Time& Time::Second(IN int a_second)
+	Time& Time::Second(int a_second)
 	{
 		CheckParam_Second(a_second);
 		m_second = a_second;
@@ -580,7 +596,7 @@ namespace asd
 	}
 
 
-	Time& Time::Millisecond(IN int a_millisecond)
+	Time& Time::Millisecond(int a_millisecond)
 	{
 		CheckParam_Millisecond(a_millisecond);
 		m_millisecond = a_millisecond;
@@ -601,8 +617,8 @@ namespace asd
 	}
 
 
-	int Time::Compare(IN const Time& a_left,
-					  IN const Time& a_right)
+	int Time::Compare(const Time& a_left,
+					  const Time& a_right)
 	{
 		int cmp1;
 		int cmp2;
@@ -639,8 +655,8 @@ namespace asd
 	}
 
 
-	inline void Time_to_tm(IN const Time& a_src,
-						   OUT tm& a_dst)
+	inline void Time_to_tm(const Time& a_src,
+						   tm& a_dst /*Out*/)
 	{
 		a_dst.tm_hour = a_src.Hour();
 		a_dst.tm_min = a_src.Minute();
@@ -736,25 +752,25 @@ namespace asd
 
 
 
-	DateTime::DateTime(IN int a_year /*= 1*/,
-					   IN int a_month /*= 1*/,
-					   IN int a_day /*= 1*/,
-					   IN int a_hour /*= 0*/,
-					   IN int a_minute /*= 0*/,
-					   IN int a_second /*= 0*/,
-					   IN int a_millisecond /*= 0*/)
+	DateTime::DateTime(int a_year /*= 1*/,
+					   int a_month /*= 1*/,
+					   int a_day /*= 1*/,
+					   int a_hour /*= 0*/,
+					   int a_minute /*= 0*/,
+					   int a_second /*= 0*/,
+					   int a_millisecond /*= 0*/)
 	{
 		Init(a_year, a_month, a_day, a_hour, a_minute, a_second, a_millisecond);
 	}
 
 
-	DateTime& DateTime::Init(IN int a_year /*= 1*/,
-							 IN int a_month /*= 1*/,
-							 IN int a_day /*= 1*/,
-							 IN int a_hour /*= 0*/,
-							 IN int a_minute /*= 0*/,
-							 IN int a_second /*= 0*/,
-							 IN int a_millisecond /*= 0*/)
+	DateTime& DateTime::Init(int a_year /*= 1*/,
+							 int a_month /*= 1*/,
+							 int a_day /*= 1*/,
+							 int a_hour /*= 0*/,
+							 int a_minute /*= 0*/,
+							 int a_second /*= 0*/,
+							 int a_millisecond /*= 0*/)
 	{
 		m_date.Init(a_year, a_month, a_day);
 		m_time.Init(a_hour, a_minute, a_second, a_millisecond);
@@ -768,7 +784,7 @@ namespace asd
 	}
 
 
-	DateTime& DateTime::Year(IN int a_year)
+	DateTime& DateTime::Year(int a_year)
 	{
 		m_date.Year(a_year);
 		return *this;
@@ -781,7 +797,7 @@ namespace asd
 	}
 
 
-	DateTime& DateTime::Month(IN int a_month)
+	DateTime& DateTime::Month(int a_month)
 	{
 		m_date.Month(a_month);
 		return *this;
@@ -794,7 +810,7 @@ namespace asd
 	}
 
 
-	DateTime& DateTime::Day(IN int a_day)
+	DateTime& DateTime::Day(int a_day)
 	{
 		m_date.Day(a_day);
 		return *this;
@@ -807,7 +823,7 @@ namespace asd
 	}
 
 
-	DateTime& DateTime::Hour(IN int a_hour)
+	DateTime& DateTime::Hour(int a_hour)
 	{
 		m_time.Hour(a_hour);
 		return *this;
@@ -820,7 +836,7 @@ namespace asd
 	}
 
 
-	DateTime& DateTime::Minute(IN int a_minute)
+	DateTime& DateTime::Minute(int a_minute)
 	{
 		m_time.Minute(a_minute);
 		return *this;
@@ -833,7 +849,7 @@ namespace asd
 	}
 
 
-	DateTime& DateTime::Second(IN int a_second)
+	DateTime& DateTime::Second(int a_second)
 	{
 		m_time.Second(a_second);
 		return *this;
@@ -846,7 +862,7 @@ namespace asd
 	}
 
 
-	DateTime& DateTime::Millisecond(IN int a_millisecond)
+	DateTime& DateTime::Millisecond(int a_millisecond)
 	{
 		m_time.Millisecond(a_millisecond);
 		return *this;
@@ -870,8 +886,8 @@ namespace asd
 	}
 
 
-	int DateTime::Compare(IN const DateTime& a_left,
-						  IN const DateTime& a_right)
+	int DateTime::Compare(const DateTime& a_left,
+						  const DateTime& a_right)
 	{
 		int cmp = Date::Compare(a_left.m_date, a_right.m_date);
 		if (cmp != 0)

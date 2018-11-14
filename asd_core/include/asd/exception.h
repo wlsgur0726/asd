@@ -17,9 +17,9 @@ namespace asd
 	{
 	public:
 		Exception();
-		Exception(IN const char* a_what);
-		Exception(IN const MString& a_what);
-		Exception(IN const DebugInfo& a_dbginfo);
+		Exception(const char* a_what);
+		Exception(const MString& a_what);
+		Exception(const DebugInfo& a_dbginfo);
 		virtual ~Exception();
 
 		virtual const char* what() const asd_noexcept override;
@@ -117,7 +117,7 @@ namespace asd
 	{
 		const ExceptionType* m_ptr;
 
-		ExceptionPtrTemplate(IN const ExceptionType* a_ptr)
+		ExceptionPtrTemplate(const ExceptionType* a_ptr)
 			: m_ptr(a_ptr)
 		{
 		}
@@ -138,7 +138,7 @@ namespace asd
 	{
 		const Exception* m_ptr;
 
-		ExceptionPtrTemplate(IN const Exception* a_ptr)
+		ExceptionPtrTemplate(const Exception* a_ptr)
 			: m_ptr(a_ptr)
 		{
 		}
@@ -164,7 +164,7 @@ namespace asd
 	{
 		const char* m_ptr;
 
-		ExceptionPtrTemplate(IN const char*const* a_ptr)
+		ExceptionPtrTemplate(const char*const* a_ptr)
 			: m_ptr(*a_ptr)
 		{
 			if (m_ptr == nullptr)
@@ -183,11 +183,11 @@ namespace asd
 	};
 
 	template<typename ExceptionType, typename ExceptionHandler>
-	void OnException(IN const ExceptionType& a_exception,
-					 IN const ExceptionHandler& a_handler,
-					 IN const char* a_file,
-					 IN const int a_line,
-					 IN const char* a_function)
+	void OnException(const ExceptionType& a_exception,
+					 const ExceptionHandler& a_handler,
+					 const char* a_file,
+					 const int a_line,
+					 const char* a_function)
 	{
 		ExceptionPtrTemplate<ExceptionType> exception(&a_exception);
 		ExceptionPtrInterface* ptr = &exception;
@@ -198,8 +198,8 @@ namespace asd
 	// for asd_Catch_Default, asd_CatchUnknown_Default
 	struct DefaultExceptionHandler
 	{
-		void operator()(IN ExceptionPtrInterface* a_exception,
-						IN const DebugInfo& a_catchPosInfo) const;
+		void operator()(ExceptionPtrInterface* a_exception,
+						const DebugInfo& a_catchPosInfo) const;
 	};
 
 
@@ -211,7 +211,7 @@ namespace asd
 		// - ErrorMessage를 asd::Logger::GlobalInstance().ErrorLog()로 출력
 		// - release일 경우 StackTrace도 출력
 		// - debug일 경우 DebugBreak
-		virtual void OnError(IN const DebugInfo& a_info);
+		virtual void OnError(const DebugInfo& a_info);
 		virtual ~AssertHandler() {}
 	};
 
@@ -222,7 +222,7 @@ namespace asd
 
 	// 커스텀 AssertHandler 셋팅
 	// nullptr 입력할 경우 기본 AssertHandler로 셋팅
-void SetAssertHandler(IN std::shared_ptr<AssertHandler> a_handler);
+void SetAssertHandler(std::shared_ptr<AssertHandler> a_handler);
 
 
 	// asd_RAssert : 표준 assert와는 다르게 release에서도 Check는 수행된다.

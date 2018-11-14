@@ -68,8 +68,8 @@ namespace asd
 		}
 	} g_init;
 
-	StackTrace::StackTrace(IN uint32_t a_skip /*= 0*/,
-						   IN uint32_t a_count /*= 10*/)
+	StackTrace::StackTrace(uint32_t a_skip /*= 0*/,
+						   uint32_t a_count /*= 10*/)
 	{
 		thread_local std::vector<void*> frames;
 		frames.resize(a_count);
@@ -108,8 +108,8 @@ namespace asd
 	}
 
 #elif asd_Compiler_GCC
-	StackTrace::StackTrace(IN uint32_t a_skip /*= 0*/,
-						   IN uint32_t a_count /*= 10*/)
+	StackTrace::StackTrace(uint32_t a_skip /*= 0*/,
+						   uint32_t a_count /*= 10*/)
 	{
 		std::vector<void*> trace;
 		trace.resize(a_skip + a_count + 1);
@@ -194,7 +194,7 @@ namespace asd
 		return MString::Format("{}@{} ({}:{})", Module, Function, File, Line);
 	}
 
-	MString StackTrace::ToString(IN const ToStrOpt& a_opt /*= ToStrOpt()*/) const
+	MString StackTrace::ToString(const ToStrOpt& a_opt /*= ToStrOpt()*/) const
 	{
 		MString indent;
 		indent.resize(a_opt.Indent);
@@ -227,15 +227,15 @@ namespace asd
 
 
 	const Trace::TimePoint g_startTime = std::chrono::system_clock::now();
-	inline int64_t Elapsed(IN Trace::TimePoint a_time)
+	inline int64_t Elapsed(Trace::TimePoint a_time)
 	{
 		return std::chrono::duration_cast<std::chrono::milliseconds>(a_time - g_startTime).count();
 	}
 
 
-	Trace::Trace(IN const char* a_file,
-				 IN int a_line,
-				 IN const char* a_function)
+	Trace::Trace(const char* a_file,
+				 int a_line,
+				 const char* a_function)
 		: Time(std::chrono::system_clock::now())
 		, TID(GetCurrentThreadID())
 		, File(a_file)
@@ -254,8 +254,8 @@ namespace asd
 							   Function);
 	}
 
-	void PushTrace(REF Tracer& a_tracer,
-				   IN const Trace& a_trace)
+	void PushTrace(Tracer& a_tracer,
+				   const Trace& a_trace)
 	{
 		if (a_tracer.size() >= a_tracer.m_limit)
 			a_tracer.pop_front();
@@ -276,8 +276,8 @@ namespace asd
 	}
 
 
-	void PushDebugTrace(REF DebugTracer& a_tracer,
-						MOVE DebugInfo&& a_trace)
+	void PushDebugTrace(DebugTracer& a_tracer,
+						DebugInfo&& a_trace)
 	{
 		static Mutex s_lock;
 		auto lock = GetLock(s_lock);

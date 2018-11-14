@@ -33,14 +33,14 @@ namespace asd
 		static constexpr bool Recycle = RECYCLE;
 		static constexpr size_t HeaderSize = HEADER_SIZE;
 
-		ObjectPool(IN const ThisType&) = delete;
-		ObjectPool& operator=(IN const ThisType&) = delete;
+		ObjectPool(const ThisType&) = delete;
+		ObjectPool& operator=(const ThisType&) = delete;
 
-		ObjectPool(MOVE ThisType&& a_mv) = default;
-		ObjectPool& operator=(MOVE ThisType&&) = default;
+		ObjectPool(ThisType&& a_mv) = default;
+		ObjectPool& operator=(ThisType&&) = default;
 
-		ObjectPool(IN size_t a_limitCount = std::numeric_limits<size_t>::max(),
-				   IN size_t a_initCount = 0)
+		ObjectPool(size_t a_limitCount = std::numeric_limits<size_t>::max(),
+				   size_t a_initCount = 0)
 			: m_limitCount(a_limitCount)
 		{
 			AddCount(a_initCount);
@@ -78,7 +78,7 @@ namespace asd
 
 
 		// 풀링되면 true, 풀이 꽉 차면 false 리턴
-		bool Free(IN Object* a_obj)
+		bool Free(Object* a_obj)
 		{
 			if (a_obj == nullptr)
 				return true;
@@ -131,7 +131,7 @@ namespace asd
 
 
 
-		void AddCount(IN size_t a_count)
+		void AddCount(size_t a_count)
 		{
 			while (a_count > 0) {
 				--a_count;
@@ -155,7 +155,7 @@ namespace asd
 
 
 		template <typename CAST>
-		inline static CAST* GetHeader(IN Object* a_obj)
+		inline static CAST* GetHeader(Object* a_obj)
 		{
 			static_assert(sizeof(CAST) <= HeaderSize, "invalid cast");
 			auto p = (uint8_t*)a_obj;
@@ -173,7 +173,7 @@ namespace asd
 		}
 
 
-		inline static void FreeMemory(IN Object* a_ptr)
+		inline static void FreeMemory(Object* a_ptr)
 		{
 			auto p = (uint8_t*)a_ptr;
 			auto block = p - HeaderSize;
@@ -195,7 +195,7 @@ namespace asd
 				return ret;
 			}
 
-			inline void push(IN Object* a_obj)
+			inline void push(Object* a_obj)
 			{
 				this->emplace_back(a_obj);
 			}
@@ -235,7 +235,7 @@ namespace asd
 			uint8_t						m_data[sizeof(Object)];
 
 			inline Node() {}
-			void SafeWait(IN const std::atomic<int>* a_diff)
+			void SafeWait(const std::atomic<int>* a_diff)
 			{
 				if (m_popContention != nullptr && m_popContention == a_diff) {
 					while (*m_popContention > 0);
@@ -251,11 +251,11 @@ namespace asd
 
 
 	public:
-		ObjectPool2(IN const ThisType&) = delete;
-		ObjectPool2& operator=(IN const ThisType&) = delete;
+		ObjectPool2(const ThisType&) = delete;
+		ObjectPool2& operator=(const ThisType&) = delete;
 
-		ObjectPool2(IN size_t a_limitCount = std::numeric_limits<size_t>::max(),
-					IN size_t a_initCount = 0)
+		ObjectPool2(size_t a_limitCount = std::numeric_limits<size_t>::max(),
+					size_t a_initCount = 0)
 			: m_limitCount(a_limitCount)
 			, m_pooledCount(0)
 			, m_head(nullptr)
@@ -291,7 +291,7 @@ namespace asd
 
 
 		// 풀링되면 true, 풀이 꽉 차면 false 리턴
-		bool Free(IN Object* a_obj)
+		bool Free(Object* a_obj)
 		{
 			if (a_obj == nullptr)
 				return true;
@@ -317,7 +317,7 @@ namespace asd
 
 
 
-		void AddCount(IN size_t a_count)
+		void AddCount(size_t a_count)
 		{
 			if (a_count <= 0)
 				return;
@@ -370,7 +370,7 @@ namespace asd
 
 
 		template <typename CAST>
-		inline static CAST* GetHeader(IN Object* a_obj)
+		inline static CAST* GetHeader(Object* a_obj)
 		{
 			static_assert(sizeof(CAST) <= HeaderSize, "invalid cast");
 			auto p = (uint8_t*)a_obj;
@@ -388,7 +388,7 @@ namespace asd
 		}
 
 
-		inline static void FreeMemory(IN Object* a_ptr)
+		inline static void FreeMemory(Object* a_ptr)
 		{
 			auto p = (uint8_t*)a_ptr;
 			auto block = p - HeaderSize;
@@ -421,7 +421,7 @@ namespace asd
 		}
 
 
-		bool PushNode(IN Node* a_node)
+		bool PushNode(Node* a_node)
 		{
 			asd_DAssert(a_node != nullptr);
 			if (!a_node->IsValidMagicCode()) {
@@ -501,9 +501,9 @@ namespace asd
 
 
 
-		ObjectPoolShardSet(IN size_t a_shardCount = 4*Get_HW_Concurrency(),
-						   IN size_t a_totalLimitCount = std::numeric_limits<size_t>::max(),
-						   IN size_t a_initCount = 0)
+		ObjectPoolShardSet(size_t a_shardCount = 4*Get_HW_Concurrency(),
+						   size_t a_totalLimitCount = std::numeric_limits<size_t>::max(),
+						   size_t a_initCount = 0)
 			: m_shardCount(max(1u, a_shardCount))
 		{
 			m_memory.resize(m_shardCount * sizeof(Pool));
@@ -536,7 +536,7 @@ namespace asd
 
 
 
-		inline bool Free(IN Object* a_obj)
+		inline bool Free(Object* a_obj)
 		{
 			size_t index = GetShardIndex(a_obj);
 			return m_shards[index].Free(a_obj);
@@ -545,7 +545,7 @@ namespace asd
 
 
 		template <typename CAST>
-		inline static CAST* GetHeader(IN Object* a_obj)
+		inline static CAST* GetHeader(Object* a_obj)
 		{
 			return Pool::template GetHeader<CAST>(a_obj);
 		}
@@ -553,7 +553,7 @@ namespace asd
 
 
 	private:
-		inline size_t GetShardIndex(IN Object* a_obj = nullptr)
+		inline size_t GetShardIndex(Object* a_obj = nullptr)
 		{
 			size_t index;
 			if (a_obj == nullptr) {
@@ -569,7 +569,7 @@ namespace asd
 		}
 
 
-		inline static ShardSetHeader* GetShardSetHeader(IN Object* a_obj)
+		inline static ShardSetHeader* GetShardSetHeader(Object* a_obj)
 		{
 			auto block = Pool::template GetHeader<uint8_t>(a_obj);
 			return (ShardSetHeader*)(block + OrgHeaderSize);

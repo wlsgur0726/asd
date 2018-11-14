@@ -15,8 +15,8 @@ namespace asd
 {
 #if defined(asd_Platform_Windows)
 	#define asd_CCS ",ccs=UTF-16LE"
-	inline FILE* fopen(IN const FChar* a_path,
-					   IN const FChar* a_mode)
+	inline FILE* fopen(const FChar* a_path,
+					   const FChar* a_mode)
 	{
 		FILE* fp;
 		if (0 != _wfopen_s(&fp, a_path, a_mode))
@@ -24,7 +24,7 @@ namespace asd
 		return fp;
 	}
 
-	inline bool Flush(IN FILE* a_fp)
+	inline bool Flush(FILE* a_fp)
 	{
 		if (fflush(a_fp) != 0)
 			return false;
@@ -39,7 +39,7 @@ namespace asd
 
 #else
 	#define asd_CCS
-	inline bool Flush(IN FILE* a_fp)
+	inline bool Flush(FILE* a_fp)
 	{
 		if (fflush(a_fp) != 0)
 			return false;
@@ -74,7 +74,7 @@ namespace asd
 	}
 
 
-	std::shared_ptr<FILE> Logger::RefreshLogFile(IN const Date& a_today)
+	std::shared_ptr<FILE> Logger::RefreshLogFile(const Date& a_today)
 	{
 		if (a_today != m_today) {
 			m_today = a_today;
@@ -84,13 +84,13 @@ namespace asd
 										 a_today.Year(), a_today.Month(), a_today.Day());
 			FILE* fp = fopen(fn, _F("a" asd_CCS));
 			if (fp != nullptr)
-				m_logFile.reset(fp, [](IN FILE* a_fp) { fclose(a_fp); });
+				m_logFile.reset(fp, [](FILE* a_fp) { fclose(a_fp); });
 		}
 		return m_logFile;
 	}
 
 
-	void Logger::SetGenHeadDelegate(MOVE GenText&& a_delegate)
+	void Logger::SetGenHeadDelegate(GenText&& a_delegate)
 	{
 		auto lock = GetLock(m_lock);
 		if (a_delegate == nullptr)
@@ -100,7 +100,7 @@ namespace asd
 	}
 
 
-	void Logger::SetGenTailDelegate(MOVE GenText&& a_delegate)
+	void Logger::SetGenTailDelegate(GenText&& a_delegate)
 	{
 		auto lock = GetLock(m_lock);
 		if (a_delegate == nullptr)
@@ -110,7 +110,7 @@ namespace asd
 	}
 
 
-	void Logger::PushLog(MOVE asd::Log&& a_log)
+	void Logger::PushLog(asd::Log&& a_log)
 	{
 		auto lock = GetLock(m_lock);
 		asd::Log* log = m_logObjPool.Alloc();
@@ -123,7 +123,7 @@ namespace asd
 	}
 
 
-	void Logger::Print(IN asd::Log* a_log)
+	void Logger::Print(asd::Log* a_log)
 	{
 		auto lock = GetLock(m_lock);
 

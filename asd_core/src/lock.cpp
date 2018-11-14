@@ -157,12 +157,12 @@ namespace asd
 		m_data.reset(new MutexData);
 	}
 
-	Mutex::Mutex(MOVE Mutex&& a_rval)
+	Mutex::Mutex(Mutex&& a_rval)
 	{
 		operator=(std::move(a_rval));
 	}
 
-	Mutex& Mutex::operator=(MOVE Mutex&& a_rval)
+	Mutex& Mutex::operator=(Mutex&& a_rval)
 	{
 		auto a = m_data.get();
 		auto b = a_rval.m_data.get();
@@ -223,13 +223,13 @@ namespace asd
 		m_lock = 0;
 	}
 
-	SpinMutex::SpinMutex(MOVE SpinMutex&& a_rval)
+	SpinMutex::SpinMutex(SpinMutex&& a_rval)
 	{
 		m_lock = 0;
 		operator=(std::move(a_rval));
 	}
 
-	SpinMutex& SpinMutex::operator=(MOVE SpinMutex&& a_rval)
+	SpinMutex& SpinMutex::operator=(SpinMutex&& a_rval)
 	{
 		auto a = this;
 		auto b = &a_rval;
@@ -244,9 +244,9 @@ namespace asd
 		return *this;
 	}
 
-	inline bool TrySpinLock(REF std::atomic<uint32_t>& a_lock,
-							IN uint32_t a_tid,
-							REF int& a_recursionCount)
+	inline bool TrySpinLock(std::atomic<uint32_t>& a_lock,
+							uint32_t a_tid,
+							int& a_recursionCount)
 	{
 		uint32_t lock = a_lock;
 		if (lock == 0) {
@@ -393,7 +393,7 @@ namespace asd
 		std::unordered_map<uint32_t, int> m_readers;
 #endif
 
-		static void IsDeadLock(IN int a_line)
+		static void IsDeadLock(int a_line)
 		{
 			asd_OnErr("deadlock detected({})", a_line);
 			for (;;)
@@ -523,12 +523,12 @@ namespace asd
 		m_data.reset(new SharedMutexData);
 	}
 
-	SharedMutex::SharedMutex(MOVE SharedMutex&& a_rval)
+	SharedMutex::SharedMutex(SharedMutex&& a_rval)
 	{
 		operator=(std::move(a_rval));
 	}
 
-	SharedMutex& SharedMutex::operator=(MOVE SharedMutex&& a_rval)
+	SharedMutex& SharedMutex::operator=(SharedMutex&& a_rval)
 	{
 		auto a = m_data.get();
 		auto b = a_rval.m_data.get();

@@ -26,9 +26,9 @@ namespace asd
 		public:
 			friend class Actx<DATA>;
 
-			Context(IN const Trace& a_start,
-					REF std::shared_ptr<Data>& a_data,
-					REF std::shared_ptr<Mutex>& a_ownerLock)
+			Context(const Trace& a_start,
+					std::shared_ptr<Data>& a_data,
+					std::shared_ptr<Mutex>& a_ownerLock)
 				: data(a_data)
 				, m_lock(a_ownerLock)
 				, m_dbg(a_start)
@@ -37,7 +37,7 @@ namespace asd
 					asd_OnErr("unknown error");
 			}
 
-			Context(REF Context* a_owner)
+			Context(Context* a_owner)
 				: m_owner(a_owner)
 				, data(a_owner->data)
 				, m_lock(a_owner->m_lock)
@@ -66,7 +66,7 @@ namespace asd
 				return nullptr;
 			}
 			template <typename ThreadPool>
-			inline auto Next(REF ThreadPool& a_threadPool)
+			inline auto Next(ThreadPool& a_threadPool)
 			{
 				return a_threadPool.Push([ctx=shared_from_this()]()
 				{
@@ -74,7 +74,7 @@ namespace asd
 				});
 			}
 			template <typename ThreadPool, typename SeqKey>
-			inline auto Next(REF ThreadPool& a_threadPool,
+			inline auto Next(ThreadPool& a_threadPool,
 							 SeqKey&& a_seqKey)
 			{
 				return a_threadPool.PushSeq(std::forward<SeqKey>(a_seqKey), [ctx=shared_from_this()]()
@@ -90,7 +90,7 @@ namespace asd
 				return Next();
 			}
 			template <typename ThreadPool>
-			inline auto Finish(REF ThreadPool& a_threadPool)
+			inline auto Finish(ThreadPool& a_threadPool)
 			{
 				return a_threadPool.Push([ctx=shared_from_this()]()
 				{
@@ -98,7 +98,7 @@ namespace asd
 				});
 			}
 			template <typename ThreadPool, typename SeqKey>
-			inline auto Finish(REF ThreadPool& a_threadPool,
+			inline auto Finish(ThreadPool& a_threadPool,
 							   SeqKey&& a_seqKey)
 			{
 				return a_threadPool.Push(std::forward<SeqKey>(a_seqKey), [ctx=shared_from_this()]()
@@ -112,7 +112,7 @@ namespace asd
 				return Finish();
 			}
 			template <typename ThreadPool>
-			inline auto Continue(REF ThreadPool& a_threadPool)
+			inline auto Continue(ThreadPool& a_threadPool)
 			{
 				return a_threadPool.Push([ctx=shared_from_this()]()
 				{
@@ -120,7 +120,7 @@ namespace asd
 				});
 			}
 			template <typename ThreadPool, typename SeqKey>
-			inline auto Continue(REF ThreadPool& a_threadPool,
+			inline auto Continue(ThreadPool& a_threadPool,
 								 SeqKey&& a_seqKey)
 			{
 				return a_threadPool.PushSeq(std::forward<SeqKey>(a_seqKey), [ctx=shared_from_this()]()
@@ -136,7 +136,7 @@ namespace asd
 				return Finish();
 			}
 			template <typename ThreadPool>
-			inline auto Break(REF ThreadPool& a_threadPool)
+			inline auto Break(ThreadPool& a_threadPool)
 			{
 				return a_threadPool.Push([ctx=shared_from_this()]()
 				{
@@ -144,7 +144,7 @@ namespace asd
 				});
 			}
 			template <typename ThreadPool, typename SeqKey>
-			inline auto Break(REF ThreadPool& a_threadPool,
+			inline auto Break(ThreadPool& a_threadPool,
 							  SeqKey&& a_seqKey)
 			{
 				return a_threadPool.Push(std::forward<SeqKey>(a_seqKey), [ctx=shared_from_this()]()
@@ -249,7 +249,7 @@ namespace asd
 			{
 				Trace startPoint;
 				int loopDepth = 0;
-				Dbg(IN const Trace& a_start)
+				Dbg(const Trace& a_start)
 					: startPoint(a_start)
 				{
 				}
@@ -257,9 +257,9 @@ namespace asd
 		};
 
 
-		Actx(IN const Trace& a_start,
-			 REF std::shared_ptr<Data> a_data,
-			 REF std::shared_ptr<Mutex> a_ownerLock)
+		Actx(const Trace& a_start,
+			 std::shared_ptr<Data> a_data,
+			 std::shared_ptr<Mutex> a_ownerLock)
 			: m_lock(std::move(a_ownerLock))
 		{
 			if (m_lock == nullptr)
@@ -268,17 +268,17 @@ namespace asd
 			m_ctx.reset(new Context(a_start, a_data, m_lock));
 		}
 
-		Actx(REF ThisType* a_owner)
+		Actx(ThisType* a_owner)
 		{
 			m_owner = a_owner;
 			InitLoop();
 		}
 
-		Actx(IN const ThisType&) = delete;
-		ThisType& operator=(IN const ThisType&) = delete;
+		Actx(const ThisType&) = delete;
+		ThisType& operator=(const ThisType&) = delete;
 
-		Actx(MOVE ThisType&& a_actx) = default;
-		ThisType& operator=(MOVE ThisType&& a_actx) = default;
+		Actx(ThisType&& a_actx) = default;
+		ThisType& operator=(ThisType&& a_actx) = default;
 
 		ThisType& Then(Task&& a_task)
 		{
@@ -420,14 +420,14 @@ namespace asd
 
 
 	template <typename Data>
-	Actx<Data> CreateActx(IN const Trace& a_start,
-						  REF std::shared_ptr<Data> a_data)
+	Actx<Data> CreateActx(const Trace& a_start,
+						  std::shared_ptr<Data> a_data)
 	{
 		return Actx<Data>(a_start, a_data, nullptr);
 	}
 
 
-	Actx<nullptr_t> CreateActx(IN const Trace& a_start)
+	Actx<nullptr_t> CreateActx(const Trace& a_start)
 	{
 		return Actx<nullptr_t>(a_start, nullptr, nullptr);
 	}

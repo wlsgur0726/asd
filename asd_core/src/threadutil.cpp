@@ -94,7 +94,7 @@ namespace asd
 
 
 
-	void KillThread(IN uint32_t a_threadSequence)
+	void KillThread(uint32_t a_threadSequence)
 	{
 		auto lock = GetLock(g_threadManager.m_lock);
 		auto it = g_threadManager.m_map.find(a_threadSequence);

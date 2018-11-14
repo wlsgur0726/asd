@@ -29,26 +29,26 @@ namespace asd
 	public:
 		virtual ~IpAddress();
 
-		IpAddress(IN AddressFamily a_addrFamily = AddressFamily::IPv4);
+		IpAddress(AddressFamily a_addrFamily = AddressFamily::IPv4);
 
-		IpAddress(IN const char* a_ip,
-				  IN uint16_t a_port = 0);
+		IpAddress(const char* a_ip,
+				  uint16_t a_port = 0);
 
-		IpAddress(IN const IpAddress& a_cp);
+		IpAddress(const IpAddress& a_cp);
 
-		IpAddress(MOVE IpAddress&& a_rval);
+		IpAddress(IpAddress&& a_rval);
 
-		IpAddress(IN const sockaddr_in& a_native_ipv4);
+		IpAddress(const sockaddr_in& a_native_ipv4);
 
-		IpAddress(IN const sockaddr_in6& a_native_ipv6);
+		IpAddress(const sockaddr_in6& a_native_ipv6);
 
-		IpAddress& operator=(IN const IpAddress& a_cp);
+		IpAddress& operator=(const IpAddress& a_cp);
 
-		IpAddress& operator=(MOVE IpAddress&& a_rval);
+		IpAddress& operator=(IpAddress&& a_rval);
 
-		IpAddress& operator=(IN const sockaddr_in& a_native_ipv4);
+		IpAddress& operator=(const sockaddr_in& a_native_ipv4);
 
-		IpAddress& operator=(IN const sockaddr_in6& a_native_ipv6);
+		IpAddress& operator=(const sockaddr_in6& a_native_ipv6);
 
 		operator const sockaddr* () const;
 
@@ -56,29 +56,29 @@ namespace asd
 
 		AddressFamily GetAddressFamily() const;
 
-		void* GetIp(OUT int* a_len = nullptr) const;
+		void* GetIp(int* a_len = nullptr /*Out*/) const;
 
 		uint16_t GetPort() const;
 
-		void SetPort(IN uint16_t a_port);
+		void SetPort(uint16_t a_port);
 
 		MString ToString() const;
 
-		static int Compare(IN const IpAddress& a_left,
-						   IN const IpAddress& a_right);
+		static int Compare(const IpAddress& a_left,
+						   const IpAddress& a_right);
 
 		asd_Define_CompareOperator(Compare, IpAddress);
 
 		// STL의 해시 기반 컨테이너에서 사용할 Functor
 		struct Hash
 		{
-			size_t operator()(IN const IpAddress& a_addr) const;
+			size_t operator()(const IpAddress& a_addr) const;
 		};
 	};
 
 
 
-	std::vector<IpAddress> FindIP(IN const char* a_domain);
+	std::vector<IpAddress> FindIP(const char* a_domain);
 }
 
 namespace std

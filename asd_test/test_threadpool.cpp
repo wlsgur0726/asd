@@ -264,7 +264,7 @@ namespace asdtest_threadpool
 		PerfTestReport report;
 		lgs.Start(lgopt, 2, pushSpeed);
 
-		for (int sec=1; sec<=60*3; ++sec) {
+		for (int sec=1; sec<=60; ++sec) {
 			std::this_thread::sleep_for(ms(1000));
 			report.printStats(tp.GetStats());
 		}

@@ -5,10 +5,10 @@
 
 namespace asd
 {
-	inline void SetPointer(REF std::shared_ptr<FILE>& a_ptr,
-						   IN FILE* a_fp)
+	inline void SetPointer(std::shared_ptr<FILE>& a_ptr,
+						   FILE* a_fp)
 	{
-		a_ptr.reset(a_fp, [](IN FILE* a_del)
+		a_ptr.reset(a_fp, [](FILE* a_del)
 		{
 			::fclose(a_del);
 		});
@@ -19,20 +19,20 @@ namespace asd
 	{
 	}
 
-	File::File(IN const char* a_path,
-			   IN const char* a_mode /*= ""*/)
+	File::File(const char* a_path,
+			   const char* a_mode /*= ""*/)
 	{
 		Open(a_path, a_mode);
 	}
 
-	File::File(IN const wchar_t* a_path,
-			   IN const wchar_t* a_mode /*= L""*/)
+	File::File(const wchar_t* a_path,
+			   const wchar_t* a_mode /*= L""*/)
 	{
 		Open(a_path, a_mode);
 	}
 
-	void File::Open(IN const char* a_path,
-					IN const char* a_mode /*= ""*/)
+	void File::Open(const char* a_path,
+					const char* a_mode /*= ""*/)
 	{
 #if asd_Platform_Windows
 		FILE* fp;
@@ -50,8 +50,8 @@ namespace asd
 		SetPointer(m_file, fp);
 	}
 
-	void File::Open(IN const wchar_t* a_path,
-					IN const wchar_t* a_mode /*= L""*/)
+	void File::Open(const wchar_t* a_path,
+					const wchar_t* a_mode /*= L""*/)
 	{
 #if asd_Platform_Windows
 		FILE* fp;
@@ -68,9 +68,9 @@ namespace asd
 #endif
 	}
 
-	size_t File::Read(OUT void* a_buffer,
-					  IN size_t a_elemSize,
-					  IN size_t a_elemCount)
+	size_t File::Read(void* a_buffer /*Out*/,
+					  size_t a_elemSize,
+					  size_t a_elemCount)
 	{
 		if (m_file == nullptr) {
 			m_lastError = EBADF;
@@ -85,9 +85,9 @@ namespace asd
 		return ret;
 	}
 
-	size_t File::Write(IN const void* a_buffer,
-					   IN size_t a_elemSize,
-					   IN size_t a_elemCount)
+	size_t File::Write(const void* a_buffer,
+					   size_t a_elemSize,
+					   size_t a_elemCount)
 	{
 		if (m_file == nullptr) {
 			m_lastError = EBADF;
@@ -107,8 +107,8 @@ namespace asd
 		return m_lastError;
 	}
 
-	int asd::File::Seek(IN off_t a_offset,
-						IN int a_whence)
+	int asd::File::Seek(off_t a_offset,
+						int a_whence)
 	{
 		if (m_file == nullptr) {
 			m_lastError = EBADF;
