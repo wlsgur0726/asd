@@ -25,7 +25,7 @@ int main(int argc, char** argv)
 	std::vector<char*> args;
 	args.emplace_back(argv[0]);
 
-	char* filter = "--gtest_filter=ThreadPool.TimerTest_*";
+	char* filter = "--gtest_filter=DateTime.*";
 	//char* filter = "--gtest_filter=Actx.*";
 	//char* filter = "--gtest_filter=Semaphore.PerfTest*";
 	args.emplace_back(filter);

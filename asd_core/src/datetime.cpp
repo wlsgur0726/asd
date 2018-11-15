@@ -4,21 +4,37 @@
 
 namespace asd
 {
+#if asd_Platform_Windows
+	// https://social.msdn.microsoft.com/Forums/ko-KR/4aabf49f-7a5d-4f51-be5e-197c511c42ce/5394551221-49345548895064049436-localtimes-gmtimes51032?forum=visualcplusko
+	struct FixTimezone
+	{
+		FixTimezone()
+		{
+			::_tzset();
+		}
+	} g_fixTimezone;
+#endif
+
+
+	time_t* TlsNow()
+	{
+		thread_local time_t t_time;
+		t_time = ::time(nullptr);
+		return &t_time;
+	}
+
+
 	tm* localtime(const time_t* a_time /*= nullptr*/)
 	{
 		thread_local tm t_tm;
 
-		if (a_time == nullptr) {
-			thread_local time_t t_time;
-			t_time = ::time(nullptr);
-			a_time = &t_time;
-		}
+		if (a_time == nullptr)
+			a_time = TlsNow();
 
 #if asd_Platform_Windows
-		if (::localtime_s(&t_tm, a_time) != 0) {
-			auto e = errno;
-			asd_OnErr("localtime_s error, {}", e);
-		}
+		int err = ::localtime_s(&t_tm, a_time);
+		if (err)
+			asd_OnErr("localtime_s error, {}", err);
 		return &t_tm;
 #else
 		return ::localtime_r(a_time, &t_tm);
@@ -30,17 +46,13 @@ namespace asd
 	{
 		thread_local tm t_tm;
 
-		if (a_time == nullptr) {
-			thread_local time_t t_time;
-			t_time = ::time(nullptr);
-			a_time = &t_time;
-		}
+		if (a_time == nullptr)
+			a_time = TlsNow();
 
 #if asd_Platform_Windows
-		if (::gmtime_s(&t_tm, a_time) != 0) {
-			auto e = errno;
-			asd_OnErr("gmtime_s error, {}", e);
-		}
+		int err = ::gmtime_s(&t_tm, a_time);
+		if (err)
+			asd_OnErr("gmtime_s error, {}", err);
 		return &t_tm;
 #else
 		return ::gmtime_r(a_time, &t_tm);
@@ -55,13 +67,10 @@ namespace asd
 		CurrentTimeZone()
 		{
 			static_assert(std::numeric_limits<time_t>::min() < 0, "time_t is unsigned type");
-			const time_t day = 24 * 60 * 60;
-			const time_t t = 365 * day;
-			const time_t local = mktime(asd::localtime(&t));
-			const time_t utc = mktime(asd::gmtime(&t));
-			const time_t diff = local - utc;
 
-			asd_DAssert(diff > -day && diff < day);
+			const time_t now = ::time(nullptr);
+			const time_t gt = ::mktime(asd::gmtime(&now));
+			const time_t diff = now - gt;
 			OffsetSec = (int)diff;
 		}
 	};
@@ -1045,7 +1054,7 @@ namespace asd
 	{																\
 		UnitTest_ ## TestName()										\
 		{															\
-			UnitTest::TestList.emplace_back(this);						\
+			UnitTest::TestList.emplace_back(this);					\
 		}															\
 		virtual void Run() override;								\
 	};																\
